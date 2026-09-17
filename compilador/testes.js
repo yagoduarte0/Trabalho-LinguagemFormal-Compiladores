@@ -1,0 +1,546 @@
+// Suíte de testes — roda no navegador (index.html) e no Node (`node testes.js`).
+// Sem dependências externas: mini-framework de asserção + coletor de resultados.
+
+(function (global) {
+  const casos = [];
+
+  function teste(nome, fn) {
+    casos.push({ nome, fn });
+  }
+
+  function afirmar(cond, msg) {
+    if (!cond) throw new Error(msg || "asserção falhou");
+  }
+
+  function afirmarIgual(atual, esperado, msg) {
+    const a = JSON.stringify(atual);
+    const e = JSON.stringify(esperado);
+    if (a !== e) {
+      throw new Error(`${msg || "valores diferentes"}\n  esperado: ${e}\n  obtido:   ${a}`);
+    }
+  }
+
+  function rodarTestes() {
+    const resultados = [];
+    for (const c of casos) {
+      try {
+        c.fn();
+        resultados.push({ nome: c.nome, ok: true });
+      } catch (e) {
+        resultados.push({ nome: c.nome, ok: false, erro: e.message });
+      }
+    }
+    const passou = resultados.filter(r => r.ok).length;
+    return { total: resultados.length, passou, falhou: resultados.length - passou, resultados };
+  }
+
+  // ---------------------------------------------------------------------
+  // Carrega os módulos: no Node via require, no navegador via globais
+  // já carregados por <script> (window.analisarLexico etc.).
+  // ---------------------------------------------------------------------
+  let analisarLexico, resumoTokens, decodificarTexto, analisarSintatico, formatarArvore;
+  if (typeof module !== "undefined" && typeof require === "function") {
+    ({ analisarLexico, resumoTokens, decodificarTexto } = require("./lexer.js"));
+    ({ analisarSintatico, formatarArvore } = require("./parser.js"));
+  } else {
+    ({ analisarLexico, resumoTokens, decodificarTexto } = global);
+    ({ analisarSintatico, formatarArvore } = global);
+  }
+
+  // parser.js espera tokens já sem comentários (o orquestrador faz esse
+  // filtro antes de chamar analisarSintatico — os testes replicam aqui)
+  function analisar(fonte) {
+    const { tokens, erros: errosLexicos } = analisarLexico(fonte);
+    if (errosLexicos.length > 0) return { ast: null, erros: errosLexicos, fase: "lexica" };
+    const relevantes = tokens.filter(t => t.categoria !== "comentario");
+    const { ast, erros } = analisarSintatico(relevantes);
+    return { ast, erros, fase: erros.length > 0 ? "sintatica" : "ok" };
+  }
+
+  // ======================= FASE 1 — LÉXICO ==============================
+
+  teste("lexico: reconhece palavras-chave de declaracao e identificadores", () => {
+    const { tokens, erros } = analisarLexico("supply x = 10");
+    afirmarIgual(erros, [], "não deveria haver erros");
+    const tipos = tokens.map(t => t.tipo);
+    afirmarIgual(tipos, ["TOKEN_LET", "TOKEN_IDENTIFIER", "ASSIGN", "TOKEN_INT_LIT", "TOKEN_EOF"]);
+  });
+
+  teste("lexico: identificador comum nao e confundido com palavra-chave parecida", () => {
+    const { tokens } = analisarLexico("supply supplies = 1");
+    afirmarIgual(tokens[1].tipo, "TOKEN_IDENTIFIER");
+    afirmarIgual(tokens[1].lexema, "supplies");
+  });
+
+  teste("lexico: todas as 8 keywords de declaracao", () => {
+    const { tokens } = analisarLexico("chronicle scavenge mission supply law survivor cache stash");
+    const tipos = tokens.filter(t => t.categoria === "declaracao").map(t => t.tipo);
+    afirmarIgual(tipos, [
+      "TOKEN_MAIN", "TOKEN_IMPORT", "TOKEN_FUNC", "TOKEN_LET",
+      "TOKEN_CONST", "TOKEN_TASK", "TOKEN_STRUCT", "TOKEN_ARRAY"
+    ]);
+  });
+
+  teste("lexico: todos os 6 tipos primitivos", () => {
+    const { tokens } = analisarLexico("ration vital status paper radio silent");
+    const tipos = tokens.filter(t => t.categoria === "tipo").map(t => t.tipo);
+    afirmarIgual(tipos, [
+      "TOKEN_TYPE_INT", "TOKEN_TYPE_FLOAT", "TOKEN_TYPE_BOOL",
+      "TOKEN_TYPE_STRING", "TOKEN_TYPE_PIN", "TOKEN_TYPE_VOID"
+    ]);
+  });
+
+  teste("lexico: todas as 5 keywords de controle de fluxo", () => {
+    const { tokens } = analisarLexico("watch patrol checkpoint fallback extract");
+    const tipos = tokens.filter(t => t.categoria === "controle").map(t => t.tipo);
+    afirmarIgual(tipos, ["TOKEN_LOOP", "TOKEN_FOR", "TOKEN_IF", "TOKEN_ELSE", "TOKEN_RETURN"]);
+  });
+
+  teste("lexico: keywords de hardware", () => {
+    const { tokens } = analisarLexico("broadcast silence hide");
+    const tipos = tokens.filter(t => t.categoria === "hardware").map(t => t.tipo);
+    afirmarIgual(tipos, ["TOKEN_GPIO_HIGH", "TOKEN_GPIO_LOW", "TOKEN_DELAY"]);
+  });
+
+  teste("lexico: keywords de tratamento de erro", () => {
+    const { tokens } = analisarLexico("outbreak quarantine catch");
+    const tipos = tokens.filter(t => t.categoria === "tratamento_erro").map(t => t.tipo);
+    afirmarIgual(tipos, ["TOKEN_ERROR_TYPE", "TOKEN_TRY", "TOKEN_CATCH"]);
+  });
+
+  teste("lexico: keywords de evento e E/S", () => {
+    const { tokens } = analisarLexico("ambush log_entry");
+    const tipos = tokens.filter(t => t.categoria === "evento_io").map(t => t.tipo);
+    afirmarIgual(tipos, ["TOKEN_EVENT", "TOKEN_PRINT"]);
+  });
+
+  teste("lexico: literais booleanos alive/dead carregam o valor certo", () => {
+    const { tokens } = analisarLexico("alive dead");
+    afirmarIgual(tokens[0].tipo, "TOKEN_BOOL_LIT");
+    afirmarIgual(tokens[0].valor, true);
+    afirmarIgual(tokens[1].valor, false);
+  });
+
+  teste("lexico: nomes de modulo embutido (gpio, mqtt, ...) sao identificadores comuns", () => {
+    const { tokens } = analisarLexico("gpio mqtt time");
+    for (const t of tokens.slice(0, 3)) {
+      afirmarIgual(t.tipo, "TOKEN_IDENTIFIER");
+    }
+  });
+
+  teste("lexico: numero inteiro e decimal (decimal vence por maximal munch)", () => {
+    const { tokens } = analisarLexico("27 0.0977 40.0");
+    afirmarIgual(tokens[0].tipo, "TOKEN_INT_LIT");
+    afirmarIgual(tokens[0].valor, 27);
+    afirmarIgual(tokens[1].tipo, "TOKEN_FLOAT_LIT");
+    afirmarIgual(tokens[1].valor, 0.0977);
+    afirmarIgual(tokens[2].valor, 40.0);
+  });
+
+  teste("lexico: string literal com aspas duplas e escapes", () => {
+    const { tokens } = analisarLexico('"area limpa, nenhum sinal"');
+    afirmarIgual(tokens[0].tipo, "TOKEN_STRING_LIT");
+    afirmarIgual(tokens[0].valor, "area limpa, nenhum sinal");
+  });
+
+  teste("lexico: decodificarTexto remove aspas e resolve escapes", () => {
+    afirmarIgual(decodificarTexto('"a\\"b"'), 'a"b');
+    afirmarIgual(decodificarTexto('"x\\ty"'), "x\ty");
+  });
+
+  teste("lexico: string sem fechar gera erro e nao trava o scanner", () => {
+    const { tokens, erros } = analisarLexico('supply x = "abc\nsupply y = 1');
+    afirmar(erros.length === 1, "deveria haver exatamente 1 erro");
+    afirmarIgual(erros[0].msg, "aspas não fechadas");
+    afirmar(tokens.some(t => t.tipo === "TOKEN_STRING_LIT_ERRO"), "token de erro deve aparecer na lista");
+    afirmar(tokens.some(t => t.tipo === "TOKEN_LET" && t.linha === 2), "scanner continua após o erro");
+  });
+
+  teste("lexico: caractere desconhecido gera erro com posicao e o scanner continua", () => {
+    const { tokens, erros } = analisarLexico("supply x = 1 & 2");
+    afirmarIgual(erros.length, 1);
+    afirmarIgual(erros[0].lexema, "&");
+    afirmar(tokens.some(t => t.tipo === "TOKEN_INT_LIT" && t.valor === 2), "continua tokenizando após o erro");
+  });
+
+  teste("lexico: operadores de dois caracteres vencem sobre um caractere", () => {
+    const { tokens } = analisarLexico("a == b != c <= d >= e && f || g");
+    const ops = tokens.filter(t => t.categoria === "operador").map(t => t.tipo);
+    afirmarIgual(ops, ["EQ", "NEQ", "LE", "GE", "AND", "OR"]);
+  });
+
+  teste("lexico: arrow (->) nao e confundido com minus (-)", () => {
+    const { tokens } = analisarLexico("mission f() -> ration");
+    const arrow = tokens.find(t => t.tipo === "ARROW");
+    afirmar(arrow !== undefined, "deveria reconhecer ARROW");
+    afirmarIgual(arrow.lexema, "->");
+  });
+
+  teste("lexico: dot (.) para acesso a membro de modulo", () => {
+    const { tokens } = analisarLexico("gpio.read(1)");
+    const dot = tokens.find(t => t.tipo === "DOT");
+    afirmar(dot !== undefined, "deveria reconhecer DOT");
+  });
+
+  teste("lexico: delimitadores de bloco, parametro e array", () => {
+    const { tokens } = analisarLexico("{ } ( ) [ ] , ; :");
+    const tipos = tokens.filter(t => t.categoria === "delimitador").map(t => t.tipo);
+    afirmarIgual(tipos, ["LBRACE", "RBRACE", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET", "COMMA", "SEMI", "COLON"]);
+  });
+
+  teste("lexico: comentario de linha // e reconhecido e nao vira SLASH+SLASH", () => {
+    const { tokens } = analisarLexico("supply x = 1 // comentario aqui");
+    const comentarios = tokens.filter(t => t.tipo === "TOKEN_COMMENT");
+    afirmarIgual(comentarios.length, 1);
+    afirmarIgual(comentarios[0].lexema, "// comentario aqui");
+  });
+
+  teste("lexico: comentario de bloco /* */ multi-linha e reconhece a linha seguinte corretamente", () => {
+    const { tokens } = analisarLexico("supply x = 1 /* bloco\nmulti\nlinha */ supply y = 2");
+    const comentario = tokens.find(t => t.tipo === "TOKEN_COMMENT");
+    afirmar(comentario !== undefined);
+    const segundoLet = tokens.filter(t => t.tipo === "TOKEN_LET")[1];
+    afirmarIgual(segundoLet.linha, 3);
+  });
+
+  teste("lexico: comentario de bloco nao fechado gera erro", () => {
+    const { erros } = analisarLexico("supply x = 1 /* nunca fecha");
+    afirmarIgual(erros.length, 1);
+    afirmarIgual(erros[0].msg, "comentário de bloco não fechado");
+  });
+
+  teste("lexico: divisao (/) nao e confundida com comentario", () => {
+    const { tokens, erros } = analisarLexico("supply x = 10 / 2");
+    afirmarIgual(erros, []);
+    const slash = tokens.find(t => t.tipo === "SLASH");
+    afirmar(slash !== undefined, "deveria reconhecer SLASH como divisao");
+  });
+
+  teste("lexico: espacos e tabs sao ignorados (nao viram token)", () => {
+    const { tokens } = analisarLexico("  supply   x   =   1  ");
+    afirmar(!tokens.some(t => t.tipo === "ESPACO"), "ESPACO nunca deve aparecer na lista");
+  });
+
+  teste("lexico: nova linha vira token proprio e reinicia a coluna", () => {
+    const { tokens } = analisarLexico("supply x = 1\nsupply y = 2");
+    const quebra = tokens.find(t => t.tipo === "TOKEN_NEWLINE");
+    afirmar(quebra !== undefined, "deve haver um token TOKEN_NEWLINE");
+    const segundoLet = tokens.filter(t => t.tipo === "TOKEN_LET")[1];
+    afirmarIgual(segundoLet.linha, 2);
+    afirmarIgual(segundoLet.coluna, 1);
+  });
+
+  teste("lexico: sempre termina com TOKEN_EOF", () => {
+    const { tokens } = analisarLexico("");
+    afirmarIgual(tokens.length, 1);
+    afirmarIgual(tokens[0].tipo, "TOKEN_EOF");
+  });
+
+  teste("lexico: resumoTokens conta por categoria", () => {
+    const { tokens } = analisarLexico("supply x = 1 + 2");
+    const resumo = resumoTokens(tokens);
+    afirmarIgual(resumo.declaracao, 1);
+    afirmarIgual(resumo.identificador, 1);
+    afirmarIgual(resumo.operador, 2);
+    afirmarIgual(resumo.literal, 2);
+    afirmarIgual(resumo.estrutura, 1);
+  });
+
+  teste("lexico: programa de referencia completo tokeniza sem erros", () => {
+    const fonte = [
+      "scavenge gpio",
+      "",
+      "law MOTION_PIN = 27",
+      "law ALARM_RADIO = 5",
+      "",
+      "mission check_perimeter() -> status {",
+      "    supply detected = gpio.read(radio(MOTION_PIN))",
+      "    extract detected",
+      "}",
+      "",
+      "survivor perimeter_watch {",
+      "    watch {",
+      "        checkpoint (check_perimeter()) {",
+      "            broadcast(radio(ALARM_RADIO))",
+      "            hide(10000)",
+      "            silence(radio(ALARM_RADIO))",
+      "        } fallback {",
+      '            log_entry("area limpa, nenhum sinal")',
+      "        }",
+      "        hide(500)",
+      "    }",
+      "}",
+      "",
+      "ambush intruder_alert {",
+      '    mqtt.publish("perimetro/alerta", "movimento detectado")',
+      "}"
+    ].join("\n");
+    const { erros } = analisarLexico(fonte);
+    afirmarIgual(erros, []);
+  });
+
+  // ======================= FASE 2 — SINTÁTICO ============================
+
+  teste("sintatico: declaracao supply vira DeclaracaoVariavel com categoria certa", () => {
+    const { ast, erros } = analisar("supply x = 10");
+    afirmarIgual(erros, []);
+    afirmarIgual(ast.declaracoes[0].tipo, "DeclaracaoVariavel");
+    afirmarIgual(ast.declaracoes[0].categoria, "supply");
+    afirmarIgual(ast.declaracoes[0].nome, "x");
+    afirmarIgual(ast.declaracoes[0].valor.tipo, "Literal");
+    afirmarIgual(ast.declaracoes[0].valor.valor, 10);
+  });
+
+  teste("sintatico: law e stash tambem viram DeclaracaoVariavel, com categoria distinta", () => {
+    const { ast } = analisar('law PIN = 27\nstash itens = [1, 2, 3]');
+    afirmarIgual(ast.declaracoes[0].categoria, "law");
+    afirmarIgual(ast.declaracoes[1].categoria, "stash");
+    afirmarIgual(ast.declaracoes[1].valor.tipo, "ListaLiteral");
+    afirmarIgual(ast.declaracoes[1].valor.elementos.length, 3);
+  });
+
+  teste("sintatico: scavenge vira no Scavenge", () => {
+    const { ast, erros } = analisar("scavenge gpio");
+    afirmarIgual(erros, []);
+    afirmarIgual(ast.declaracoes[0], { tipo: "Scavenge", linha: 1, coluna: 1, modulo: "gpio" });
+  });
+
+  teste("sintatico: mission com parametros tipados e retorno vira Funcao", () => {
+    const { ast, erros } = analisar("mission soma(ration a, ration b) -> ration {\n    extract a\n}");
+    afirmarIgual(erros, []);
+    const f = ast.declaracoes[0];
+    afirmarIgual(f.tipo, "Funcao");
+    afirmarIgual(f.nome, "soma");
+    afirmarIgual(f.parametros, [
+      { tipoDado: "ration", nome: "a", linha: 1, coluna: 21 },
+      { tipoDado: "ration", nome: "b", linha: 1, coluna: 31 }
+    ]);
+    afirmarIgual(f.tipoRetorno, "ration");
+    afirmarIgual(f.corpo[0].tipo, "Extract");
+  });
+
+  teste("sintatico: mission sem parametros e sem seta de retorno", () => {
+    const { ast, erros } = analisar("mission tick() {\n    extract\n}");
+    afirmarIgual(erros, []);
+    const f = ast.declaracoes[0];
+    afirmarIgual(f.parametros, []);
+    afirmarIgual(f.tipoRetorno, null);
+    afirmarIgual(f.corpo[0], { tipo: "Extract", linha: 2, coluna: 5, expressao: null });
+  });
+
+  teste("sintatico: survivor, ambush e chronicle viram Task/Evento/Principal", () => {
+    const { ast, erros } = analisar(
+      'survivor s {\n    watch {\n        hide(1)\n    }\n}\n' +
+      'ambush e {\n    log_entry("evento")\n}\n' +
+      'chronicle {\n    log_entry("main")\n}\n'
+    );
+    afirmarIgual(erros, []);
+    afirmarIgual(ast.declaracoes.map(d => d.tipo), ["Task", "Evento", "Principal"]);
+    afirmarIgual(ast.declaracoes[0].nome, "s");
+    afirmarIgual(ast.declaracoes[1].nome, "e");
+    afirmarIgual(ast.declaracoes[2].nome, null);
+  });
+
+  teste("sintatico: cache vira Estrutura com campos tipados", () => {
+    const { ast, erros } = analisar("cache Config {\n    ration limite\n    paper nome\n}");
+    afirmarIgual(erros, []);
+    const est = ast.declaracoes[0];
+    afirmarIgual(est.tipo, "Estrutura");
+    afirmarIgual(est.nome, "Config");
+    afirmarIgual(est.campos.map(c => [c.tipoDado, c.nome]), [["ration", "limite"], ["paper", "nome"]]);
+  });
+
+  teste("sintatico: checkpoint sem fallback vira Checkpoint com outros nulo", () => {
+    const { ast, erros } = analisar("checkpoint (alive) {\n    hide(1)\n}");
+    afirmarIgual(erros, []);
+    const c = ast.declaracoes[0];
+    afirmarIgual(c.tipo, "Checkpoint");
+    afirmarIgual(c.outros, null);
+  });
+
+  teste("sintatico: checkpoint com fallback final vira bloco (array) em outros", () => {
+    const { ast } = analisar("checkpoint (dead) {\n    hide(1)\n} fallback {\n    hide(2)\n}");
+    const c = ast.declaracoes[0];
+    afirmar(Array.isArray(c.outros), "outros deveria ser um array (bloco fallback)");
+    afirmarIgual(c.outros[0].tipo, "ExpressaoStmt");
+  });
+
+  teste("sintatico: fallback checkpoint encadeado vira outro no Checkpoint (elif)", () => {
+    const { ast } = analisar(
+      "checkpoint (1 == 1) {\n    hide(1)\n} fallback checkpoint (2 == 2) {\n    hide(2)\n} fallback {\n    hide(3)\n}"
+    );
+    const c = ast.declaracoes[0];
+    afirmarIgual(c.outros.tipo, "Checkpoint");
+    afirmar(Array.isArray(c.outros.outros), "o segundo nivel deveria terminar em bloco fallback");
+  });
+
+  teste("sintatico: watch (loop infinito) e patrol (repeticao) tem corpo em bloco", () => {
+    const { ast, erros } = analisar("watch {\n    hide(1)\n}\npatrol(5) {\n    hide(2)\n}");
+    afirmarIgual(erros, []);
+    afirmarIgual(ast.declaracoes[0].tipo, "Watch");
+    afirmarIgual(ast.declaracoes[1].tipo, "Patrol");
+    afirmarIgual(ast.declaracoes[1].vezes, { tipo: "Literal", linha: 4, coluna: 8, valor: 5, tipoLiteral: "ration" });
+  });
+
+  teste("sintatico: quarantine/catch vira Quarantine com tentativa e captura", () => {
+    const { ast, erros } = analisar(
+      "quarantine {\n    outbreak dead\n} catch (falha) {\n    log_entry(falha)\n}"
+    );
+    afirmarIgual(erros, []);
+    const q = ast.declaracoes[0];
+    afirmarIgual(q.tipo, "Quarantine");
+    afirmarIgual(q.nomeErro, "falha");
+    afirmarIgual(q.tentativa[0].tipo, "Outbreak");
+    afirmarIgual(q.captura[0].tipo, "ExpressaoStmt");
+  });
+
+  teste("sintatico: atribuicao (IDENT = expressao) e distinta de comando de expressao", () => {
+    const { ast, erros } = analisar("supply x = 1\nx = 2\nhide(x)");
+    afirmarIgual(erros, []);
+    afirmarIgual(ast.declaracoes[1], { tipo: "Atribuicao", linha: 2, coluna: 1, nome: "x", valor: { tipo: "Literal", linha: 2, coluna: 5, valor: 2, tipoLiteral: "ration" } });
+    afirmarIgual(ast.declaracoes[2].tipo, "ExpressaoStmt");
+  });
+
+  teste("sintatico: precedencia de operadores (||, &&, igualdade, relacional, aditivo, multiplicativo)", () => {
+    const { ast, erros } = analisar("supply r = 1 + 2 * 3 == 7 && alive || dead");
+    afirmarIgual(erros, []);
+    const raiz = ast.declaracoes[0].valor;
+    afirmarIgual(raiz.tipo, "Logica");
+    afirmarIgual(raiz.operador, "||");
+    afirmarIgual(raiz.esquerda.operador, "&&");
+    afirmarIgual(raiz.esquerda.esquerda.operador, "==");
+    afirmarIgual(raiz.esquerda.esquerda.esquerda.operador, "+");
+    afirmarIgual(raiz.esquerda.esquerda.esquerda.direita.operador, "*");
+  });
+
+  teste("sintatico: unario logico e aritmetico (!, -)", () => {
+    const { ast, erros } = analisar("supply x = !alive\nsupply y = -5");
+    afirmarIgual(erros, []);
+    afirmarIgual(ast.declaracoes[0].valor, { tipo: "Unaria", linha: 1, coluna: 12, operador: "!", operando: { tipo: "Literal", linha: 1, coluna: 13, valor: true, tipoLiteral: "status" } });
+    afirmarIgual(ast.declaracoes[1].valor.operador, "-");
+  });
+
+  teste("sintatico: parenteses agrupam e alteram a arvore (Agrupamento)", () => {
+    const { ast } = analisar("supply r = (1 + 2) * 3");
+    afirmarIgual(ast.declaracoes[0].valor.tipo, "Binaria");
+    afirmarIgual(ast.declaracoes[0].valor.operador, "*");
+    afirmarIgual(ast.declaracoes[0].valor.esquerda.tipo, "Agrupamento");
+  });
+
+  teste("sintatico: chamada encadeada com acesso a membro (obj.metodo(args))", () => {
+    const { ast, erros } = analisar("supply x = gpio.read(radio(1))");
+    afirmarIgual(erros, []);
+    const chamada = ast.declaracoes[0].valor;
+    afirmarIgual(chamada.tipo, "Chamada");
+    afirmarIgual(chamada.alvo.tipo, "Membro");
+    afirmarIgual(chamada.alvo.nome, "read");
+    afirmarIgual(chamada.alvo.objeto, { tipo: "Identificador", linha: 1, coluna: 12, nome: "gpio" });
+    afirmarIgual(chamada.argumentos[0].tipo, "Chamada");
+    afirmarIgual(chamada.argumentos[0].alvo.nome, "radio");
+  });
+
+  teste("sintatico: indice de lista ([ ]) vira no Indice", () => {
+    const { ast, erros } = analisar("stash itens = [1, 2, 3]\nsupply primeiro = itens[0]");
+    afirmarIgual(erros, []);
+    const indice = ast.declaracoes[1].valor;
+    afirmarIgual(indice.tipo, "Indice");
+    afirmarIgual(indice.alvo.nome, "itens");
+    afirmarIgual(indice.indice.valor, 0);
+  });
+
+  teste("sintatico: palavras reservadas de hardware/tipo funcionam como alvo de chamada", () => {
+    const { ast, erros } = analisar("broadcast(radio(5))\nsilence(radio(5))\nhide(500)\nlog_entry(\"oi\")");
+    afirmarIgual(erros, []);
+    afirmarIgual(ast.declaracoes.map(d => d.expressao.alvo.nome), ["broadcast", "silence", "hide", "log_entry"]);
+  });
+
+  teste("sintatico: ';' funciona como separador alternativo a nova linha", () => {
+    const { ast, erros } = analisar("supply x = 1; supply y = 2; hide(x)");
+    afirmarIgual(erros, []);
+    afirmarIgual(ast.declaracoes.length, 3);
+  });
+
+  teste("sintatico: parenteses nao fechados geram erro com linha/coluna e o parser se recupera na linha seguinte", () => {
+    const { ast, erros } = analisar("supply x = (1 + 2\nsupply y = 3");
+    afirmarIgual(erros.length, 1);
+    afirmarIgual(erros[0].linha, 1);
+    afirmarIgual(ast.declaracoes.length, 1, "a declaracao 'y' deveria sobreviver a recuperacao em modo panico");
+    afirmarIgual(ast.declaracoes[0].nome, "y");
+  });
+
+  teste("sintatico: bloco sem '}' gera erro apontando onde o fechamento era esperado", () => {
+    const { erros } = analisar("mission f() {\n    extract\n");
+    afirmarIgual(erros.length, 1);
+    afirmar(erros[0].msg.includes("'}'"), "mensagem deveria mencionar a chave que falta");
+  });
+
+  teste("sintatico: erro em uma declaracao nao impede reportar erro em outra (modo panico)", () => {
+    const { ast, erros } = analisar("supply x = )\nsupply y = )\nhide(1)");
+    afirmarIgual(erros.length, 2);
+    afirmarIgual(ast.declaracoes.length, 1, "so a declaracao valida (hide(1)) sobrevive a recuperacao");
+  });
+
+  teste("sintatico: formatarArvore desenha a raiz e os filhos com arestas nomeadas", () => {
+    const { ast } = analisar("supply x = 1");
+    const texto = formatarArvore(ast);
+    afirmar(texto.startsWith("Programa (1:1)"), "primeira linha deveria ser a raiz");
+    afirmar(texto.includes("declaracoes[0]:"), "deveria nomear a aresta do array de declaracoes");
+    afirmar(texto.includes("DeclaracaoVariavel"), "deveria mostrar o tipo do filho");
+  });
+
+  teste("sintatico: programa de referencia completo (sentinela de perimetro) sem erros", () => {
+    const fonte = [
+      "scavenge gpio",
+      "",
+      "law MOTION_PIN = 27",
+      "law ALARM_RADIO = 5",
+      "",
+      "mission check_perimeter() -> status {",
+      "    supply detected = gpio.read(radio(MOTION_PIN))",
+      "    extract detected",
+      "}",
+      "",
+      "survivor perimeter_watch {",
+      "    watch {",
+      "        checkpoint (check_perimeter()) {",
+      "            broadcast(radio(ALARM_RADIO))",
+      "            hide(10000)",
+      "            silence(radio(ALARM_RADIO))",
+      "        } fallback {",
+      '            log_entry("area limpa, nenhum sinal")',
+      "        }",
+      "        hide(500)",
+      "    }",
+      "}",
+      "",
+      "ambush intruder_alert {",
+      '    mqtt.publish("perimetro/alerta", "movimento detectado")',
+      "}"
+    ].join("\n");
+    const { erros } = analisar(fonte);
+    afirmarIgual(erros, []);
+  });
+
+  // ======================= exposição / execução ==========================
+
+  const api = { teste, afirmar, afirmarIgual, rodarTestes, casos };
+
+  if (typeof module !== "undefined") {
+    module.exports = api;
+  }
+  if (typeof global.window !== "undefined") {
+    global.window.testesBnkr = api;
+  } else {
+    global.testesBnkr = api;
+  }
+
+  // Execução direta via `node testes.js`
+  if (typeof require !== "undefined" && typeof module !== "undefined" && require.main === module) {
+    const r = rodarTestes();
+    for (const res of r.resultados) {
+      console.log(`${res.ok ? "OK  " : "FAIL"} ${res.nome}${res.ok ? "" : "\n     " + res.erro}`);
+    }
+    console.log(`\n${r.passou}/${r.total} testes passaram.`);
+    process.exit(r.falhou > 0 ? 1 : 0);
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this);
