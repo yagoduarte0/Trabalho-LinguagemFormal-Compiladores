@@ -39,7 +39,7 @@
         <div id="arvore-ast"></div>
       </div>
       <div id="conteudo-python">
-        <div class="aviso-fase">Geração de código — implementada no dia 3 (gerador.js).</div>
+        <div id="codigo-python"></div>
       </div>
       <div id="conteudo-saida">
         <div class="aviso-fase">Execução via Pyodide — implementada no dia 3.</div>
@@ -48,10 +48,11 @@
   </section>
 </main>
 
-<footer>lexer.js · parser.js · testes.js — <span id="resultado-testes">testes não rodados nesta sessão</span></footer>
+<footer>lexer.js · parser.js · gerador.js · testes.js — <span id="resultado-testes">testes não rodados nesta sessão</span></footer>
 
 <script src="lexer.js"></script>
 <script src="parser.js"></script>
+<script src="gerador.js"></script>
 <script src="compilador.js"></script>
 <script src="testes.js"></script>
 <script>
@@ -170,6 +171,28 @@
     arvoreAst.innerHTML = html;
   }
 
+  // ---- aba Python ------------------------------------------------------
+  const codigoPython = document.getElementById("codigo-python");
+
+  function renderizarPython(resultado) {
+    if (resultado.fase !== "ok") {
+      codigoPython.innerHTML =
+        '<div class="aviso-fase">corrija os erros das fases anteriores para gerar o Python.</div>';
+      return;
+    }
+
+    // numera as linhas e anota de qual linha do fonte cada uma veio
+    const linhas = resultado.python.replace(/\n$/, "").split("\n");
+    let html = '<pre class="arvore-texto">';
+    linhas.forEach((linha, i) => {
+      const origem = resultado.linhaOrigem(i + 1);
+      const marca = origem === null ? "" : ` title="gerada da linha ${origem} do fonte"`;
+      html += `<span${marca}>${escaparHtml(linha)}</span>\n`;
+    });
+    html += "</pre>";
+    codigoPython.innerHTML = html;
+  }
+
   // ---- compilar ------------------------------------------------------
   function compilarAgora() {
     const resultado = compilar(editor.value);
@@ -182,6 +205,7 @@
     }
 
     renderizarAst(resultado);
+    renderizarPython(resultado);
   }
 
   btnCompilar.addEventListener("click", compilarAgora);
