@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BNKR // Compilador</title>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+<header>
+  <h1>BNKR // Compilador</h1>
+  <span class="subtitulo">análise léxica · análise sintática · AST · back end (BNKR → Python)</span>
+</header>
+
+<main>
+  <section class="painel">
+    <div class="painel-cabecalho">
+      <label for="exemplos">exemplo</label>
+      <select id="exemplos"></select>
+      <button id="btn-compilar" class="primario">compilar</button>
+      <span id="status-fase" style="margin-left:auto; font-size:11px; color:var(--texto-fraco);"></span>
+    </div>
+    <textarea id="editor" spellcheck="false"></textarea>
+  </section>
+
+  <section class="painel">
+    <div class="abas">
+      <div class="aba ativa" data-aba="tokens">Tokens</div>
+      <div class="aba" data-aba="ast">AST</div>
+      <div class="aba" data-aba="python">Python</div>
+      <div class="aba" data-aba="saida">Saída</div>
+    </div>
+    <div class="conteudo-aba">
+      <div id="conteudo-tokens" class="ativa">
+        <div id="tabela-tokens-wrap"></div>
+      </div>
+      <div id="conteudo-ast">
+        <div id="arvore-ast"></div>
+      </div>
+      <div id="conteudo-python">
+        <div class="aviso-fase">Geração de código — implementada no dia 3 (gerador.js).</div>
+      </div>
+      <div id="conteudo-saida">
+        <div class="aviso-fase">Execução via Pyodide — implementada no dia 3.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>lexer.js · parser.js · testes.js — <span id="resultado-testes">testes não rodados nesta sessão</span></footer>
+
+<script src="lexer.js"></script>
+<script src="parser.js"></script>
+<script src="compilador.js"></script>
+<script src="testes.js"></script>
+<script>
+(function () {
+  const editor = document.getElementById("editor");
+  const seletorExemplos = document.getElementById("exemplos");
+  const btnCompilar = document.getElementById("btn-compilar");
+  const statusFase = document.getElementById("status-fase");
+  const wrapTokens = document.getElementById("tabela-tokens-wrap");
+
+  for (const chave of Object.keys(EXEMPLOS)) {
+    const opt = document.createElement("option");
+    opt.value = chave;
+    opt.textContent = EXEMPLOS[chave].titulo;
+    seletorExemplos.appendChild(opt);
+  }
+
+  function carregarExemplo(chave) {
+    editor.value = EXEMPLOS[chave].fonte;
+  }
+
+  seletorExemplos.addEventListener("change", () => carregarExemplo(seletorExemplos.value));
+  carregarExemplo(Object.keys(EXEMPLOS)[0]);
+
+  // ---- abas -------------------------------------------------------
+  document.querySelectorAll(".aba").forEach(aba => {
+    aba.addEventListener("click", () => {
+      document.querySelectorAll(".aba").forEach(a => a.classList.remove("ativa"));
+      document.querySelectorAll(".conteudo-aba > div").forEach(c => c.classList.remove("ativa"));
+      aba.classList.add("ativa");
+      document.getElementById("conteudo-" + aba.dataset.aba).classList.add("ativa");
+    });
+  });
+
+  // ---- tabela de tokens --------------------------------------------
+  const CATEGORIAS_LABEL = {
+    declaracao: "declaração",
+    tipo: "tipo",
+    controle: "controle",
+    hardware: "hardware",
+    tratamento_erro: "tratamento de erro",
+    evento_io: "evento/E-S",
+    identificador: "identificador",
+    literal: "literal",
+    operador: "operador",
+    delimitador: "delimitador",
+    comentario: "comentário",
+    estrutura: "estrutura",
+    erro: "erro"
+  };
+
+  function renderizarTokens(tokens) {
+    if (tokens.length === 0) {
+      wrapTokens.innerHTML = '<div class="aviso-fase">nenhum token — fonte vazia.</div>';
+      return;
+    }
+
+    let html = '<table class="tabela-tokens"><thead><tr>' +
+      '<th>#</th><th>tipo</th><th>categoria</th><th>lexema</th><th>valor</th><th>lin</th><th>col</th>' +
+      '</tr></thead><tbody>';
+
+    for (const t of tokens) {
+      const valor = t.valor === null || t.valor === undefined ? "" : String(t.valor);
+      const lexema = t.lexema === "" ? "<i>&nbsp;</i>" : escaparHtml(t.lexema);
+      html += `<tr>
+        <td>${t.indice}</td>
+        <td>${t.tipo}</td>
+        <td><span class="badge badge-${t.categoria}">${CATEGORIAS_LABEL[t.categoria] || t.categoria}</span></td>
+        <td>${lexema}</td>
+        <td>${escaparHtml(valor)}</td>
+        <td>${t.linha}</td>
+        <td>${t.coluna}</td>
+      </tr>`;
+    }
+    html += "</tbody></table>";
+
+    const resumo = resumoTokens(tokens);
+    html += '<div class="rodape-resumo">';
+    for (const cat of Object.keys(resumo)) {
+      html += `<span>${CATEGORIAS_LABEL[cat] || cat}: <b>${resumo[cat]}</b></span>`;
+    }
+    html += `<span>total: <b>${tokens.length}</b></span></div>`;
+
+    wrapTokens.innerHTML = html;
+  }
+
+  function htmlErros(erros, fase) {
+    let html = `<div class="lista-erros"><p style="color:var(--ferrugem-clara); font-size:12px;">` +
+      `erro na fase ${fase}:</p>`;
+    for (const e of erros) {
+      html += `<div class="erro-item"><span class="pos">linha ${e.linha}, coluna ${e.coluna}</span> — ${escaparHtml(e.msg)}` +
+        (e.lexema ? ` <code>(${escaparHtml(e.lexema)})</code>` : "") + `</div>`;
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function escaparHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  // ---- aba AST ---------------------------------------------------------
+  const arvoreAst = document.getElementById("arvore-ast");
+
+  function renderizarAst(resultado) {
+    if (resultado.fase === "lexica") {
+      arvoreAst.innerHTML = '<div class="aviso-fase">corrija os erros léxicos (aba Tokens) para gerar a AST.</div>';
+      return;
+    }
+    let html = "";
+    if (resultado.fase === "sintatica") html += htmlErros(resultado.erros, resultado.fase);
+    html += `<pre class="arvore-texto">${escaparHtml(formatarArvore(resultado.ast))}</pre>`;
+    arvoreAst.innerHTML = html;
+  }
+
+  // ---- compilar ------------------------------------------------------
+  function compilarAgora() {
+    const resultado = compilar(editor.value);
+    statusFase.textContent = "fase: " + resultado.fase;
+
+    renderizarTokens(resultado.tokens);
+    if (resultado.fase === "lexica" && resultado.erros.length > 0) {
+      const tabelaHtml = wrapTokens.innerHTML;
+      wrapTokens.innerHTML = htmlErros(resultado.erros, resultado.fase) + tabelaHtml;
+    }
+
+    renderizarAst(resultado);
+  }
+
+  btnCompilar.addEventListener("click", compilarAgora);
+  compilarAgora();
+
+  // ---- roda a suite de testes no navegador e mostra o placar no rodape --
+  const spanTestes = document.getElementById("resultado-testes");
+  if (window.testesBnkr) {
+    const r = window.testesBnkr.rodarTestes();
+    spanTestes.textContent = `${r.passou}/${r.total} testes passaram`;
+    spanTestes.style.color = r.falhou > 0 ? "var(--ferrugem-clara)" : "var(--verde)";
+    if (r.falhou > 0) console.warn("testes falhando:", r.resultados.filter(x => !x.ok));
+  }
+})();
+</script>
+</body>
+</html>
