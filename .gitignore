@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Artefatos de render do Manim (regeneráveis com pitch/render_all.ps1)
+media/
+slides/
