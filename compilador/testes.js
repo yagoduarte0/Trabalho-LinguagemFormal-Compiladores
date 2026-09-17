@@ -38,13 +38,15 @@
   // Carrega os módulos: no Node via require, no navegador via globais
   // já carregados por <script> (window.analisarLexico etc.).
   // ---------------------------------------------------------------------
-  let analisarLexico, resumoTokens, decodificarTexto, analisarSintatico, formatarArvore;
+  let analisarLexico, resumoTokens, decodificarTexto, analisarSintatico, formatarArvore, gerarCodigo;
   if (typeof module !== "undefined" && typeof require === "function") {
     ({ analisarLexico, resumoTokens, decodificarTexto } = require("./lexer.js"));
     ({ analisarSintatico, formatarArvore } = require("./parser.js"));
+    ({ gerarCodigo } = require("./gerador.js"));
   } else {
     ({ analisarLexico, resumoTokens, decodificarTexto } = global);
     ({ analisarSintatico, formatarArvore } = global);
+    ({ gerarCodigo } = global);
   }
 
   // parser.js espera tokens já sem comentários (o orquestrador faz esse
@@ -55,6 +57,21 @@
     const relevantes = tokens.filter(t => t.categoria !== "comentario");
     const { ast, erros } = analisarSintatico(relevantes);
     return { ast, erros, fase: erros.length > 0 ? "sintatica" : "ok" };
+  }
+
+  // compila até o Python, para os testes da fase 3
+  function gerarPython(fonte) {
+    const { ast, erros, fase } = analisar(fonte);
+    if (fase !== "ok") throw new Error(`esperava compilar sem erros, parou em ${fase}: ${JSON.stringify(erros)}`);
+    return gerarCodigo(ast);
+  }
+
+  // o Python gerado começa sempre com o runtime; os testes olham só o
+  // trecho que veio do programa do usuário
+  function corpoGerado(fonte) {
+    const { corpo } = gerarPython(fonte);
+    const marca = "# --- fim do runtime ---";
+    return corpo.slice(corpo.indexOf(marca) + marca.length).trim();
   }
 
   // ======================= FASE 1 — LÉXICO ==============================
@@ -519,6 +536,156 @@
     ].join("\n");
     const { erros } = analisar(fonte);
     afirmarIgual(erros, []);
+  });
+
+  // ======================= FASE 3 — GERAÇÃO ==============================
+
+  teste("gerador: supply e law viram atribuicao, com law marcada como constante", () => {
+    const py = corpoGerado("supply x = 10\nlaw LIMITE = 5\n");
+    afirmar(py.includes("x = 10"), "esperava a atribuicao de x\n" + py);
+    afirmar(py.includes("LIMITE = 5  # constante"), "esperava LIMITE marcada como constante\n" + py);
+  });
+
+  teste("gerador: literais booleanos viram True/False", () => {
+    const py = corpoGerado("supply ligado = alive\nsupply parado = dead\n");
+    afirmar(py.includes("ligado = True"), py);
+    afirmar(py.includes("parado = False"), py);
+  });
+
+  teste("gerador: vital de valor redondo preserva o ponto decimal", () => {
+    const py = corpoGerado("supply limite = 10.0\n");
+    afirmar(py.includes("limite = 10.0"), "10.0 nao pode virar int no Python\n" + py);
+  });
+
+  teste("gerador: checkpoint/fallback vira if/else", () => {
+    const py = corpoGerado('checkpoint (alive) {\n  log_entry("sim")\n} fallback {\n  log_entry("nao")\n}\n');
+    afirmar(py.includes("if True:"), py);
+    afirmar(py.includes("else:"), py);
+  });
+
+  teste("gerador: fallback checkpoint encadeado vira elif", () => {
+    const fonte = [
+      "supply a = 1",
+      "supply b = 2",
+      "checkpoint (a) {",
+      '  log_entry("a")',
+      "} fallback checkpoint (b) {",
+      '  log_entry("b")',
+      "} fallback {",
+      '  log_entry("c")',
+      "}"
+    ].join("\n");
+    const py = corpoGerado(fonte);
+    afirmar(py.includes("elif b:"), "esperava elif no encadeamento\n" + py);
+    afirmar(py.includes("else:"), py);
+  });
+
+  teste("gerador: watch vira laco infinito", () => {
+    const py = corpoGerado("watch {\n  hide(500)\n}\n");
+    afirmar(py.includes("while True:"), py);
+    afirmar(py.includes("hide(500)"), py);
+  });
+
+  teste("gerador: patrol vira for com range", () => {
+    const py = corpoGerado('patrol(7) {\n  log_entry("dia")\n}\n');
+    afirmar(py.includes("for _ in range(7):"), py);
+  });
+
+  teste("gerador: mission vira def com os parametros na ordem", () => {
+    const py = corpoGerado("mission somar(ration a, ration b) -> ration {\n  extract a + b\n}\n");
+    afirmar(py.includes("def somar(a, b):"), py);
+    afirmar(py.includes("return a + b"), py);
+  });
+
+  teste("gerador: chronicle vira main() com guarda de execucao", () => {
+    const py = corpoGerado('chronicle {\n  log_entry("online")\n}\n');
+    afirmar(py.includes("def main():"), py);
+    afirmar(py.includes('if __name__ == "__main__":'), py);
+    afirmar(py.includes("main()"), py);
+  });
+
+  teste("gerador: quarantine/catch vira try/except", () => {
+    const py = corpoGerado('quarantine {\n  log_entry("tenta")\n} catch (falha) {\n  log_entry(falha)\n}\n');
+    afirmar(py.includes("try:"), py);
+    afirmar(py.includes("except Exception as falha:"), py);
+  });
+
+  teste("gerador: operadores logicos viram and/or/not", () => {
+    const py = corpoGerado("supply r = alive && dead || !alive\n");
+    afirmar(py.includes("and"), py);
+    afirmar(py.includes("or"), py);
+    afirmar(py.includes("not "), py);
+  });
+
+  teste("gerador: bloco vazio vira pass", () => {
+    const py = corpoGerado("chronicle {\n}\n");
+    afirmar(py.includes("pass"), "bloco vazio precisa de pass para o Python ser valido\n" + py);
+  });
+
+  teste("gerador: outbreak vira raise", () => {
+    const py = corpoGerado('outbreak "reserva critica"\n');
+    afirmar(py.includes('raise Exception("reserva critica")'), py);
+  });
+
+  teste("gerador: acesso a membro e indice sao preservados", () => {
+    const py = corpoGerado("supply v = gpio.read(radio(27))\nsupply p = lista[0]\n");
+    afirmar(py.includes("gpio.read(radio(27))"), py);
+    afirmar(py.includes("lista[0]"), py);
+  });
+
+  teste("gerador: cache vira classe com construtor", () => {
+    const py = corpoGerado("cache Leitura {\n  vital valor\n  paper origem\n}\n");
+    afirmar(py.includes("class Leitura:"), py);
+    afirmar(py.includes("def __init__(self, valor=None, origem=None):"), py);
+    afirmar(py.includes("self.valor = valor"), py);
+  });
+
+  teste("gerador: mapa liga a linha gerada a linha do fonte", () => {
+    const { corpo, mapa } = gerarPython("supply x = 1\nsupply y = 2\n");
+    const linhas = corpo.split("\n");
+    const idxY = linhas.findIndex(l => l.startsWith("y = 2"));
+    afirmar(idxY >= 0, "esperava encontrar a linha de y no Python gerado");
+    afirmarIgual(mapa[idxY + 1], 2, "a linha de y veio da linha 2 do fonte");
+  });
+
+  teste("gerador: programa de referencia gera o Python esperado", () => {
+    const fonte = [
+      "scavenge gpio",
+      "",
+      "law ALARM_RADIO = 5",
+      "",
+      "mission check_perimeter() -> status {",
+      "    supply detected = gpio.read(radio(27))",
+      "    extract detected",
+      "}",
+      "",
+      "survivor perimeter_watch {",
+      "    watch {",
+      "        checkpoint (check_perimeter()) {",
+      "            broadcast(radio(ALARM_RADIO))",
+      "        } fallback {",
+      '            log_entry("area limpa")',
+      "        }",
+      "        hide(500)",
+      "    }",
+      "}"
+    ].join("\n");
+    const py = corpoGerado(fonte);
+    for (const trecho of [
+      "ALARM_RADIO = 5  # constante",
+      "def check_perimeter():",
+      "detected = gpio.read(radio(27))",
+      "return detected",
+      "def perimeter_watch():",
+      "while True:",
+      "if check_perimeter():",
+      "broadcast(radio(ALARM_RADIO))",
+      "else:",
+      'log_entry("area limpa")',
+      "hide(500)"
+    ]) {
+      afirmar(py.includes(trecho), `faltou no Python gerado: ${trecho}\n${py}`);
+    }
   });
 
   // ======================= exposição / execução ==========================
