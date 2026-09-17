@@ -43,15 +43,15 @@ repositório. Ficou decidido unificar tudo sob o nome AEGIS.
 |---|---|
 | `compilador/lexer.js` | Fase 1 — análise léxica e tabela de tokens |
 | `compilador/parser.js` | Fase 2 — análise sintática, gramática EBNF e AST |
-| `compilador/gerador.js` | Fase 3 — back-end que emite Python (**pendente**) |
+| `compilador/gerador.js` | Fase 3 — back-end que emite Python |
 | `compilador/compilador.js` | Orquestrador das fases e exemplos da linguagem |
 | `compilador/testes.js` | Suíte de testes (roda com `node testes.js`) |
 | `compilador/index.html` | Interface web que mostra cada fase |
 | `docs/` | Documentação da linguagem |
-| `pitch/` | Apresentação animada em Manim (**a mover para cá**) |
+| `pitch/` | Apresentação animada em Manim |
 
-O pitch ainda está em `C:\Users\yagod\OneDrive\Desktop\Apresentacao-Comp` e será
-movido para `pitch/` dentro deste repositório.
+A pasta `C:\Users\yagod\OneDrive\Desktop\Apresentacao-Comp` foi a origem do
+pitch e pode ser descartada: tudo que importa já está versionado aqui.
 
 ---
 
@@ -65,24 +65,26 @@ movido para `pitch/` dentro deste repositório.
 - **Análise sintática** — descendente recursivo, uma função por regra, gramática
   publicada em `GRAMATICA_EBNF`, AST com 26 tipos de nó, precedência codificada
   na cadeia de chamadas e recuperação em modo pânico.
-- **Testes** — 53 casos, todos passando.
-- **Interface web** — mostra tokens, AST, Python e erros.
-- **Pitch** — 10 cenas animadas prontas e renderizadas em 1080p, exportadas para
-  um `pitch.html` autocontido.
+- **Geração de código** — `gerador.js` traduz a AST para Python, com runtime
+  embutido (o código gerado roda sozinho) e mapa de linha gerada para linha de
+  origem. Verificado: o Python gerado dos exemplos compila e executa.
+- **Testes** — 70 casos das três fases, todos passando.
+- **Interface web** — mostra tokens, AST, Python gerado e erros, com a origem de
+  cada linha do Python.
+- **Documentação** — `linguagem.md` e `gramatica.md`, com tabela de tokens e
+  árvore de exemplo extraídas do próprio código.
+- **Pitch** — 10 cenas animadas, com a cena de arquitetura mostrando a linguagem
+  real ao lado da saída verdadeira do compilador.
 
 ### Pendente
 
-1. **`compilador/gerador.js`** — é o "back-end funcionando" exigido. O
-   `compilador.js` já o procura e cai num fallback quando não o encontra, então
-   basta criar o módulo exportando `gerarCodigo(ast)` que devolva
-   `{ corpo, mapa }`, onde `corpo` é o Python e `mapa` liga linha gerada a linha
-   de origem.
-2. **Documentação em `docs/`** — especificação da linguagem com a tabela de
-   tokens, a gramática e a descrição da AST.
-3. **Mover o pitch para `pitch/`** neste repositório.
-4. **Corrigir a cena 5 do pitch** — ela mostra código em português da linguagem
-   BNKR antiga. Deve mostrar a linguagem real, usando o exemplo da sentinela de
-   perímetro que está em `compilador/compilador.js`.
+1. **Revisar o pitch com os dados da sua pesquisa** — os números de mercado
+   estão em `pitch/aegis/data.py` com a fonte ao lado; trocar lá não exige
+   tocar nas animações.
+2. **Ensaiar cronometrado** — o roteiro foi desenhado para 10 minutos.
+3. **Possível melhoria do compilador** — não há análise semântica: os tipos
+   declarados (`ration`, `vital`, `status`) são registrados na AST mas não
+   verificados. Se a disciplina exigir uma quarta fase, é o caminho natural.
 
 ---
 
