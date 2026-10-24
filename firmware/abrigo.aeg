@@ -1,0 +1,312 @@
+// AEGIS — firmware do abrigo (ESP32 DevKit V1)
+//
+// Compilar para a placa (ou para o Wokwi):
+//   node compilador/aegisc.js firmware/abrigo.aeg --alvo esp32 -o firmware/main.py
+//
+// Cada sensor tem um survivor que lê o valor e classifica o risco em
+// NORMAL, ATENCAO ou ALARME. A cada ciclo o pior risco decide os LEDs, o
+// buzzer, o display e o aviso pela rede. Funciona sem internet: a rede é
+// só um canal a mais quando existe.
+
+scavenge gpio
+scavenge adc
+scavenge sonar
+scavenge climate
+scavenge display
+scavenge pwm
+scavenge wifi
+scavenge mqtt
+scavenge time
+
+// ------------------------------------------------------------------
+// Pinos — mapa completo em docs/hardware.md
+// ------------------------------------------------------------------
+law PINO_PIR = 27
+law PINO_TRIG = 25
+law PINO_ECHO = 26
+law PINO_DHT = 4
+law PINO_MQ2 = 34          // ADC1: o ADC2 não funciona com o WiFi ligado
+law PINO_MQ135 = 35
+law PINO_BOTAO = 14        // botão entre o pino e o GND
+law PINO_BUZZER = 18
+law LED_VERDE = 13
+law LED_AMARELO = 33
+law LED_VERMELHO = 32
+
+// ------------------------------------------------------------------
+// Limites — calibrar com os sensores reais (docs/hardware.md, seção 5)
+// ------------------------------------------------------------------
+law LIMITE_FUMACA = 2000   // MQ-2, leitura de 0 a 4095
+law LIMITE_AR_RUIM = 2500  // MQ-135, leitura de 0 a 4095
+law LIMITE_AGUA_CM = 20.0  // sensor no alto, olhando para baixo: água perto = enchente
+law TEMP_ATENCAO = 40.0
+law TEMP_ALARME = 55.0
+law AQUECIMENTO_MS = 20000 // os MQ dão leituras falsas enquanto esquentam
+law SILENCIO_MS = 60000    // quanto tempo o botão cala o buzzer
+law CICLO_MS = 500
+law TELEMETRIA_MS = 10000
+
+// ------------------------------------------------------------------
+// Rede — opcional. "Wokwi-GUEST" é a rede aberta do simulador.
+// ------------------------------------------------------------------
+law USAR_REDE = alive
+law WIFI_SSID = "Wokwi-GUEST"
+law WIFI_SENHA = ""
+law MQTT_BROKER = "broker.hivemq.com"
+
+// ------------------------------------------------------------------
+// Estados
+// ------------------------------------------------------------------
+law NORMAL = 0
+law ATENCAO = 1
+law ALARME = 2
+stash NOMES_ESTADO = ["NORMAL", "ATENCAO", "ALARME"]
+
+// ------------------------------------------------------------------
+// Memória do firmware
+// ------------------------------------------------------------------
+supply inicio = 0
+supply aquecido = dead
+
+supply leitura_fumaca = 0
+supply leitura_ar = 0
+supply distancia_agua = 0.0
+supply temperatura = 0.0
+supply umidade = 0.0
+supply presenca = dead
+
+supply risco_fumaca = 0
+supply risco_ar = 0
+supply risco_agua = 0
+supply risco_calor = 0
+supply risco_presenca = 0
+
+supply estado = 0
+supply estado_anterior = -1
+supply motivo = "tudo em ordem"
+supply motivo_anterior = ""
+
+supply silenciado = dead
+supply silencio_desde = 0
+supply sirene_alta = dead
+supply rede = dead
+supply ultima_telemetria = 0
+
+// ------------------------------------------------------------------
+// Sentinelas: um por sensor
+// ------------------------------------------------------------------
+
+// MQ-2: fumaça e gás inflamável
+survivor sentinela_fumaca {
+    leitura_fumaca = adc.read(radio(PINO_MQ2))
+    risco_fumaca = NORMAL
+    checkpoint (aquecido && leitura_fumaca >= LIMITE_FUMACA) {
+        risco_fumaca = ALARME
+    }
+}
+
+// MQ-135: qualidade do ar (CO2, amônia, fumaça leve)
+survivor sentinela_ar {
+    leitura_ar = adc.read(radio(PINO_MQ135))
+    risco_ar = NORMAL
+    checkpoint (aquecido && leitura_ar >= LIMITE_AR_RUIM) {
+        risco_ar = ATENCAO
+    }
+}
+
+// HC-SR04: distância até a superfície da água; -1 quando não há eco
+survivor sentinela_agua {
+    distancia_agua = sonar.distance(radio(PINO_TRIG), radio(PINO_ECHO))
+    risco_agua = NORMAL
+    checkpoint (distancia_agua > 0.0 && distancia_agua < LIMITE_AGUA_CM) {
+        risco_agua = ALARME
+    }
+}
+
+// DHT22: temperatura e umidade; -1 quando a leitura falha
+survivor sentinela_calor {
+    temperatura = climate.temperature(radio(PINO_DHT))
+    umidade = climate.humidity(radio(PINO_DHT))
+    risco_calor = NORMAL
+    checkpoint (temperatura >= TEMP_ALARME) {
+        risco_calor = ALARME
+    } fallback checkpoint (temperatura >= TEMP_ATENCAO) {
+        risco_calor = ATENCAO
+    }
+}
+
+// PIR: presença no perímetro
+survivor sentinela_presenca {
+    presenca = gpio.read(radio(PINO_PIR))
+    risco_presenca = NORMAL
+    checkpoint (presenca) {
+        risco_presenca = ATENCAO
+    }
+}
+
+// Botão: cala o buzzer por SILENCIO_MS; o LED vermelho continua aceso
+survivor vigia_botao {
+    checkpoint (!silenciado && estado == ALARME && gpio.pressed(radio(PINO_BOTAO))) {
+        silenciado = alive
+        silencio_desde = time.ms()
+        log_entry("[AEGIS] buzzer silenciado por", SILENCIO_MS / 1000, "s")
+    }
+    checkpoint (silenciado && time.since(silencio_desde) >= SILENCIO_MS) {
+        silenciado = dead
+    }
+}
+
+// ------------------------------------------------------------------
+// Decisão: o pior risco vence. A ordem vai do menos ao mais grave, então
+// o último checkpoint verdadeiro define o motivo exibido.
+// ------------------------------------------------------------------
+mission avaliar() {
+    estado = NORMAL
+    motivo = "tudo em ordem"
+    checkpoint (risco_presenca == ATENCAO) {
+        estado = ATENCAO
+        motivo = "presenca"
+    }
+    checkpoint (risco_ar == ATENCAO) {
+        estado = ATENCAO
+        motivo = "ar ruim"
+    }
+    checkpoint (risco_calor == ATENCAO) {
+        estado = ATENCAO
+        motivo = "calor"
+    }
+    checkpoint (risco_calor == ALARME) {
+        estado = ALARME
+        motivo = "TEMP ALTA"
+    }
+    checkpoint (risco_agua == ALARME) {
+        estado = ALARME
+        motivo = "ENCHENTE"
+    }
+    checkpoint (risco_fumaca == ALARME) {
+        estado = ALARME
+        motivo = "FUMACA/GAS"
+    }
+}
+
+// ------------------------------------------------------------------
+// Saídas
+// ------------------------------------------------------------------
+mission acender(radio pino, status ligado) {
+    checkpoint (ligado) {
+        broadcast(radio(pino))
+    } fallback {
+        silence(radio(pino))
+    }
+}
+
+// LEDs de estado e sirene de dois tons
+mission sinalizar() {
+    acender(LED_VERDE, estado == NORMAL)
+    acender(LED_AMARELO, estado == ATENCAO)
+    acender(LED_VERMELHO, estado == ALARME)
+    checkpoint (estado == ALARME && !silenciado) {
+        sirene_alta = !sirene_alta
+        checkpoint (sirene_alta) {
+            pwm.tone(radio(PINO_BUZZER), 2500)
+        } fallback {
+            pwm.tone(radio(PINO_BUZZER), 1500)
+        }
+    } fallback {
+        pwm.off(radio(PINO_BUZZER))
+    }
+}
+
+// Avisa no serial e pela rede só quando algo muda
+mission relatar() {
+    checkpoint (estado != estado_anterior || motivo != motivo_anterior) {
+        log_entry("[AEGIS] estado:", NOMES_ESTADO[estado], "-", motivo)
+        checkpoint (estado == NORMAL) {
+            silenciado = dead
+        }
+        checkpoint (rede) {
+            mqtt.publish("aegis/alerta", NOMES_ESTADO[estado] + ": " + motivo)
+        }
+        estado_anterior = estado
+        motivo_anterior = motivo
+    }
+}
+
+// OLED 128x64: 8 linhas de 16 caracteres
+mission atualizar_tela() {
+    display.write(0, "AEGIS " + NOMES_ESTADO[estado])
+    display.write(1, motivo)
+    display.write(3, "Fumaca  " + paper(leitura_fumaca))
+    display.write(4, "Ar      " + paper(leitura_ar))
+    display.write(5, "Agua    " + paper(ration(distancia_agua)) + " cm")
+    display.write(6, "T " + paper(temperatura) + "C U " + paper(ration(umidade)) + "%")
+    checkpoint (!aquecido) {
+        display.write(7, "aquecendo MQ...")
+    } fallback checkpoint (silenciado) {
+        display.write(7, "BUZZER MUDO")
+    } fallback checkpoint (rede) {
+        display.write(7, "rede: online")
+    } fallback {
+        display.write(7, "rede: offline")
+    }
+    display.show()
+}
+
+// Telemetria periódica em JSON, para um painel externo
+mission telemetria() {
+    rede = mqtt.connected()
+    checkpoint (rede && time.since(ultima_telemetria) >= TELEMETRIA_MS) {
+        ultima_telemetria = time.ms()
+        mqtt.publish("aegis/telemetria",
+            "{\"estado\":" + paper(estado) +
+            ",\"fumaca\":" + paper(leitura_fumaca) +
+            ",\"ar\":" + paper(leitura_ar) +
+            ",\"agua_cm\":" + paper(distancia_agua) +
+            ",\"temp\":" + paper(temperatura) +
+            ",\"umid\":" + paper(umidade) + "}")
+    }
+}
+
+// Um ciclo completo: ler, decidir, agir. Separado do laço para poder ser
+// testado no PC um ciclo por vez (firmware/cenarios.py).
+mission ciclo() {
+    aquecido = time.since(inicio) >= AQUECIMENTO_MS
+    sentinela_fumaca()
+    sentinela_ar()
+    sentinela_agua()
+    sentinela_calor()
+    sentinela_presenca()
+    vigia_botao()
+    avaliar()
+    sinalizar()
+    relatar()
+    atualizar_tela()
+    telemetria()
+}
+
+// ------------------------------------------------------------------
+// Programa principal
+// ------------------------------------------------------------------
+chronicle {
+    log_entry("[AEGIS] abrigo iniciando")
+    inicio = time.ms()
+    display.write(0, "AEGIS")
+    display.write(2, "iniciando...")
+    display.show()
+
+    checkpoint (USAR_REDE) {
+        checkpoint (wifi.connect(WIFI_SSID, WIFI_SENHA, 10000)) {
+            rede = mqtt.connect(MQTT_BROKER)
+        }
+    }
+    checkpoint (rede) {
+        log_entry("[AEGIS] online: alertas tambem vao por MQTT")
+    } fallback {
+        log_entry("[AEGIS] modo offline: alertas so no local")
+    }
+
+    watch {
+        ciclo()
+        hide(CICLO_MS)
+    }
+}

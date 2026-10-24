@@ -1,0 +1,190 @@
+"""Testa a lógica do firmware do abrigo no PC, sem placa e sem simulador.
+
+    python3 firmware/cenarios.py
+
+Compila firmware/abrigo.aeg para o alvo "simulado", carrega o Python gerado
+sem rodar o laço principal e, para cada cenário, ajusta os sensores falsos do
+runtime, executa um ciclo() e confere LEDs, buzzer e estado.
+"""
+
+import contextlib
+import io
+import os
+import subprocess
+import sys
+
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FONTE = os.path.join(RAIZ, "firmware", "abrigo.aeg")
+AEGISC = os.path.join(RAIZ, "compilador", "aegisc.js")
+
+
+def carregar_firmware():
+    python = subprocess.run(
+        ["node", AEGISC, FONTE, "--alvo", "simulado"],
+        check=True, capture_output=True, text=True,
+    ).stdout
+    g = {"__name__": "cenarios"}  # evita o if __name__ == "__main__"
+    exec(compile(python, "abrigo (simulado)", "exec"), g)
+    return g
+
+
+def zerar_sensores(g):
+    g["gpio"].estado.clear()
+    g["adc"].estado.clear()
+    g["pwm"].estado.clear()
+    g["sonar"].cm = 100.0
+    g["climate"].temperatura = 25.0
+    g["climate"].umidade = 50.0
+    g["inicio"] = 0                 # já passou do aquecimento dos MQ
+    g["silenciado"] = False
+    g["estado"] = g["NORMAL"]
+    g["rede"] = False
+
+
+def ciclo(g, vezes=1):
+    saida = io.StringIO()
+    with contextlib.redirect_stdout(saida):
+        for _ in range(vezes):
+            g["ciclo"]()
+    return saida.getvalue()
+
+
+def leds(g):
+    pinos = g["gpio"].estado
+    return {
+        "verde": pinos.get(g["LED_VERDE"]),
+        "amarelo": pinos.get(g["LED_AMARELO"]),
+        "vermelho": pinos.get(g["LED_VERMELHO"]),
+    }
+
+
+def buzzer_ligado(g):
+    return bool(g["pwm"].estado.get(g["PINO_BUZZER"]))
+
+
+CENARIOS = []
+
+
+def cenario(nome):
+    def registrar(fn):
+        CENARIOS.append((nome, fn))
+        return fn
+    return registrar
+
+
+@cenario("tudo normal: LED verde, buzzer desligado")
+def _(g):
+    ciclo(g)
+    assert g["estado"] == g["NORMAL"]
+    assert leds(g) == {"verde": True, "amarelo": False, "vermelho": False}
+    assert not buzzer_ligado(g)
+
+
+@cenario("fumaca acima do limite: ALARME com sirene")
+def _(g):
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    log = ciclo(g)
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "FUMACA/GAS", g["motivo"]
+    assert leds(g)["vermelho"] and not leds(g)["verde"]
+    assert buzzer_ligado(g)
+    assert "ALARME - FUMACA/GAS" in log, log
+
+
+@cenario("fumaca durante o aquecimento dos MQ: ignorada")
+def _(g):
+    g["inicio"] = g["time"].ms()
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    assert g["estado"] == g["NORMAL"]
+
+
+@cenario("agua a 10 cm do sensor: ALARME de enchente")
+def _(g):
+    g["sonar"].cm = 10.0
+    ciclo(g)
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "ENCHENTE"
+
+
+@cenario("sonar sem eco (-1): nao dispara enchente")
+def _(g):
+    g["sonar"].cm = -1.0
+    ciclo(g)
+    assert g["estado"] == g["NORMAL"]
+
+
+@cenario("45 graus: ATENCAO; 60 graus: ALARME")
+def _(g):
+    g["climate"].temperatura = 45.0
+    ciclo(g)
+    assert g["estado"] == g["ATENCAO"] and g["motivo"] == "calor"
+    assert leds(g)["amarelo"] and not buzzer_ligado(g)
+    g["climate"].temperatura = 60.0
+    ciclo(g)
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "TEMP ALTA"
+
+
+@cenario("presenca no PIR: ATENCAO sem sirene")
+def _(g):
+    g["gpio"].estado[g["PINO_PIR"]] = True
+    ciclo(g)
+    assert g["estado"] == g["ATENCAO"] and g["motivo"] == "presenca"
+    assert not buzzer_ligado(g)
+
+
+@cenario("ar ruim no MQ-135: ATENCAO")
+def _(g):
+    g["adc"].estado[g["PINO_MQ135"]] = 3000
+    ciclo(g)
+    assert g["estado"] == g["ATENCAO"] and g["motivo"] == "ar ruim"
+
+
+@cenario("fumaca + presenca: o mais grave vence")
+def _(g):
+    g["gpio"].estado[g["PINO_PIR"]] = True
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "FUMACA/GAS"
+
+
+@cenario("botao cala o buzzer, LED vermelho continua; volta apos SILENCIO_MS")
+def _(g):
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    g["gpio"].estado[g["PINO_BOTAO"]] = True     # pressionado
+    log = ciclo(g)
+    assert g["silenciado"] and "silenciado" in log
+    assert not buzzer_ligado(g) and leds(g)["vermelho"]
+    g["gpio"].estado[g["PINO_BOTAO"]] = False
+    g["silencio_desde"] = g["time"].ms() - g["SILENCIO_MS"] - 1
+    ciclo(g)
+    assert not g["silenciado"] and buzzer_ligado(g)
+
+
+@cenario("alarme resolvido: volta ao NORMAL e libera o silencio")
+def _(g):
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    g["silenciado"] = True
+    g["adc"].estado[g["PINO_MQ2"]] = 100
+    ciclo(g)
+    assert g["estado"] == g["NORMAL"] and not g["silenciado"]
+    assert leds(g)["verde"] and not buzzer_ligado(g)
+
+
+def principal():
+    g = carregar_firmware()
+    falhas = 0
+    for nome, fn in CENARIOS:
+        zerar_sensores(g)
+        try:
+            fn(g)
+            print("OK  ", nome)
+        except AssertionError as erro:
+            falhas += 1
+            print("FAIL", nome, "-", erro)
+    print(f"\n{len(CENARIOS) - falhas}/{len(CENARIOS)} cenarios passaram.")
+    return 1 if falhas else 0
+
+
+if __name__ == "__main__":
+    sys.exit(principal())
