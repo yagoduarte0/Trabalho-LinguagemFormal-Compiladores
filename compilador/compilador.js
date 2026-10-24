@@ -86,7 +86,8 @@ const EXEMPLOS = {
   }
 };
 
-function compilar(fonte) {
+// opcoes.alvo: "simulado" (padrão) ou "esp32" — repassado ao gerador
+function compilar(fonte, opcoes = {}) {
   const resultado = {
     python: "",
     erros: [],
@@ -126,7 +127,7 @@ function compilar(fonte) {
     return resultado;
   }
 
-  const { corpo, mapa } = _gerarCodigo(ast);
+  const { corpo, mapa } = _gerarCodigo(ast, opcoes);
   resultado.python = corpo;
   resultado.linhaOrigem = (n) => (mapa && mapa[n] !== undefined ? mapa[n] : null);
   resultado.fase = "ok";

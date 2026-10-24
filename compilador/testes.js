@@ -60,10 +60,10 @@
   }
 
   // compila até o Python, para os testes da fase 3
-  function gerarPython(fonte) {
+  function gerarPython(fonte, opcoes) {
     const { ast, erros, fase } = analisar(fonte);
     if (fase !== "ok") throw new Error(`esperava compilar sem erros, parou em ${fase}: ${JSON.stringify(erros)}`);
-    return gerarCodigo(ast);
+    return gerarCodigo(ast, opcoes);
   }
 
   // o Python gerado começa sempre com o runtime; os testes olham só o
@@ -711,6 +711,36 @@
     );
     afirmar(py.includes("def t():\n    global ciclos"), py);
     afirmar(py.includes("def main():\n    global ciclos"), py);
+  });
+
+  teste("gerador: alvo padrao e o simulado, sem modulos do MicroPython", () => {
+    const { corpo } = gerarPython("hide(1)\n");
+    afirmar(!corpo.includes("import machine"), "o alvo simulado nao pode depender do MicroPython");
+    afirmar(corpo.includes("sonar = _Sonar()"), "o simulado tambem oferece a API de sensores");
+  });
+
+  teste("gerador: alvo esp32 usa o runtime MicroPython com o mesmo programa", () => {
+    const fonte = "law TRIG = 25\nsupply d = sonar.distance(TRIG, 26)\n";
+    const simulado = gerarPython(fonte).corpo;
+    const esp32 = gerarPython(fonte, { alvo: "esp32" }).corpo;
+    afirmar(esp32.includes("import machine as _machine"), esp32);
+    afirmar(esp32.includes("time_pulse_us"), "o sonar do esp32 mede o pulso do ECHO");
+    const marca = "# --- fim do runtime ---";
+    afirmarIgual(esp32.split(marca)[1], simulado.split(marca)[1],
+                 "trocar o alvo nao pode mudar o codigo do programa");
+  });
+
+  teste("gerador: alvo desconhecido e recusado", () => {
+    const { ast } = analisar("hide(1)\n");
+    let mensagem = "";
+    try { gerarCodigo(ast, { alvo: "arduino" }); } catch (e) { mensagem = e.message; }
+    afirmar(mensagem.includes("alvo desconhecido: arduino"), mensagem);
+  });
+
+  teste("gerador: paper/ration/vital viram conversoes do runtime", () => {
+    const { corpo } = gerarPython('log_entry("T=" + paper(ration(25.7)))\n');
+    afirmar(corpo.includes("def paper(valor):\n    return str(valor)"), "faltou paper no runtime");
+    afirmar(corpo.includes('log_entry("T=" + paper(ration(25.7)))'), corpo);
   });
 
   // ======================= exposição / execução ==========================
