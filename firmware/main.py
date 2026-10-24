@@ -318,6 +318,8 @@ AQUECIMENTO_MS = 20000  # constante
 SILENCIO_MS = 60000  # constante
 CICLO_MS = 500  # constante
 TELEMETRIA_MS = 10000  # constante
+DEPURAR = True  # constante
+DEPURAR_MS = 2000  # constante
 USAR_REDE = True  # constante
 WIFI_SSID = "Wokwi-GUEST"  # constante
 WIFI_SENHA = ""  # constante
@@ -354,6 +356,7 @@ silencio_desde = 0
 sirene_alta = False
 rede = False
 ultima_telemetria = 0
+ultima_depuracao = 0
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_fumaca():
     global leitura_fumaca, soma_fumaca, base_fumaca, risco_fumaca
@@ -496,6 +499,12 @@ def telemetria():
         ultima_telemetria = time.ms()
         mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(leitura_fumaca) + ",\"ar\":" + paper(leitura_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
 
+def depurar():
+    global ultima_depuracao
+    if DEPURAR and time.since(ultima_depuracao) >= DEPURAR_MS:
+        ultima_depuracao = time.ms()
+        log_entry("[leituras] fumaca", leitura_fumaca, "(base", paper(base_fumaca) + ")", "ar", leitura_ar, "agua", distancia_agua, "cm", "temp", temperatura, "umid", umidade, "pir", presenca)
+
 def ciclo():
     global aquecido, amostras, base_registrada
     aquecido = time.since(inicio) >= AQUECIMENTO_MS
@@ -515,6 +524,7 @@ def ciclo():
     relatar()
     atualizar_tela()
     telemetria()
+    depurar()
 
 def main():
     global inicio, rede

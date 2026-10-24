@@ -51,6 +51,8 @@ law AQUECIMENTO_MS = 20000 // os MQ dão leituras falsas enquanto esquentam
 law SILENCIO_MS = 60000    // quanto tempo o botão cala o buzzer
 law CICLO_MS = 500
 law TELEMETRIA_MS = 10000
+law DEPURAR = alive        // imprime as leituras cruas no serial (calibração)
+law DEPURAR_MS = 2000
 
 // ------------------------------------------------------------------
 // Rede — opcional. "Wokwi-GUEST" é a rede aberta do simulador.
@@ -103,6 +105,7 @@ supply silencio_desde = 0
 supply sirene_alta = dead
 supply rede = dead
 supply ultima_telemetria = 0
+supply ultima_depuracao = 0
 
 // ------------------------------------------------------------------
 // Sentinelas: um por sensor
@@ -292,6 +295,16 @@ mission telemetria() {
     }
 }
 
+// Leituras cruas no serial, para calibrar os limites com os sensores reais
+mission depurar() {
+    checkpoint (DEPURAR && time.since(ultima_depuracao) >= DEPURAR_MS) {
+        ultima_depuracao = time.ms()
+        log_entry("[leituras] fumaca", leitura_fumaca, "(base", paper(base_fumaca) + ")",
+                  "ar", leitura_ar, "agua", distancia_agua, "cm",
+                  "temp", temperatura, "umid", umidade, "pir", presenca)
+    }
+}
+
 // Um ciclo completo: ler, decidir, agir. Separado do laço para poder ser
 // testado no PC um ciclo por vez (firmware/cenarios.py).
 mission ciclo() {
@@ -313,6 +326,7 @@ mission ciclo() {
     relatar()
     atualizar_tela()
     telemetria()
+    depurar()
 }
 
 // ------------------------------------------------------------------
