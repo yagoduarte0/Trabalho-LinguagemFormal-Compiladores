@@ -39,6 +39,10 @@ def zerar_sensores(g):
     g["silenciado"] = False
     g["estado"] = g["NORMAL"]
     g["rede"] = False
+    for nome in ("risco_fumaca", "risco_ar", "base_fumaca", "base_ar",
+                 "soma_fumaca", "soma_ar", "amostras"):
+        g[nome] = 0
+    g["base_registrada"] = True
 
 
 def ciclo(g, vezes=1):
@@ -94,6 +98,33 @@ def _(g):
 def _(g):
     g["inicio"] = g["time"].ms()
     g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    assert g["estado"] == g["NORMAL"]
+
+
+@cenario("ar limpo com leitura alta (o caso do Wokwi): vira a base, sem alarme")
+def _(g):
+    g["inicio"] = g["time"].ms()                 # comeca aquecendo
+    g["base_registrada"] = False
+    g["adc"].estado[g["PINO_MQ2"]] = 2500
+    ciclo(g, vezes=5)
+    assert g["base_fumaca"] == 2500, g["base_fumaca"]
+    g["inicio"] = g["time"].ms() - g["AQUECIMENTO_MS"] - 1   # aquecimento acabou
+    log = ciclo(g, vezes=3)
+    assert g["estado"] == g["NORMAL"], g["motivo"]
+    assert "base de ar limpo: fumaca 2500" in log, log
+
+
+@cenario("histerese: alarme so desliga bem abaixo do limite, sem liga-desliga")
+def _(g):
+    g["base_fumaca"] = 2500                      # limite de alarme = 3300
+    g["adc"].estado[g["PINO_MQ2"]] = 3400
+    ciclo(g)
+    assert g["estado"] == g["ALARME"]
+    g["adc"].estado[g["PINO_MQ2"]] = 3100        # caiu, mas ainda acima de 3000
+    ciclo(g)
+    assert g["estado"] == g["ALARME"], "nao pode desligar dentro da histerese"
+    g["adc"].estado[g["PINO_MQ2"]] = 2900        # abaixo de base + 500
     ciclo(g)
     assert g["estado"] == g["NORMAL"]
 

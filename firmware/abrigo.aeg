@@ -36,8 +36,14 @@ law LED_VERMELHO = 32
 // ------------------------------------------------------------------
 // Limites — calibrar com os sensores reais (docs/hardware.md, seção 5)
 // ------------------------------------------------------------------
-law LIMITE_FUMACA = 2000   // MQ-2, leitura de 0 a 4095
-law LIMITE_AR_RUIM = 2500  // MQ-135, leitura de 0 a 4095
+// MQ-2 e MQ-135 não têm escala absoluta confiável (cada unidade e o
+// simulador dão valores diferentes para o mesmo ar). O firmware aprende a
+// leitura de ar limpo durante o aquecimento e alarma pela subida acima dela.
+// A histerese evita liga-desliga quando a leitura oscila perto do limite.
+law MARGEM_FUMACA = 800    // MQ-2: alarme quando passa de base + 800 (escala 0..4095)
+law HISTERESE_FUMACA = 300 // ...e só desliga abaixo de base + 500
+law MARGEM_AR = 800        // MQ-135: atenção quando passa de base + 800
+law HISTERESE_AR = 300
 law LIMITE_AGUA_CM = 20.0  // sensor no alto, olhando para baixo: água perto = enchente
 law TEMP_ATENCAO = 40.0
 law TEMP_ALARME = 55.0
@@ -67,6 +73,12 @@ stash NOMES_ESTADO = ["NORMAL", "ATENCAO", "ALARME"]
 // ------------------------------------------------------------------
 supply inicio = 0
 supply aquecido = dead
+supply amostras = 0
+supply soma_fumaca = 0
+supply soma_ar = 0
+supply base_fumaca = 0
+supply base_ar = 0
+supply base_registrada = dead
 
 supply leitura_fumaca = 0
 supply leitura_ar = 0
@@ -96,21 +108,33 @@ supply ultima_telemetria = 0
 // Sentinelas: um por sensor
 // ------------------------------------------------------------------
 
-// MQ-2: fumaça e gás inflamável
+// MQ-2: fumaça e gás inflamável. No aquecimento só acumula a média (a
+// base de ar limpo). Depois: acima de base + MARGEM liga o alarme, abaixo
+// de base + MARGEM - HISTERESE desliga; no meio, mantém o que estava.
 survivor sentinela_fumaca {
     leitura_fumaca = adc.read(radio(PINO_MQ2))
-    risco_fumaca = NORMAL
-    checkpoint (aquecido && leitura_fumaca >= LIMITE_FUMACA) {
+    checkpoint (!aquecido) {
+        soma_fumaca = soma_fumaca + leitura_fumaca
+        base_fumaca = ration(soma_fumaca / amostras)
+        risco_fumaca = NORMAL
+    } fallback checkpoint (leitura_fumaca >= base_fumaca + MARGEM_FUMACA) {
         risco_fumaca = ALARME
+    } fallback checkpoint (leitura_fumaca < base_fumaca + MARGEM_FUMACA - HISTERESE_FUMACA) {
+        risco_fumaca = NORMAL
     }
 }
 
-// MQ-135: qualidade do ar (CO2, amônia, fumaça leve)
+// MQ-135: qualidade do ar (CO2, amônia, fumaça leve), mesma lógica
 survivor sentinela_ar {
     leitura_ar = adc.read(radio(PINO_MQ135))
-    risco_ar = NORMAL
-    checkpoint (aquecido && leitura_ar >= LIMITE_AR_RUIM) {
+    checkpoint (!aquecido) {
+        soma_ar = soma_ar + leitura_ar
+        base_ar = ration(soma_ar / amostras)
+        risco_ar = NORMAL
+    } fallback checkpoint (leitura_ar >= base_ar + MARGEM_AR) {
         risco_ar = ATENCAO
+    } fallback checkpoint (leitura_ar < base_ar + MARGEM_AR - HISTERESE_AR) {
+        risco_ar = NORMAL
     }
 }
 
@@ -236,6 +260,7 @@ mission relatar() {
 mission atualizar_tela() {
     display.write(0, "AEGIS " + NOMES_ESTADO[estado])
     display.write(1, motivo)
+    display.write(2, "base F" + paper(base_fumaca) + " A" + paper(base_ar))
     display.write(3, "Fumaca  " + paper(leitura_fumaca))
     display.write(4, "Ar      " + paper(leitura_ar))
     display.write(5, "Agua    " + paper(ration(distancia_agua)) + " cm")
@@ -271,6 +296,12 @@ mission telemetria() {
 // testado no PC um ciclo por vez (firmware/cenarios.py).
 mission ciclo() {
     aquecido = time.since(inicio) >= AQUECIMENTO_MS
+    checkpoint (!aquecido) {
+        amostras = amostras + 1
+    } fallback checkpoint (!base_registrada) {
+        base_registrada = alive
+        log_entry("[AEGIS] base de ar limpo: fumaca", base_fumaca, "ar", base_ar)
+    }
     sentinela_fumaca()
     sentinela_ar()
     sentinela_agua()

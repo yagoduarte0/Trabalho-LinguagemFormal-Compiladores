@@ -307,8 +307,10 @@ PINO_BUZZER = 18  # constante
 LED_VERDE = 13  # constante
 LED_AMARELO = 33  # constante
 LED_VERMELHO = 32  # constante
-LIMITE_FUMACA = 2000  # constante
-LIMITE_AR_RUIM = 2500  # constante
+MARGEM_FUMACA = 800  # constante
+HISTERESE_FUMACA = 300  # constante
+MARGEM_AR = 800  # constante
+HISTERESE_AR = 300  # constante
 LIMITE_AGUA_CM = 20.0  # constante
 TEMP_ATENCAO = 40.0  # constante
 TEMP_ALARME = 55.0  # constante
@@ -326,6 +328,12 @@ ALARME = 2  # constante
 NOMES_ESTADO = ["NORMAL", "ATENCAO", "ALARME"]
 inicio = 0
 aquecido = False
+amostras = 0
+soma_fumaca = 0
+soma_ar = 0
+base_fumaca = 0
+base_ar = 0
+base_registrada = False
 leitura_fumaca = 0
 leitura_ar = 0
 distancia_agua = 0.0
@@ -348,19 +356,29 @@ rede = False
 ultima_telemetria = 0
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_fumaca():
-    global leitura_fumaca, risco_fumaca
+    global leitura_fumaca, soma_fumaca, base_fumaca, risco_fumaca
     leitura_fumaca = adc.read(radio(PINO_MQ2))
-    risco_fumaca = NORMAL
-    if aquecido and leitura_fumaca >= LIMITE_FUMACA:
+    if not aquecido:
+        soma_fumaca = soma_fumaca + leitura_fumaca
+        base_fumaca = ration(soma_fumaca / amostras)
+        risco_fumaca = NORMAL
+    elif leitura_fumaca >= base_fumaca + MARGEM_FUMACA:
         risco_fumaca = ALARME
+    elif leitura_fumaca < base_fumaca + MARGEM_FUMACA - HISTERESE_FUMACA:
+        risco_fumaca = NORMAL
 
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_ar():
-    global leitura_ar, risco_ar
+    global leitura_ar, soma_ar, base_ar, risco_ar
     leitura_ar = adc.read(radio(PINO_MQ135))
-    risco_ar = NORMAL
-    if aquecido and leitura_ar >= LIMITE_AR_RUIM:
+    if not aquecido:
+        soma_ar = soma_ar + leitura_ar
+        base_ar = ration(soma_ar / amostras)
+        risco_ar = NORMAL
+    elif leitura_ar >= base_ar + MARGEM_AR:
         risco_ar = ATENCAO
+    elif leitura_ar < base_ar + MARGEM_AR - HISTERESE_AR:
+        risco_ar = NORMAL
 
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_agua():
@@ -456,6 +474,7 @@ def relatar():
 def atualizar_tela():
     display.write(0, "AEGIS " + NOMES_ESTADO[estado])
     display.write(1, motivo)
+    display.write(2, "base F" + paper(base_fumaca) + " A" + paper(base_ar))
     display.write(3, "Fumaca  " + paper(leitura_fumaca))
     display.write(4, "Ar      " + paper(leitura_ar))
     display.write(5, "Agua    " + paper(ration(distancia_agua)) + " cm")
@@ -478,8 +497,13 @@ def telemetria():
         mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(leitura_fumaca) + ",\"ar\":" + paper(leitura_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
 
 def ciclo():
-    global aquecido
+    global aquecido, amostras, base_registrada
     aquecido = time.since(inicio) >= AQUECIMENTO_MS
+    if not aquecido:
+        amostras = amostras + 1
+    elif not base_registrada:
+        base_registrada = True
+        log_entry("[AEGIS] base de ar limpo: fumaca", base_fumaca, "ar", base_ar)
     sentinela_fumaca()
     sentinela_ar()
     sentinela_agua()
