@@ -296,6 +296,23 @@
     afirmarIgual(erros, []);
   });
 
+  teste("lexico: quebra de linha dentro de parenteses e colchetes e ignorada", () => {
+    const { tokens, erros } = analisarLexico("f(1,\n  2)\nsupply l = [1,\n 2]\n");
+    afirmarIgual(erros, []);
+    const quebras = tokens.filter(t => t.tipo === "TOKEN_NEWLINE").map(t => t.linha);
+    afirmarIgual(quebras, [2, 4], "so as quebras fora de ( ) e [ ] viram token");
+  });
+
+  teste("lexico: quebra de linha dentro de chaves continua separando comandos", () => {
+    const { tokens } = analisarLexico("watch {\n    hide(1)\n}\n");
+    afirmarIgual(tokens.filter(t => t.tipo === "TOKEN_NEWLINE").length, 3);
+  });
+
+  teste("sintatico: chamada quebrada em varias linhas compila", () => {
+    const { erros, fase } = analisar('mqtt.publish("t",\n    "a" +\n    "b")\nhide(1)\n');
+    afirmarIgual(fase, "ok", JSON.stringify(erros));
+  });
+
   // ======================= FASE 2 — SINTÁTICO ============================
 
   teste("sintatico: declaracao supply vira DeclaracaoVariavel com categoria certa", () => {

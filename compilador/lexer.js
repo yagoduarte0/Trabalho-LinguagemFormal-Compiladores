@@ -133,6 +133,23 @@ function valorDoToken(tipo, lexema, reservada) {
   return null;
 }
 
+// Palavras que só podem abrir um comando, nunca continuar uma expressão.
+// Se uma linha começa com uma delas enquanto há "(" aberto, o parêntese
+// ficou sem fechar: o léxico volta a emitir a quebra de linha para que o
+// parser acuse o erro e se recupere na linha certa (modo pânico).
+const INICIA_COMANDO = new Set([
+  "chronicle", "scavenge", "mission", "supply", "law", "survivor", "cache", "stash",
+  "ambush", "checkpoint", "fallback", "watch", "patrol", "extract",
+  "quarantine", "catch", "outbreak"
+]);
+const PROXIMA_LINHA = /[ \t\r\n]*(?:([a-zA-Z_][a-zA-Z0-9_]*)|(\}))?/y;
+
+function parenteseEsquecido(fonte, pos) {
+  PROXIMA_LINHA.lastIndex = pos;
+  const m = PROXIMA_LINHA.exec(fonte);
+  return Boolean(m && ((m[1] && INICIA_COMANDO.has(m[1])) || m[2]));
+}
+
 function analisarLexico(fonte) {
   const tokens = [];
   const erros = [];
@@ -140,6 +157,10 @@ function analisarLexico(fonte) {
   let linha = 1;
   let coluna = 1;
   const tam = fonte.length;
+  // ( e [ abertos: dentro deles a quebra de linha não encerra o comando,
+  // como no Python. Permite quebrar uma chamada longa em várias linhas.
+  // Chaves não contam: dentro de um bloco a quebra separa comandos.
+  let profundidade = 0;
 
   while (pos < tam) {
     let casou = false;
@@ -171,6 +192,10 @@ function analisarLexico(fonte) {
       pos += lexema.length;
 
       if (def.ignorar) break;
+      if (def.tipo === "NOVA_LINHA" && profundidade > 0) {
+        if (!parenteseEsquecido(fonte, pos)) break;
+        profundidade = 0;
+      }
 
       let tipo = def.tipo;
       let categoria = def.categoria;
@@ -190,6 +215,8 @@ function analisarLexico(fonte) {
         const info = MAPA_SIMBOLOS.get(lexema);
         tipo = info.tipo;
         categoria = info.categoria;
+        if (tipo === "LPAREN" || tipo === "LBRACKET") profundidade += 1;
+        if ((tipo === "RPAREN" || tipo === "RBRACKET") && profundidade > 0) profundidade -= 1;
       } else if (tipo === "INTEIRO") {
         tipo = "TOKEN_INT_LIT";
       } else if (tipo === "DECIMAL") {
