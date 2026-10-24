@@ -688,6 +688,31 @@
     }
   });
 
+  teste("gerador: mission que altera supply do topo declara global", () => {
+    const py = corpoGerado(
+      "supply alarme = dead\nsupply n = 0\nmission disparar() {\n" +
+      "    checkpoint (n > 1) {\n        alarme = alive\n    }\n    n = n + 1\n}\n"
+    );
+    afirmar(py.includes("def disparar():\n    global alarme, n"), py);
+  });
+
+  teste("gerador: parametro e supply local nao viram global", () => {
+    const py = corpoGerado(
+      "supply x = 0\nmission f(ration x) {\n    x = 1\n}\n" +
+      "mission g() {\n    supply x = 2\n    x = 3\n}\n"
+    );
+    afirmar(!py.includes("global"), py);
+  });
+
+  teste("gerador: chronicle e survivor tambem declaram global", () => {
+    const py = corpoGerado(
+      "supply ciclos = 0\nsurvivor t {\n    ciclos = ciclos + 1\n}\n" +
+      "chronicle {\n    watch {\n        ciclos = 0\n    }\n}\n"
+    );
+    afirmar(py.includes("def t():\n    global ciclos"), py);
+    afirmar(py.includes("def main():\n    global ciclos"), py);
+  });
+
   // ======================= exposição / execução ==========================
 
   const api = { teste, afirmar, afirmarIgual, rodarTestes, casos };

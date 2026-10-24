@@ -84,10 +84,52 @@ const OPERADOR_UNARIO = { "!": "not ", "-": "-" };
 function gerarCodigo(ast) {
   const linhas = [];
   const mapa = {};
+  const declaracoes = ast && ast.declaracoes ? ast.declaracoes : [];
+  // variáveis do topo do programa: as únicas que podem precisar de "global"
+  const globais = new Set(
+    declaracoes.filter(d => d.tipo === "DeclaracaoVariavel").map(d => d.nome)
+  );
 
   function emitir(texto, nivel, origem) {
     linhas.push(nivel > 0 ? INDENT.repeat(nivel) + texto : texto);
     if (origem && origem.linha) mapa[linhas.length] = origem.linha;
+  }
+
+  // Em Python, atribuir dentro de uma função cria uma variável local. Para
+  // que uma mission altere um supply do topo é preciso declarar "global".
+  // Coleta os nomes atribuídos no corpo que são globais e não foram
+  // sombreados por parâmetro ou por supply local.
+  function nomesGlobaisAtribuidos(corpo, parametros) {
+    const locais = new Set(parametros || []);
+    const atribuidos = [];
+
+    function visitar(nos) {
+      for (const no of nos || []) {
+        if (!no) continue;
+        if (no.tipo === "DeclaracaoVariavel") locais.add(no.nome);
+        if (no.tipo === "Atribuicao" && !atribuidos.includes(no.nome)) atribuidos.push(no.nome);
+        if (no.tipo === "Checkpoint") {
+          visitar(no.entao);
+          if (Array.isArray(no.outros)) visitar(no.outros);
+          else if (no.outros) visitar([no.outros]);
+        }
+        if (no.tipo === "Watch" || no.tipo === "Patrol") visitar(no.corpo);
+        if (no.tipo === "Quarantine") {
+          locais.add(no.nomeErro);
+          visitar(no.tentativa);
+          visitar(no.captura);
+        }
+      }
+    }
+
+    visitar(corpo);
+    return atribuidos.filter(n => globais.has(n) && !locais.has(n));
+  }
+
+  function emitirCorpoFuncao(no, nivel, parametros) {
+    const nomes = nomesGlobaisAtribuidos(no.corpo, parametros);
+    if (nomes.length > 0) emitir(`global ${nomes.join(", ")}`, nivel);
+    emitirBloco(no.corpo, nivel);
   }
 
   function emitirBloco(declaracoes, nivel) {
@@ -178,7 +220,7 @@ function gerarCodigo(ast) {
       case "Funcao": {
         const params = no.parametros.map(p => p.nome).join(", ");
         emitir(`def ${no.nome}(${params}):`, nivel, no);
-        emitirBloco(no.corpo, nivel + 1);
+        emitirCorpoFuncao(no, nivel + 1, no.parametros.map(p => p.nome));
         emitir("", nivel);
         break;
       }
@@ -186,20 +228,20 @@ function gerarCodigo(ast) {
       case "Task":
         emitir(`# survivor: roda como tarefa concorrente no alvo`, nivel, no);
         emitir(`def ${no.nome}():`, nivel, no);
-        emitirBloco(no.corpo, nivel + 1);
+        emitirCorpoFuncao(no, nivel + 1);
         emitir("", nivel);
         break;
 
       case "Evento":
         emitir(`# ambush: disparado por evento no alvo`, nivel, no);
         emitir(`def ${no.nome}():`, nivel, no);
-        emitirBloco(no.corpo, nivel + 1);
+        emitirCorpoFuncao(no, nivel + 1);
         emitir("", nivel);
         break;
 
       case "Principal":
         emitir("def main():", nivel, no);
-        emitirBloco(no.corpo, nivel + 1);
+        emitirCorpoFuncao(no, nivel + 1);
         emitir("", nivel);
         break;
 
@@ -266,7 +308,6 @@ function gerarCodigo(ast) {
   linhas.push("");
   linhas.push("");
 
-  const declaracoes = ast && ast.declaracoes ? ast.declaracoes : [];
   for (const d of declaracoes) gerarDeclaracao(d, 0);
 
   const temPrincipal = declaracoes.some(d => d.tipo === "Principal");
