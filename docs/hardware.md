@@ -109,12 +109,19 @@ tem o comportamento esperado de cada sensor.
 Os MQ não dão uma leitura absoluta confiável. Cada unidade, a temperatura, a umidade e até o
 simulador dão valores diferentes para o mesmo ar. Por isso o firmware **não usa limite fixo**:
 
-1. Durante os primeiros `AQUECIMENTO_MS` depois de ligar, o firmware ignora os MQ e tira a média das
-   leituras. Essa média é a **base de ar limpo**. Ela aparece no serial como
-   `[AEGIS] base de ar limpo: fumaca X ar Y` e no OLED como `base F.. A..`.
-2. Depois disso, o MQ-2 dispara ALARME quando a leitura passa de `base + MARGEM_FUMACA` (800), e o
-   alarme só desliga quando a leitura cai abaixo de `base + MARGEM_FUMACA − HISTERESE_FUMACA` (500).
-   O MQ-135 funciona do mesmo jeito, mas o que ele dispara é ATENÇÃO.
+1. **Filtro.** A leitura crua oscila bastante: no Wokwi ela varia uns ±300 em poucos segundos, com o
+   ppm parado. As decisões usam uma média móvel, `media = media + (leitura − media) / FILTRO_MQ`, que
+   corta esse ruído e responde a fumaça de verdade em 2 a 3 s. O OLED e a telemetria mostram a média.
+2. **Base de ar limpo.** Durante os primeiros `AQUECIMENTO_MS` depois de ligar, o firmware ignora os MQ
+   e a base acompanha a média. No fim do aquecimento, a base é o valor de ar limpo. Ela aparece no
+   serial como `[AEGIS] base de ar limpo: fumaca X ar Y` e no OLED como `base F.. A..`.
+3. **Limite com histerese.** O MQ-2 dispara ALARME quando a média passa de `base + MARGEM_FUMACA`
+   (800), e o alarme só desliga quando a média cai abaixo de `base + MARGEM_FUMACA − HISTERESE_FUMACA`
+   (500). O MQ-135 funciona do mesmo jeito, mas o que ele dispara é ATENÇÃO.
+4. **Base que se adapta.** Fora do alarme, a base anda `1/ADAPTA_BASE` da diferença a cada ciclo, o que
+   dá uns 30 s para alcançar a média. Assim a deriva lenta do sensor (temperatura, umidade,
+   envelhecimento) não vira alarme falso. O custo é que um aumento **muito** lento de gás, ao longo de
+   vários minutos, também é absorvido. Para fumaça de incêndio, que sobe em segundos, isso não acontece.
 
 O que fazer com os sensores reais:
 
@@ -126,7 +133,7 @@ O que fazer com os sensores reais:
 - **Ligue sempre em ar limpo.** A base é aprendida a cada partida. Se o abrigo for ligado com fumaça,
   a fumaça vira o "normal".
 - **Ajuste das margens:** com `DEPURAR = alive`, o serial mostra a cada 2 s
-  `[leituras] fumaca X (base Y) ar ...`. Anote a leitura em ar limpo e com um pouco de gás perto do
+  `[leituras] fumaca X (media M base B) ar ...`. Anote a média em ar limpo e com um pouco de gás perto do
   MQ-2: por 1 a 2 s, o gás de um isqueiro **apagado**, em local ventilado e longe de chamas. A margem
   deve ficar entre as duas leituras, mais perto da de gás, para evitar alarme falso. Com a calibração
   pronta, use `DEPURAR = dead` para limpar o serial.

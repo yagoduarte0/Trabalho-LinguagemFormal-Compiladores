@@ -37,13 +37,18 @@ law LED_VERMELHO = 32
 // Limites — calibrar com os sensores reais (docs/hardware.md, seção 5)
 // ------------------------------------------------------------------
 // MQ-2 e MQ-135 não têm escala absoluta confiável (cada unidade e o
-// simulador dão valores diferentes para o mesmo ar). O firmware aprende a
-// leitura de ar limpo durante o aquecimento e alarma pela subida acima dela.
-// A histerese evita liga-desliga quando a leitura oscila perto do limite.
+// simulador dão valores diferentes para o mesmo ar) e a leitura crua é
+// ruidosa. O firmware filtra a leitura, aprende a base de ar limpo no
+// aquecimento e alarma pela subida acima dela. Fora do alarme, a base
+// acompanha devagar a deriva lenta do sensor; a fumaça sobe em segundos e
+// passa da margem antes que a base a alcance. A histerese evita
+// liga-desliga quando a leitura oscila perto do limite.
 law MARGEM_FUMACA = 800    // MQ-2: alarme quando passa de base + 800 (escala 0..4095)
 law HISTERESE_FUMACA = 300 // ...e só desliga abaixo de base + 500
 law MARGEM_AR = 800        // MQ-135: atenção quando passa de base + 800
 law HISTERESE_AR = 300
+law FILTRO_MQ = 4          // média móvel: cada leitura nova pesa 1/4
+law ADAPTA_BASE = 64       // a base anda 1/64 da diferença por ciclo (~30 s)
 law LIMITE_AGUA_CM = 20.0  // sensor no alto, olhando para baixo: água perto = enchente
 law TEMP_ATENCAO = 40.0
 law TEMP_ALARME = 55.0
@@ -76,8 +81,9 @@ stash NOMES_ESTADO = ["NORMAL", "ATENCAO", "ALARME"]
 supply inicio = 0
 supply aquecido = dead
 supply amostras = 0
-supply soma_fumaca = 0
-supply soma_ar = 0
+supply filtro_pronto = dead
+supply media_fumaca = 0
+supply media_ar = 0
 supply base_fumaca = 0
 supply base_ar = 0
 supply base_registrada = dead
@@ -111,33 +117,48 @@ supply ultima_depuracao = 0
 // Sentinelas: um por sensor
 // ------------------------------------------------------------------
 
-// MQ-2: fumaça e gás inflamável. No aquecimento só acumula a média (a
-// base de ar limpo). Depois: acima de base + MARGEM liga o alarme, abaixo
-// de base + MARGEM - HISTERESE desliga; no meio, mantém o que estava.
+// MQ-2: fumaça e gás inflamável. A decisão usa a média filtrada, nunca a
+// leitura crua. No aquecimento a base segue a média (no fim, é o ar limpo).
+// Depois: acima de base + MARGEM liga o alarme, abaixo de
+// base + MARGEM - HISTERESE desliga; no meio, mantém o que estava.
 survivor sentinela_fumaca {
     leitura_fumaca = adc.read(radio(PINO_MQ2))
+    checkpoint (filtro_pronto) {
+        media_fumaca = media_fumaca + ration((leitura_fumaca - media_fumaca) / FILTRO_MQ)
+    } fallback {
+        media_fumaca = leitura_fumaca
+    }
     checkpoint (!aquecido) {
-        soma_fumaca = soma_fumaca + leitura_fumaca
-        base_fumaca = ration(soma_fumaca / amostras)
+        base_fumaca = media_fumaca
         risco_fumaca = NORMAL
-    } fallback checkpoint (leitura_fumaca >= base_fumaca + MARGEM_FUMACA) {
+    } fallback checkpoint (media_fumaca >= base_fumaca + MARGEM_FUMACA) {
         risco_fumaca = ALARME
-    } fallback checkpoint (leitura_fumaca < base_fumaca + MARGEM_FUMACA - HISTERESE_FUMACA) {
+    } fallback checkpoint (media_fumaca < base_fumaca + MARGEM_FUMACA - HISTERESE_FUMACA) {
         risco_fumaca = NORMAL
+    }
+    checkpoint (aquecido && risco_fumaca == NORMAL) {
+        base_fumaca = base_fumaca + ration((media_fumaca - base_fumaca) / ADAPTA_BASE)
     }
 }
 
 // MQ-135: qualidade do ar (CO2, amônia, fumaça leve), mesma lógica
 survivor sentinela_ar {
     leitura_ar = adc.read(radio(PINO_MQ135))
+    checkpoint (filtro_pronto) {
+        media_ar = media_ar + ration((leitura_ar - media_ar) / FILTRO_MQ)
+    } fallback {
+        media_ar = leitura_ar
+    }
     checkpoint (!aquecido) {
-        soma_ar = soma_ar + leitura_ar
-        base_ar = ration(soma_ar / amostras)
+        base_ar = media_ar
         risco_ar = NORMAL
-    } fallback checkpoint (leitura_ar >= base_ar + MARGEM_AR) {
+    } fallback checkpoint (media_ar >= base_ar + MARGEM_AR) {
         risco_ar = ATENCAO
-    } fallback checkpoint (leitura_ar < base_ar + MARGEM_AR - HISTERESE_AR) {
+    } fallback checkpoint (media_ar < base_ar + MARGEM_AR - HISTERESE_AR) {
         risco_ar = NORMAL
+    }
+    checkpoint (aquecido && risco_ar == NORMAL) {
+        base_ar = base_ar + ration((media_ar - base_ar) / ADAPTA_BASE)
     }
 }
 
@@ -264,8 +285,8 @@ mission atualizar_tela() {
     display.write(0, "AEGIS " + NOMES_ESTADO[estado])
     display.write(1, motivo)
     display.write(2, "base F" + paper(base_fumaca) + " A" + paper(base_ar))
-    display.write(3, "Fumaca  " + paper(leitura_fumaca))
-    display.write(4, "Ar      " + paper(leitura_ar))
+    display.write(3, "Fumaca  " + paper(media_fumaca))
+    display.write(4, "Ar      " + paper(media_ar))
     display.write(5, "Agua    " + paper(ration(distancia_agua)) + " cm")
     display.write(6, "T " + paper(temperatura) + "C U " + paper(ration(umidade)) + "%")
     checkpoint (!aquecido) {
@@ -287,8 +308,8 @@ mission telemetria() {
         ultima_telemetria = time.ms()
         mqtt.publish("aegis/telemetria",
             "{\"estado\":" + paper(estado) +
-            ",\"fumaca\":" + paper(leitura_fumaca) +
-            ",\"ar\":" + paper(leitura_ar) +
+            ",\"fumaca\":" + paper(media_fumaca) +
+            ",\"ar\":" + paper(media_ar) +
             ",\"agua_cm\":" + paper(distancia_agua) +
             ",\"temp\":" + paper(temperatura) +
             ",\"umid\":" + paper(umidade) + "}")
@@ -299,8 +320,10 @@ mission telemetria() {
 mission depurar() {
     checkpoint (DEPURAR && time.since(ultima_depuracao) >= DEPURAR_MS) {
         ultima_depuracao = time.ms()
-        log_entry("[leituras] fumaca", leitura_fumaca, "(base", paper(base_fumaca) + ")",
-                  "ar", leitura_ar, "agua", distancia_agua, "cm",
+        log_entry("[leituras] fumaca", leitura_fumaca, "(media", media_fumaca,
+                  "base", paper(base_fumaca) + ")",
+                  "ar", leitura_ar, "(media", media_ar, "base", paper(base_ar) + ")",
+                  "agua", distancia_agua, "cm",
                   "temp", temperatura, "umid", umidade, "pir", presenca)
     }
 }
@@ -317,6 +340,7 @@ mission ciclo() {
     }
     sentinela_fumaca()
     sentinela_ar()
+    filtro_pronto = alive
     sentinela_agua()
     sentinela_calor()
     sentinela_presenca()

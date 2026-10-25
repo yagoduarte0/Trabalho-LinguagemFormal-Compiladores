@@ -311,6 +311,8 @@ MARGEM_FUMACA = 800  # constante
 HISTERESE_FUMACA = 300  # constante
 MARGEM_AR = 800  # constante
 HISTERESE_AR = 300  # constante
+FILTRO_MQ = 4  # constante
+ADAPTA_BASE = 64  # constante
 LIMITE_AGUA_CM = 20.0  # constante
 TEMP_ATENCAO = 40.0  # constante
 TEMP_ALARME = 55.0  # constante
@@ -331,8 +333,9 @@ NOMES_ESTADO = ["NORMAL", "ATENCAO", "ALARME"]
 inicio = 0
 aquecido = False
 amostras = 0
-soma_fumaca = 0
-soma_ar = 0
+filtro_pronto = False
+media_fumaca = 0
+media_ar = 0
 base_fumaca = 0
 base_ar = 0
 base_registrada = False
@@ -359,29 +362,39 @@ ultima_telemetria = 0
 ultima_depuracao = 0
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_fumaca():
-    global leitura_fumaca, soma_fumaca, base_fumaca, risco_fumaca
+    global leitura_fumaca, media_fumaca, base_fumaca, risco_fumaca
     leitura_fumaca = adc.read(radio(PINO_MQ2))
+    if filtro_pronto:
+        media_fumaca = media_fumaca + ration((leitura_fumaca - media_fumaca) / FILTRO_MQ)
+    else:
+        media_fumaca = leitura_fumaca
     if not aquecido:
-        soma_fumaca = soma_fumaca + leitura_fumaca
-        base_fumaca = ration(soma_fumaca / amostras)
+        base_fumaca = media_fumaca
         risco_fumaca = NORMAL
-    elif leitura_fumaca >= base_fumaca + MARGEM_FUMACA:
+    elif media_fumaca >= base_fumaca + MARGEM_FUMACA:
         risco_fumaca = ALARME
-    elif leitura_fumaca < base_fumaca + MARGEM_FUMACA - HISTERESE_FUMACA:
+    elif media_fumaca < base_fumaca + MARGEM_FUMACA - HISTERESE_FUMACA:
         risco_fumaca = NORMAL
+    if aquecido and risco_fumaca == NORMAL:
+        base_fumaca = base_fumaca + ration((media_fumaca - base_fumaca) / ADAPTA_BASE)
 
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_ar():
-    global leitura_ar, soma_ar, base_ar, risco_ar
+    global leitura_ar, media_ar, base_ar, risco_ar
     leitura_ar = adc.read(radio(PINO_MQ135))
+    if filtro_pronto:
+        media_ar = media_ar + ration((leitura_ar - media_ar) / FILTRO_MQ)
+    else:
+        media_ar = leitura_ar
     if not aquecido:
-        soma_ar = soma_ar + leitura_ar
-        base_ar = ration(soma_ar / amostras)
+        base_ar = media_ar
         risco_ar = NORMAL
-    elif leitura_ar >= base_ar + MARGEM_AR:
+    elif media_ar >= base_ar + MARGEM_AR:
         risco_ar = ATENCAO
-    elif leitura_ar < base_ar + MARGEM_AR - HISTERESE_AR:
+    elif media_ar < base_ar + MARGEM_AR - HISTERESE_AR:
         risco_ar = NORMAL
+    if aquecido and risco_ar == NORMAL:
+        base_ar = base_ar + ration((media_ar - base_ar) / ADAPTA_BASE)
 
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_agua():
@@ -478,8 +491,8 @@ def atualizar_tela():
     display.write(0, "AEGIS " + NOMES_ESTADO[estado])
     display.write(1, motivo)
     display.write(2, "base F" + paper(base_fumaca) + " A" + paper(base_ar))
-    display.write(3, "Fumaca  " + paper(leitura_fumaca))
-    display.write(4, "Ar      " + paper(leitura_ar))
+    display.write(3, "Fumaca  " + paper(media_fumaca))
+    display.write(4, "Ar      " + paper(media_ar))
     display.write(5, "Agua    " + paper(ration(distancia_agua)) + " cm")
     display.write(6, "T " + paper(temperatura) + "C U " + paper(ration(umidade)) + "%")
     if not aquecido:
@@ -497,16 +510,16 @@ def telemetria():
     rede = mqtt.connected()
     if rede and time.since(ultima_telemetria) >= TELEMETRIA_MS:
         ultima_telemetria = time.ms()
-        mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(leitura_fumaca) + ",\"ar\":" + paper(leitura_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
+        mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(media_fumaca) + ",\"ar\":" + paper(media_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
 
 def depurar():
     global ultima_depuracao
     if DEPURAR and time.since(ultima_depuracao) >= DEPURAR_MS:
         ultima_depuracao = time.ms()
-        log_entry("[leituras] fumaca", leitura_fumaca, "(base", paper(base_fumaca) + ")", "ar", leitura_ar, "agua", distancia_agua, "cm", "temp", temperatura, "umid", umidade, "pir", presenca)
+        log_entry("[leituras] fumaca", leitura_fumaca, "(media", media_fumaca, "base", paper(base_fumaca) + ")", "ar", leitura_ar, "(media", media_ar, "base", paper(base_ar) + ")", "agua", distancia_agua, "cm", "temp", temperatura, "umid", umidade, "pir", presenca)
 
 def ciclo():
-    global aquecido, amostras, base_registrada
+    global aquecido, amostras, base_registrada, filtro_pronto
     aquecido = time.since(inicio) >= AQUECIMENTO_MS
     if not aquecido:
         amostras = amostras + 1
@@ -515,6 +528,7 @@ def ciclo():
         log_entry("[AEGIS] base de ar limpo: fumaca", base_fumaca, "ar", base_ar)
     sentinela_fumaca()
     sentinela_ar()
+    filtro_pronto = True
     sentinela_agua()
     sentinela_calor()
     sentinela_presenca()

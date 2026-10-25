@@ -40,8 +40,9 @@ def zerar_sensores(g):
     g["estado"] = g["NORMAL"]
     g["rede"] = False
     for nome in ("risco_fumaca", "risco_ar", "base_fumaca", "base_ar",
-                 "soma_fumaca", "soma_ar", "amostras"):
+                 "media_fumaca", "media_ar", "amostras"):
         g[nome] = 0
+    g["filtro_pronto"] = False      # a primeira leitura vira a média
     g["base_registrada"] = True
 
 
@@ -125,8 +126,40 @@ def _(g):
     ciclo(g)
     assert g["estado"] == g["ALARME"], "nao pode desligar dentro da histerese"
     g["adc"].estado[g["PINO_MQ2"]] = 2900        # abaixo de base + 500
-    ciclo(g)
+    ciclo(g, vezes=20)                           # a média filtrada desce aos poucos
     assert g["estado"] == g["NORMAL"]
+
+
+@cenario("ruido do MQ-2 do Wokwi (1800..2400) em torno da base: sem alarme")
+def _(g):
+    g["base_fumaca"] = g["media_fumaca"] = 2100
+    g["filtro_pronto"] = True
+    # as leituras do log do Wokwi, repetidas: picos passam de base + 800 na
+    # leitura crua de vez em quando, mas a média não
+    for leitura in [1987, 2093, 1806, 2372, 2264, 2950, 1700, 2400] * 10:
+        g["adc"].estado[g["PINO_MQ2"]] = leitura
+        ciclo(g)
+        assert g["estado"] == g["NORMAL"], (leitura, g["media_fumaca"], g["base_fumaca"])
+
+
+@cenario("deriva lenta do sensor (+5 por ciclo): a base acompanha, sem alarme")
+def _(g):
+    g["base_fumaca"] = g["media_fumaca"] = 1600
+    g["filtro_pronto"] = True
+    for i in range(300):                         # 2,5 min subindo ate 3100
+        g["adc"].estado[g["PINO_MQ2"]] = 1600 + 5 * i
+        ciclo(g)
+        assert g["estado"] == g["NORMAL"], (i, g["media_fumaca"], g["base_fumaca"])
+    assert g["base_fumaca"] > 2500, g["base_fumaca"]
+
+
+@cenario("fumaca de verdade (salto de +1200): alarma em ate 3 s")
+def _(g):
+    g["base_fumaca"] = g["media_fumaca"] = 2000
+    g["filtro_pronto"] = True
+    g["adc"].estado[g["PINO_MQ2"]] = 3200
+    ciclo(g, vezes=6)                            # 6 ciclos de 500 ms
+    assert g["estado"] == g["ALARME"], (g["media_fumaca"], g["base_fumaca"])
 
 
 @cenario("agua a 10 cm do sensor: ALARME de enchente")
@@ -197,7 +230,7 @@ def _(g):
     ciclo(g)
     g["silenciado"] = True
     g["adc"].estado[g["PINO_MQ2"]] = 100
-    ciclo(g)
+    ciclo(g, vezes=10)
     assert g["estado"] == g["NORMAL"] and not g["silenciado"]
     assert leds(g)["verde"] and not buzzer_ligado(g)
 
