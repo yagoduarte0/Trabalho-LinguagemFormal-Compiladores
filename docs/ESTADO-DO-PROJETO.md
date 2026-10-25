@@ -97,6 +97,15 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 
 ### Pendente
 
+**Próximos passos do firmware (parado em 24/10/2026):**
+
+- **F — Alerta no Telegram**, com o token do bot num arquivo de configuração no ESP32 que fica
+  fora do Git.
+- **G — Painel web local**: o ESP32 serve uma página com as leituras na rede de casa, sem
+  depender de internet. No Wokwi, a porta é exposta pelo `wokwi.toml`.
+- **Conferir no Wokwi** a digital pelo Touch ID (`./firmware/wokwi.sh dedo`) e a tela nova.
+- Depois disso, o **artigo IEEE** (`artigo/`).
+
 1. **Revisar o pitch com os dados da sua pesquisa** — os números de mercado
    estão em `pitch/aegis/data.py` com a fonte ao lado; trocar lá não exige
    tocar nas animações.
