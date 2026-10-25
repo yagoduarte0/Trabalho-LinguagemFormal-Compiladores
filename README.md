@@ -46,15 +46,17 @@ fonte  ->  [análise léxica]  ->  tokens
 |---|---|---|
 | 1 | `compilador/lexer.js` | 29 palavras reservadas, 25 símbolos e literais; maximal munch, rastreio de linha e coluna, coleta de erros sem parar a análise |
 | 2 | `compilador/parser.js` | descendente recursivo LL(1), gramática EBNF publicada no código, AST de 26 tipos de nó, recuperação em modo pânico |
-| 3 | `compilador/gerador.js` | traduz a AST para Python com runtime embutido e mapa de linha gerada para linha de origem |
+| 3 | `compilador/gerador.js` | traduz a AST para Python com runtime embutido e mapa de linha gerada para linha de origem; dois alvos: `simulado` (PC) e `esp32` (MicroPython) |
 
 `compilador/compilador.js` encadeia as três e para na primeira que acusar erro.
+`compilador/aegisc.js` é a linha de comando.
 
 ### Rodar
 
 ```bash
-cd compilador
-node testes.js      # 70 testes
+node compilador/testes.js                                   # 80 testes
+node compilador/aegisc.js programa.aeg | python3            # compila e roda no PC
+node compilador/aegisc.js programa.aeg --alvo esp32 -o main.py
 ```
 
 Para ver cada fase funcionando, abra `compilador/index.html` no navegador: as
@@ -65,7 +67,28 @@ erros com linha e coluna.
 
 - [docs/linguagem.md](docs/linguagem.md) — especificação da linguagem e tabela de tokens
 - [docs/gramatica.md](docs/gramatica.md) — gramática EBNF, AST e geração de código
+- [docs/hardware.md](docs/hardware.md) — lista de compras, mapa de pinos, montagem e gravação no ESP32
 - [docs/ESTADO-DO-PROJETO.md](docs/ESTADO-DO-PROJETO.md) — situação atual e decisões tomadas
+
+---
+
+## O firmware
+
+`firmware/abrigo.aeg` é o programa do abrigo escrito em AEGIS. Um ESP32 lê
+presença (PIR), nível da água (HC-SR04), fumaça (MQ-2), qualidade do ar
+(MQ-135) e temperatura (DHT22), classifica cada leitura em NORMAL, ATENÇÃO ou
+ALARME e reage com LEDs, sirene, display OLED e, se houver WiFi, avisos por
+MQTT. Funciona offline: a rede é só um canal a mais.
+
+```bash
+python3 firmware/cenarios.py      # 16 cenários testando a lógica no PC
+./firmware/wokwi.sh preparar      # uma vez: baixa o MicroPython e o mpremote
+./firmware/wokwi.sh enviar        # com a simulação aberta no VS Code (Wokwi)
+```
+
+O circuito do Wokwi (`firmware/diagram.json`) usa as mesmas ligações da placa
+real, então o `firmware/main.py` gerado roda nos dois. A montagem física está
+em [docs/hardware.md](docs/hardware.md).
 
 ---
 

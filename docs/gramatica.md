@@ -247,8 +247,17 @@ análise semântica: confia que a AST já passou pelas fases anteriores.
 **Runtime embutido.** A linguagem tem construções de hardware (`broadcast`,
 `silence`, `hide`, `radio`) e módulos (`gpio`, `mqtt` e outros) que não existem
 em Python. Em vez de gerar `import` de um pacote que precisaria ser instalado,
-o gerador emite um runtime simulado no topo do arquivo. O Python gerado roda
-sozinho, sem dependência nenhuma.
+o gerador emite um runtime no topo do arquivo. O Python gerado roda sozinho,
+sem dependência nenhuma. Existem dois runtimes com a mesma API, escolhidos pela
+opção `alvo`: `simulado` (PC, sensores falsos) e `esp32` (MicroPython, hardware
+real). O corpo do programa traduzido é idêntico nos dois.
+
+**Variáveis globais.** Em Python, atribuir a um nome dentro de uma função cria
+uma variável local, a menos que a função declare `global`. Sem isso, uma
+`mission` que altera um `supply` do topo daria `UnboundLocalError`. O gerador
+percorre o corpo de cada `mission`, `survivor`, `ambush` e `chronicle`, coleta
+as atribuições a nomes globais que não foram sombreados por parâmetro ou
+`supply` local, e emite `global a, b` na primeira linha.
 
 **Blocos.** AEGIS delimita por chaves e Python por indentação; a conversão
 acontece no emissor, que aplica 4 espaços por nível. Bloco vazio vira `pass`,

@@ -3,7 +3,7 @@
 Documento de continuidade: registra o que está pronto, o que falta e as decisões
 já tomadas. Serve para retomar o trabalho sem precisar reconstruir o contexto.
 
-Última atualização: 17/09/2026
+Última atualização: 24/10/2026
 
 ---
 
@@ -46,8 +46,13 @@ repositório. Ficou decidido unificar tudo sob o nome AEGIS.
 | `compilador/gerador.js` | Fase 3 — back-end que emite Python |
 | `compilador/compilador.js` | Orquestrador das fases e exemplos da linguagem |
 | `compilador/testes.js` | Suíte de testes (roda com `node testes.js`) |
+| `compilador/aegisc.js` | Linha de comando: `.aeg` → Python, alvo `simulado` ou `esp32` |
 | `compilador/index.html` | Interface web que mostra cada fase |
-| `docs/` | Documentação da linguagem |
+| `firmware/abrigo.aeg` | Firmware do abrigo escrito em AEGIS |
+| `firmware/main.py` | MicroPython gerado a partir do `abrigo.aeg` (entra no Git) |
+| `firmware/cenarios.py` | Cenários que testam a lógica do firmware no PC |
+| `firmware/diagram.json`, `wokwi.toml`, `wokwi.sh` | Simulação no Wokwi (VS Code) |
+| `docs/` | Documentação da linguagem e do hardware |
 | `pitch/` | Apresentação animada em Manim |
 
 A pasta `C:\Users\yagod\OneDrive\Desktop\Apresentacao-Comp` foi a origem do
@@ -68,7 +73,16 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 - **Geração de código** — `gerador.js` traduz a AST para Python, com runtime
   embutido (o código gerado roda sozinho) e mapa de linha gerada para linha de
   origem. Verificado: o Python gerado dos exemplos compila e executa.
-- **Testes** — 70 casos das três fases, todos passando.
+- **Dois alvos de compilação** — `simulado` (PC) e `esp32` (MicroPython), com a
+  mesma API de hardware; `global` emitido automaticamente; expressões podem
+  quebrar linha dentro de parênteses e colchetes.
+- **Testes** — 80 casos das três fases, todos passando.
+- **Firmware do abrigo** — `abrigo.aeg` com cinco sensores, máquina de estados
+  NORMAL/ATENÇÃO/ALARME, sirene, botão de silenciar, OLED e MQTT opcional.
+  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 16 cenários
+  passando no PC e circuito testado no simulador Wokwi.
+- **Guia de hardware** — `docs/hardware.md` com lista de compras, mapa de
+  pinos, divisores de tensão, calibração e gravação no ESP32 real.
 - **Interface web** — mostra tokens, AST, Python gerado e erros, com a origem de
   cada linha do Python.
 - **Documentação** — `linguagem.md` e `gramatica.md`, com tabela de tokens e
@@ -82,7 +96,12 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
    estão em `pitch/aegis/data.py` com a fonte ao lado; trocar lá não exige
    tocar nas animações.
 2. **Ensaiar cronometrado** — o roteiro foi desenhado para 10 minutos.
-3. **Possível melhoria do compilador** — não há análise semântica: os tipos
+3. **Montar o hardware real** quando os componentes chegarem, seguindo
+   `docs/hardware.md`, e recalibrar os MQ (seção 5 do guia).
+4. **Artigo IEEE** (`artigo/`) sobre a linguagem, o compilador e o sistema.
+5. **Orçamento do pitch** — o OLED, o botão e os resistores dos divisores não
+   estão em `pitch/aegis/data.py`.
+6. **Possível melhoria do compilador** — não há análise semântica: os tipos
    declarados (`ration`, `vital`, `status`) são registrados na AST mas não
    verificados. Se a disciplina exigir uma quarta fase, é o caminho natural.
 
@@ -100,6 +119,10 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 | Identidade visual | Fundo `#0A0D0A`, cáqui `#C8B88A`, verde radar `#A8D04A`, creme `#EDE4CC`, fonte display Impact |
 | Commits | Mensagens em português, descritivas, **sem coautoria de ferramenta de IA** (exigência do professor) |
 | Arquivos pesados | `media/` e `slides/` ficam fora do Git; o `pitch.html` entra |
+| Firmware | Escrito em AEGIS e compilado para MicroPython; o mesmo `.aeg` roda no PC e no ESP32 |
+| Hardware | Lista do pitch + OLED SSD1306 I2C + botão; sensores analógicos só no ADC1 |
+| Rede | Local primeiro; MQTT (`broker.hivemq.com`, público) só para demonstração |
+| Simulação | Wokwi no VS Code com MicroPython 1.29.0; o MQ-135 vira um potenciômetro |
 
 ---
 
@@ -132,9 +155,9 @@ Não inventar um número para essa lacuna.
 ## Como rodar
 
 ```powershell
-# testes do compilador
-cd compilador
-node testes.js
+# testes do compilador e do firmware
+node compilador/testes.js
+python3 firmware/cenarios.py
 
 # interface web do compilador
 # basta abrir compilador/index.html no navegador

@@ -30,6 +30,19 @@ e a ordem implementa **maximal munch**:
 Cada token registra **tipo**, **categoria**, **lexema**, **valor já convertido**,
 **linha**, **coluna** e a posição absoluta no fonte.
 
+**Quebra de linha dentro de parênteses e colchetes.** A quebra de linha é o
+separador de comandos, mas, como em Python, ela é ignorada enquanto houver um
+`(` ou `[` aberto. Assim uma chamada longa pode ocupar várias linhas:
+
+```
+mqtt.publish("aegis/telemetria",
+    "{\"temp\":" + paper(temperatura) + "}")
+```
+
+Para que um parêntese esquecido não engula o resto do programa, o lexer volta a
+contar a quebra de linha quando a linha seguinte começa com uma palavra que só
+pode abrir um comando novo (`supply`, `checkpoint`, `mission`...) ou com `}`.
+
 ### Palavras reservadas
 
 São 29, agrupadas em sete categorias.
@@ -127,9 +140,36 @@ programas de referência usam acesso a membro (`gpio.read(...)`,
 
 ### Módulos embutidos
 
-`gpio`, `adc`, `pwm`, `wifi`, `mqtt` e `time` são convenção da biblioteca
-padrão, **não** palavras reservadas. O lexer os trata como identificadores
-comuns, então um programa pode tecnicamente usar esses nomes para outra coisa.
+Os módulos abaixo são convenção da biblioteca padrão, **não** palavras
+reservadas. O lexer os trata como identificadores comuns, então um programa
+pode tecnicamente usar esses nomes para outra coisa. A API é a mesma nos dois
+alvos de compilação (seção 3): o mesmo programa roda no PC e no ESP32.
+
+| Chamada | O que faz | No ESP32 (MicroPython) |
+|---|---|---|
+| `gpio.read(p)` / `gpio.write(p, v)` | lê ou escreve um pino digital | `machine.Pin` |
+| `gpio.pressed(p)` | botão entre o pino e o GND, com pull-up interno | `Pin.PULL_UP`, pressionado = 0 |
+| `adc.read(p)` | leitura analógica, 0 a 4095 | `machine.ADC`, atenuação de 11 dB |
+| `pwm.tone(p, hz)` / `pwm.off(p)` | toca ou cala um buzzer passivo | `machine.PWM` |
+| `sonar.distance(trig, echo)` | distância do HC-SR04 em cm, `-1` sem eco | pulso de 10 µs + `time_pulse_us` |
+| `climate.temperature(p)` / `climate.humidity(p)` | DHT22, `-1` se a leitura falhar | `dht.DHT22`, uma leitura a cada 2 s |
+| `display.write(linha, texto)` / `display.show()` | OLED SSD1306 128×64, linhas 0 a 7 | driver mínimo embutido, I2C SDA 21 / SCL 22 |
+| `wifi.connect(ssid, senha, limite_ms)` | conecta ao WiFi, devolve `alive`/`dead` | `network.WLAN` |
+| `mqtt.connect(broker)` / `mqtt.publish(topico, msg)` / `mqtt.connected()` | avisos pela rede; falhas nunca derrubam o programa | `umqtt.simple` |
+| `time.ms()` / `time.since(marca)` | relógio em milissegundos | `time.ticks_ms` / `ticks_diff` |
+
+### Conversões de tipo
+
+Os nomes de tipo também funcionam como funções de conversão: `ration(x)`
+(inteiro), `vital(x)` (decimal), `paper(x)` (texto), `status(x)` (booleano) e
+`radio(x)` (pino). É assim que um número entra numa mensagem:
+`log_entry("temperatura " + paper(t))`.
+
+### Variáveis globais
+
+Um `supply` declarado no topo do arquivo é global: uma `mission`, um `survivor`
+ou o `chronicle` podem lê-lo e alterá-lo. Um `supply` declarado dentro de um
+bloco, ou um parâmetro, é local e esconde o global de mesmo nome.
 
 ### Erros léxicos
 
@@ -181,13 +221,33 @@ construção a construção.
 
 ---
 
-## 3. Como verificar
+## 3. Compilar e verificar
+
+```
+node compilador/aegisc.js programa.aeg                      # Python no terminal
+node compilador/aegisc.js programa.aeg | python3            # compila e roda no PC
+node compilador/aegisc.js programa.aeg --alvo esp32 -o main.py   # MicroPython para o ESP32
+```
+
+O **alvo** escolhe só o runtime embutido no topo do Python gerado. O programa
+traduzido é o mesmo:
+
+- `simulado` (padrão): roda com Python comum. Os sensores devolvem valores
+  fixos, e o hardware imprime o que faria (`[oled] ...`, `[mqtt] ...`).
+- `esp32`: usa `machine`, `dht`, `network` e `umqtt` do MicroPython.
+
+Erros saem no formato `arquivo:linha:coluna: erro <fase>: mensagem`, com código
+de saída 1.
 
 ```
 cd compilador
-node testes.js        # 70 testes das três fases
+node testes.js        # 80 testes das três fases e dos dois alvos
 ```
 
 Para inspecionar visualmente cada fase, abra `compilador/index.html` no
 navegador: as abas mostram a tabela de tokens, a AST desenhada em texto, o
 Python gerado e os erros com linha e coluna.
+
+Um programa completo, o firmware do abrigo, está em `firmware/abrigo.aeg`. Os
+cenários que testam esse firmware estão em `firmware/cenarios.py`, e o guia de
+montagem em [hardware.md](hardware.md).
