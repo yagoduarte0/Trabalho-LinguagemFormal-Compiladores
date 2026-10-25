@@ -309,6 +309,7 @@ LED_AMARELO = 33  # constante
 LED_VERMELHO = 32  # constante
 PINO_CHUVA = 36  # constante
 PINO_SOLO = 39  # constante
+PINO_RELE = 23  # constante
 MARGEM_FUMACA = 800  # constante
 HISTERESE_FUMACA = 300  # constante
 MARGEM_AR = 800  # constante
@@ -326,6 +327,8 @@ CHUVA_ATENCAO = 30  # constante
 SOLO_ATENCAO = 70  # constante
 SOLO_ALARME = 85  # constante
 HISTERESE_PCT = 10  # constante
+RELE_ATIVO_EM_ALTO = True  # constante
+RELE_EXTRA_MS = 30000  # constante
 AQUECIMENTO_MS = 20000  # constante
 SILENCIO_MS = 60000  # constante
 CICLO_MS = 500  # constante
@@ -364,6 +367,9 @@ solo_pct = 0
 chovendo = False
 solo_encharcado = False
 deslizamento = False
+rele_ligado = False
+houve_fumaca = False
+ultima_fumaca = 0
 risco_fumaca = 0
 risco_ar = 0
 risco_agua = 0
@@ -544,6 +550,20 @@ def sinalizar():
     else:
         pwm.off(radio(PINO_BUZZER))
 
+def acionar_rele():
+    global houve_fumaca, ultima_fumaca, rele_ligado
+    if risco_fumaca == ALARME:
+        houve_fumaca = True
+        ultima_fumaca = time.ms()
+    ligar = houve_fumaca and time.since(ultima_fumaca) < RELE_EXTRA_MS
+    if ligar != rele_ligado:
+        rele_ligado = ligar
+        gpio.write(radio(PINO_RELE), ligar == RELE_ATIVO_EM_ALTO)
+        if ligar:
+            log_entry("[AEGIS] exaustor ligado")
+        else:
+            log_entry("[AEGIS] exaustor desligado")
+
 def relatar():
     global silenciado, estado_anterior, motivo_anterior
     if estado != estado_anterior or motivo != motivo_anterior:
@@ -567,6 +587,8 @@ def atualizar_tela():
         display.write(7, "aquecendo MQ...")
     elif silenciado:
         display.write(7, "BUZZER MUDO")
+    elif rele_ligado:
+        display.write(7, "EXAUSTOR LIGADO")
     elif rede:
         display.write(7, "rede: online")
     else:
@@ -605,6 +627,7 @@ def ciclo():
     vigia_botao()
     avaliar()
     sinalizar()
+    acionar_rele()
     relatar()
     atualizar_tela()
     telemetria()
@@ -613,6 +636,7 @@ def ciclo():
 def main():
     global inicio, rede
     log_entry("[AEGIS] abrigo iniciando")
+    gpio.write(radio(PINO_RELE), not RELE_ATIVO_EM_ALTO)
     inicio = time.ms()
     display.write(0, "AEGIS")
     display.write(2, "iniciando...")

@@ -34,6 +34,7 @@ law LED_AMARELO = 33
 law LED_VERMELHO = 32
 law PINO_CHUVA = 36        // VP: só entrada, ADC1
 law PINO_SOLO = 39         // VN: só entrada, ADC1
+law PINO_RELE = 23         // exaustor ou sirene externa
 
 // ------------------------------------------------------------------
 // Limites — calibrar com os sensores reais (docs/hardware.md, seção 5)
@@ -65,6 +66,8 @@ law CHUVA_ATENCAO = 30     // % a partir do qual está chovendo
 law SOLO_ATENCAO = 70      // % de solo encharcado
 law SOLO_ALARME = 85       // chuva + solo acima disso: risco de deslizamento
 law HISTERESE_PCT = 10
+law RELE_ATIVO_EM_ALTO = alive // módulos com optoacoplador ligam em nível baixo: use dead
+law RELE_EXTRA_MS = 30000  // o exaustor segue ligado depois que a fumaça some
 law AQUECIMENTO_MS = 20000 // os MQ dão leituras falsas enquanto esquentam
 law SILENCIO_MS = 60000    // quanto tempo o botão cala o buzzer
 law CICLO_MS = 500
@@ -116,6 +119,9 @@ supply solo_pct = 0
 supply chovendo = dead
 supply solo_encharcado = dead
 supply deslizamento = dead
+supply rele_ligado = dead
+supply houve_fumaca = dead
+supply ultima_fumaca = 0
 
 supply risco_fumaca = 0
 supply risco_ar = 0
@@ -350,6 +356,26 @@ mission sinalizar() {
     }
 }
 
+// Relé do exaustor: só para fumaça/gás (em enchente não ajuda) e fica
+// ligado mais RELE_EXTRA_MS depois que a fumaça some. O botão de silenciar
+// cala só o buzzer, não o exaustor.
+mission acionar_rele() {
+    checkpoint (risco_fumaca == ALARME) {
+        houve_fumaca = alive
+        ultima_fumaca = time.ms()
+    }
+    supply ligar = houve_fumaca && time.since(ultima_fumaca) < RELE_EXTRA_MS
+    checkpoint (ligar != rele_ligado) {
+        rele_ligado = ligar
+        gpio.write(radio(PINO_RELE), ligar == RELE_ATIVO_EM_ALTO)
+        checkpoint (ligar) {
+            log_entry("[AEGIS] exaustor ligado")
+        } fallback {
+            log_entry("[AEGIS] exaustor desligado")
+        }
+    }
+}
+
 // Avisa no serial e pela rede só quando algo muda
 mission relatar() {
     checkpoint (estado != estado_anterior || motivo != motivo_anterior) {
@@ -378,6 +404,8 @@ mission atualizar_tela() {
         display.write(7, "aquecendo MQ...")
     } fallback checkpoint (silenciado) {
         display.write(7, "BUZZER MUDO")
+    } fallback checkpoint (rele_ligado) {
+        display.write(7, "EXAUSTOR LIGADO")
     } fallback checkpoint (rede) {
         display.write(7, "rede: online")
     } fallback {
@@ -437,6 +465,7 @@ mission ciclo() {
     vigia_botao()
     avaliar()
     sinalizar()
+    acionar_rele()
     relatar()
     atualizar_tela()
     telemetria()
@@ -448,6 +477,7 @@ mission ciclo() {
 // ------------------------------------------------------------------
 chronicle {
     log_entry("[AEGIS] abrigo iniciando")
+    gpio.write(radio(PINO_RELE), !RELE_ATIVO_EM_ALTO)   // relé desligado antes de tudo
     inicio = time.ms()
     display.write(0, "AEGIS")
     display.write(2, "iniciando...")

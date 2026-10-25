@@ -44,7 +44,8 @@ def zerar_sensores(g):
     for nome in ("risco_fumaca", "risco_ar", "base_fumaca", "base_ar",
                  "media_fumaca", "media_ar", "amostras"):
         g[nome] = 0
-    for nome in ("chovendo", "solo_encharcado", "deslizamento"):
+    for nome in ("chovendo", "solo_encharcado", "deslizamento",
+                 "rele_ligado", "houve_fumaca"):
         g[nome] = False
     g["filtro_pronto"] = False      # a primeira leitura vira a média
     g["base_registrada"] = True
@@ -216,6 +217,39 @@ def _(g):
     molhar(g, "PINO_SOLO", "SOLO_SECO", "SOLO_MOLHADO", 40)      # solo secou
     ciclo(g, vezes=20)
     assert g["estado"] == g["NORMAL"], g["motivo"]
+
+
+def rele(g):
+    return g["gpio"].estado.get(g["PINO_RELE"]) == g["RELE_ATIVO_EM_ALTO"]
+
+
+@cenario("fumaca liga o exaustor; ele segue ligado RELE_EXTRA_MS depois")
+def _(g):
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    log = ciclo(g)
+    assert rele(g) and "exaustor ligado" in log, log
+    g["adc"].estado[g["PINO_MQ2"]] = 100
+    ciclo(g, vezes=10)
+    assert g["estado"] == g["NORMAL"] and rele(g), "desligou cedo demais"
+    g["ultima_fumaca"] = g["time"].ms() - g["RELE_EXTRA_MS"] - 1
+    log = ciclo(g)
+    assert not rele(g) and "exaustor desligado" in log, log
+
+
+@cenario("silenciar o buzzer nao desliga o exaustor")
+def _(g):
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    g["gpio"].estado[g["PINO_BOTAO"]] = True
+    ciclo(g)
+    assert g["silenciado"] and not buzzer_ligado(g) and rele(g)
+
+
+@cenario("enchente nao liga o exaustor")
+def _(g):
+    g["sonar"].cm = 10.0
+    ciclo(g)
+    assert g["estado"] == g["ALARME"] and not rele(g)
 
 
 @cenario("agua a 10 cm do sensor: ALARME de enchente")

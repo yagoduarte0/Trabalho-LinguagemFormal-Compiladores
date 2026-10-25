@@ -82,7 +82,7 @@ ALARME e reage com LEDs, sirene, display OLED e, se houver WiFi, avisos por
 MQTT. Funciona offline: a rede é só um canal a mais.
 
 ```bash
-python3 firmware/cenarios.py      # 21 cenários testando a lógica no PC
+python3 firmware/cenarios.py      # 24 cenários testando a lógica no PC
 ./firmware/wokwi.sh preparar      # uma vez: baixa o MicroPython e o mpremote
 ./firmware/wokwi.sh enviar        # com a simulação aberta no VS Code (Wokwi)
 ```

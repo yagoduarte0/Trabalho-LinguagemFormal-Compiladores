@@ -85,7 +85,9 @@ MQ e do sensor de chuva (o limiar ajustado no trimpot azul) não é usada.
 Os sensores de chuva e de solo são alimentados em 3,3 V, então o sinal nunca passa de 3,3 V e eles
 não precisam de divisor.
 
-**Relé:** para a demonstração, ligue no contato do relé uma carga de baixa tensão, como uma ventoinha
+**Relé:** se o módulo ligar com o pino em nível baixo (é o caso da maioria dos módulos com
+optoacoplador), mude para `law RELE_ATIVO_EM_ALTO = dead`. Para conferir, ligue a placa sem fumaça:
+o relé não pode estalar nem acender o LED dele. Para a demonstração, ligue no contato do relé uma carga de baixa tensão, como uma ventoinha
 de 12 V ou uma sirene de 12 V com fonte própria. Ligar 127/220 V exige isolamento e conhecimento de
 instalação elétrica. Os contatos do relé aguentam a rede, mas a protoboard não.
 
@@ -232,6 +234,7 @@ clicando no componente com a simulação rodando. Na placa real, provoque cada s
 | Gás no MQ-2 (no Wokwi: subir o ppm) | ALARME | vermelho + sirene | `ALARME - FUMACA/GAS` |
 | Água na placa de chuva (no Wokwi: girar o potenciômetro do telhado) | ATENÇÃO | amarelo | `ATENCAO - chovendo` |
 | Solo molhado sem chuva (no Wokwi: girar o potenciômetro do quintal) | ATENÇÃO | amarelo | `ATENCAO - solo encharcado` |
+| Fumaça/gás | relé liga | exaustor (no Wokwi: LED azul) | `exaustor ligado`; desliga 30 s depois que a fumaça some |
 | Chuva + solo acima de 85% | ALARME | vermelho + sirene | `ALARME - RISCO DESLIZAMENTO` |
 | A chuva para, o solo continua acima de 75% | ALARME continua | vermelho + sirene | o risco só acaba quando o solo seca |
 | Apertar o botão durante um ALARME | ALARME | vermelho, buzzer mudo por `SILENCIO_MS` | `buzzer silenciado por 60 s` |

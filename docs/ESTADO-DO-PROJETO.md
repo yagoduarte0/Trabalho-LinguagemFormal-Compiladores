@@ -80,7 +80,7 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 - **Firmware do abrigo** — `abrigo.aeg` com sete sensores (inclui chuva e solo,
   que juntos dão o alerta de risco de deslizamento), máquina de estados
   NORMAL/ATENÇÃO/ALARME, sirene, botão de silenciar, OLED e MQTT opcional.
-  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 21 cenários
+  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 24 cenários
   passando no PC e circuito testado no simulador Wokwi.
 - **Guia de hardware** — `docs/hardware.md` com lista de compras, mapa de
   pinos, divisores de tensão, calibração e gravação no ESP32 real.
