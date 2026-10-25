@@ -307,6 +307,8 @@ PINO_BUZZER = 18  # constante
 LED_VERDE = 13  # constante
 LED_AMARELO = 33  # constante
 LED_VERMELHO = 32  # constante
+PINO_CHUVA = 36  # constante
+PINO_SOLO = 39  # constante
 MARGEM_FUMACA = 800  # constante
 HISTERESE_FUMACA = 300  # constante
 MARGEM_AR = 800  # constante
@@ -316,6 +318,14 @@ ADAPTA_BASE = 64  # constante
 LIMITE_AGUA_CM = 20.0  # constante
 TEMP_ATENCAO = 40.0  # constante
 TEMP_ALARME = 55.0  # constante
+CHUVA_SECO = 4095  # constante
+CHUVA_MOLHADO = 1000  # constante
+SOLO_SECO = 2900  # constante
+SOLO_MOLHADO = 1100  # constante
+CHUVA_ATENCAO = 30  # constante
+SOLO_ATENCAO = 70  # constante
+SOLO_ALARME = 85  # constante
+HISTERESE_PCT = 10  # constante
 AQUECIMENTO_MS = 20000  # constante
 SILENCIO_MS = 60000  # constante
 CICLO_MS = 500  # constante
@@ -345,6 +355,15 @@ distancia_agua = 0.0
 temperatura = 0.0
 umidade = 0.0
 presenca = False
+leitura_chuva = 0
+media_chuva = 0
+chuva_pct = 0
+leitura_solo = 0
+media_solo = 0
+solo_pct = 0
+chovendo = False
+solo_encharcado = False
+deslizamento = False
 risco_fumaca = 0
 risco_ar = 0
 risco_agua = 0
@@ -423,6 +442,46 @@ def sentinela_presenca():
     if presenca:
         risco_presenca = ATENCAO
 
+def percentual_molhado(leitura, seco, molhado):
+    pct = ration((seco - leitura) * 100 / (seco - molhado))
+    if pct < 0:
+        pct = 0
+    if pct > 100:
+        pct = 100
+    return pct
+
+# survivor: roda como tarefa concorrente no alvo
+def sentinela_chuva():
+    global leitura_chuva, media_chuva, chuva_pct, chovendo
+    leitura_chuva = adc.read(radio(PINO_CHUVA))
+    if filtro_pronto:
+        media_chuva = media_chuva + ration((leitura_chuva - media_chuva) / FILTRO_MQ)
+    else:
+        media_chuva = leitura_chuva
+    chuva_pct = percentual_molhado(media_chuva, CHUVA_SECO, CHUVA_MOLHADO)
+    if chuva_pct >= CHUVA_ATENCAO:
+        chovendo = True
+    elif chuva_pct < CHUVA_ATENCAO - HISTERESE_PCT:
+        chovendo = False
+
+# survivor: roda como tarefa concorrente no alvo
+def sentinela_solo():
+    global leitura_solo, media_solo, solo_pct, solo_encharcado, deslizamento
+    leitura_solo = adc.read(radio(PINO_SOLO))
+    if filtro_pronto:
+        media_solo = media_solo + ration((leitura_solo - media_solo) / FILTRO_MQ)
+    else:
+        media_solo = leitura_solo
+    solo_pct = percentual_molhado(media_solo, SOLO_SECO, SOLO_MOLHADO)
+    if solo_pct >= SOLO_ATENCAO:
+        solo_encharcado = True
+    elif solo_pct < SOLO_ATENCAO - HISTERESE_PCT:
+        solo_encharcado = False
+    if chovendo and solo_pct >= SOLO_ALARME:
+        deslizamento = True
+    elif solo_pct < SOLO_ALARME - HISTERESE_PCT:
+        deslizamento = False
+
 # survivor: roda como tarefa concorrente no alvo
 def vigia_botao():
     global silenciado, silencio_desde
@@ -443,6 +502,12 @@ def avaliar():
     if risco_ar == ATENCAO:
         estado = ATENCAO
         motivo = "ar ruim"
+    if chovendo:
+        estado = ATENCAO
+        motivo = "chovendo"
+    if solo_encharcado:
+        estado = ATENCAO
+        motivo = "solo encharcado"
     if risco_calor == ATENCAO:
         estado = ATENCAO
         motivo = "calor"
@@ -452,6 +517,9 @@ def avaliar():
     if risco_agua == ALARME:
         estado = ALARME
         motivo = "ENCHENTE"
+    if deslizamento:
+        estado = ALARME
+        motivo = "RISCO DESLIZAMENTO"
     if risco_fumaca == ALARME:
         estado = ALARME
         motivo = "FUMACA/GAS"
@@ -490,7 +558,7 @@ def relatar():
 def atualizar_tela():
     display.write(0, "AEGIS " + NOMES_ESTADO[estado])
     display.write(1, motivo)
-    display.write(2, "base F" + paper(base_fumaca) + " A" + paper(base_ar))
+    display.write(2, "Chuva " + paper(chuva_pct) + "% S" + paper(solo_pct) + "%")
     display.write(3, "Fumaca  " + paper(media_fumaca))
     display.write(4, "Ar      " + paper(media_ar))
     display.write(5, "Agua    " + paper(ration(distancia_agua)) + " cm")
@@ -510,13 +578,13 @@ def telemetria():
     rede = mqtt.connected()
     if rede and time.since(ultima_telemetria) >= TELEMETRIA_MS:
         ultima_telemetria = time.ms()
-        mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(media_fumaca) + ",\"ar\":" + paper(media_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
+        mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(media_fumaca) + ",\"ar\":" + paper(media_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"chuva\":" + paper(chuva_pct) + ",\"solo\":" + paper(solo_pct) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
 
 def depurar():
     global ultima_depuracao
     if DEPURAR and time.since(ultima_depuracao) >= DEPURAR_MS:
         ultima_depuracao = time.ms()
-        log_entry("[leituras] fumaca", leitura_fumaca, "(media", media_fumaca, "base", paper(base_fumaca) + ")", "ar", leitura_ar, "(media", media_ar, "base", paper(base_ar) + ")", "agua", distancia_agua, "cm", "temp", temperatura, "umid", umidade, "pir", presenca)
+        log_entry("[leituras] fumaca", leitura_fumaca, "(media", media_fumaca, "base", paper(base_fumaca) + ")", "ar", leitura_ar, "(media", media_ar, "base", paper(base_ar) + ")", "agua", distancia_agua, "cm", "chuva", chuva_pct, "% solo", solo_pct, "%", "temp", temperatura, "umid", umidade, "pir", presenca)
 
 def ciclo():
     global aquecido, amostras, base_registrada, filtro_pronto
@@ -528,6 +596,8 @@ def ciclo():
         log_entry("[AEGIS] base de ar limpo: fumaca", base_fumaca, "ar", base_ar)
     sentinela_fumaca()
     sentinela_ar()
+    sentinela_chuva()
+    sentinela_solo()
     filtro_pronto = True
     sentinela_agua()
     sentinela_calor()

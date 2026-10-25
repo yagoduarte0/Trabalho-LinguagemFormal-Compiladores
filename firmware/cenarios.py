@@ -31,6 +31,8 @@ def carregar_firmware():
 def zerar_sensores(g):
     g["gpio"].estado.clear()
     g["adc"].estado.clear()
+    g["adc"].estado[g["PINO_CHUVA"]] = g["CHUVA_SECO"]   # chuva e solo leem alto secos
+    g["adc"].estado[g["PINO_SOLO"]] = g["SOLO_SECO"]
     g["pwm"].estado.clear()
     g["sonar"].cm = 100.0
     g["climate"].temperatura = 25.0
@@ -42,6 +44,8 @@ def zerar_sensores(g):
     for nome in ("risco_fumaca", "risco_ar", "base_fumaca", "base_ar",
                  "media_fumaca", "media_ar", "amostras"):
         g[nome] = 0
+    for nome in ("chovendo", "solo_encharcado", "deslizamento"):
+        g[nome] = False
     g["filtro_pronto"] = False      # a primeira leitura vira a média
     g["base_registrada"] = True
 
@@ -160,6 +164,58 @@ def _(g):
     g["adc"].estado[g["PINO_MQ2"]] = 3200
     ciclo(g, vezes=6)                            # 6 ciclos de 500 ms
     assert g["estado"] == g["ALARME"], (g["media_fumaca"], g["base_fumaca"])
+
+
+def molhar(g, pino, seco, molhado, pct):
+    """Leitura do ADC equivalente a pct% de molhado."""
+    g["adc"].estado[g[pino]] = int(g[seco] - (g[seco] - g[molhado]) * pct / 100)
+
+
+@cenario("percentual_molhado: 0 no seco, 100 no molhado, limitado nos extremos")
+def _(g):
+    p = g["percentual_molhado"]
+    assert p(4095, 4095, 1000) == 0 and p(1000, 4095, 1000) == 100
+    assert p(5000, 4095, 1000) == 0 and p(0, 4095, 1000) == 100
+    assert p(2000, 2900, 1100) == 50
+
+
+@cenario("chuva a 50%: ATENCAO chovendo, sem sirene")
+def _(g):
+    molhar(g, "PINO_CHUVA", "CHUVA_SECO", "CHUVA_MOLHADO", 50)
+    log = ciclo(g)
+    assert g["estado"] == g["ATENCAO"] and g["motivo"] == "chovendo", g["motivo"]
+    assert not buzzer_ligado(g)
+    assert "ATENCAO - chovendo" in log, log
+
+
+@cenario("solo a 90% sem chuva: so ATENCAO, nao e deslizamento")
+def _(g):
+    molhar(g, "PINO_SOLO", "SOLO_SECO", "SOLO_MOLHADO", 90)
+    ciclo(g)
+    assert g["estado"] == g["ATENCAO"] and g["motivo"] == "solo encharcado", g["motivo"]
+
+
+@cenario("chuva + solo a 90%: ALARME de deslizamento")
+def _(g):
+    molhar(g, "PINO_CHUVA", "CHUVA_SECO", "CHUVA_MOLHADO", 60)
+    molhar(g, "PINO_SOLO", "SOLO_SECO", "SOLO_MOLHADO", 90)
+    ciclo(g)
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "RISCO DESLIZAMENTO", g["motivo"]
+    assert buzzer_ligado(g)
+
+
+@cenario("chuva para com o solo saturado: o alarme de deslizamento continua")
+def _(g):
+    molhar(g, "PINO_CHUVA", "CHUVA_SECO", "CHUVA_MOLHADO", 60)
+    molhar(g, "PINO_SOLO", "SOLO_SECO", "SOLO_MOLHADO", 90)
+    ciclo(g)
+    molhar(g, "PINO_CHUVA", "CHUVA_SECO", "CHUVA_MOLHADO", 0)
+    ciclo(g, vezes=20)
+    assert not g["chovendo"]
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "RISCO DESLIZAMENTO", g["motivo"]
+    molhar(g, "PINO_SOLO", "SOLO_SECO", "SOLO_MOLHADO", 40)      # solo secou
+    ciclo(g, vezes=20)
+    assert g["estado"] == g["NORMAL"], g["motivo"]
 
 
 @cenario("agua a 10 cm do sensor: ALARME de enchente")

@@ -230,12 +230,22 @@ clicando no componente com a simulação rodando. Na placa real, provoque cada s
 | Temperatura acima de 55 °C | ALARME | vermelho + sirene | `ALARME - TEMP ALTA` |
 | Objeto/água a menos de 20 cm do HC-SR04 | ALARME | vermelho + sirene | `ALARME - ENCHENTE` |
 | Gás no MQ-2 (no Wokwi: subir o ppm) | ALARME | vermelho + sirene | `ALARME - FUMACA/GAS` |
+| Água na placa de chuva (no Wokwi: girar o potenciômetro do telhado) | ATENÇÃO | amarelo | `ATENCAO - chovendo` |
+| Solo molhado sem chuva (no Wokwi: girar o potenciômetro do quintal) | ATENÇÃO | amarelo | `ATENCAO - solo encharcado` |
+| Chuva + solo acima de 85% | ALARME | vermelho + sirene | `ALARME - RISCO DESLIZAMENTO` |
+| A chuva para, o solo continua acima de 75% | ALARME continua | vermelho + sirene | o risco só acaba quando o solo seca |
 | Apertar o botão durante um ALARME | ALARME | vermelho, buzzer mudo por `SILENCIO_MS` | `buzzer silenciado por 60 s` |
 | Situação resolvida | NORMAL | verde | `NORMAL` |
 
 As mudanças de estado aparecem no serial como `[AEGIS] estado: ATENCAO - presenca`.
 Com dois problemas ao mesmo tempo, vale o mais grave: um ALARME de fumaça vence a ATENÇÃO de presença.
-No Wokwi não existe MQ-135, então um potenciômetro faz o papel dele, ligado no mesmo pino.
+No Wokwi não existe MQ-135, nem sensor de chuva ou de solo, então potenciômetros fazem o papel deles,
+ligados nos mesmos pinos. Os de chuva e de solo estão ligados invertidos (VCC no GND e GND no 3V3)
+para imitar o sensor real: girar para a direita derruba a tensão, como a água faz.
+
+**Calibrar chuva e solo:** com `DEPURAR = alive`, anote a leitura crua com o sensor seco e
+molhado. Para o solo, molhado é o sensor dentro de um copo d'água, até a linha marcada na placa.
+Coloque esses valores em `CHUVA_SECO`/`CHUVA_MOLHADO` e `SOLO_SECO`/`SOLO_MOLHADO`.
 
 ## 8. Rede e segurança
 

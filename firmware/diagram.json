@@ -18,6 +18,8 @@
     { "type": "wokwi-resistor", "id": "r_verde", "top": 0, "left": 230, "rotate": 90, "attrs": {"value": "220"} },
     { "type": "wokwi-resistor", "id": "r_amarelo", "top": 0, "left": 280, "rotate": 90, "attrs": {"value": "220"} },
     { "type": "wokwi-resistor", "id": "r_vermelho", "top": 0, "left": 330, "rotate": 90, "attrs": {"value": "220"} },
+    { "type": "wokwi-potentiometer", "id": "chuva", "top": -480, "left": 460, "attrs": {"value": "0"} },
+    { "type": "wokwi-potentiometer", "id": "solo", "top": 190, "left": 300, "attrs": {"value": "0"} },
     { "type": "wokwi-text", "id": "t_titulo", "top": -500, "left": -60, "attrs": {"text": "AEGIS  -  abrigo inteligente"} },
     { "type": "wokwi-text", "id": "t_teto", "top": -450, "left": -420, "attrs": {"text": "TETO\nfumaça, gases e calor sobem"} },
     { "type": "wokwi-text", "id": "t_mq135", "top": -300, "left": 100, "attrs": {"text": "MQ-135\n(potenciômetro no Wokwi)"} },
@@ -25,6 +27,8 @@
     { "type": "wokwi-text", "id": "t_sala", "top": -270, "left": -420, "attrs": {"text": "SALA  -  central (ESP32)"} },
     { "type": "wokwi-text", "id": "t_painel", "top": -385, "left": 300, "attrs": {"text": "PAINEL  -  display, alertas e botão"} },
     { "type": "wokwi-text", "id": "t_piso", "top": 120, "left": -420, "attrs": {"text": "PISO / PORÃO  -  sensor de nível olhando para baixo"} },
+    { "type": "wokwi-text", "id": "t_chuva", "top": -520, "left": 430, "attrs": {"text": "TELHADO  -  sensor de chuva\n(gire para a direita = mais chuva)"} },
+    { "type": "wokwi-text", "id": "t_solo", "top": 150, "left": 280, "attrs": {"text": "QUINTAL  -  umidade do solo\n(gire para a direita = mais molhado)"} },
     { "type": "wokwi-text", "id": "t_agua", "top": 270, "left": -90, "attrs": {"text": "~ ~ ~ ~ ~ ~   nível da água   ~ ~ ~ ~ ~ ~"} }
   ],
   "connections": [
@@ -46,6 +50,13 @@
     [ "mq135:VCC", "esp:3V3", "red", [] ],
     [ "mq135:GND", "esp:GND.1", "black", [] ],
     [ "mq135:SIG", "esp:D35", "gray", [] ],
+    [ "chuva:GND", "esp:3V3", "red", [] ],
+    [ "chuva:VCC", "esp:GND.1", "black", [] ],
+    [ "chuva:SIG", "esp:VP", "cyan", [] ],
+    [ "solo:GND", "esp:3V3", "red", [] ],
+    [ "solo:VCC", "esp:GND.1", "black", [] ],
+    [ "solo:SIG", "esp:VN", "brown", [] ],
+
     [ "oled:VCC", "esp:3V3", "red", [] ],
     [ "oled:GND", "esp:GND.2", "black", [] ],
     [ "oled:SDA", "esp:D21", "blue", [] ],
