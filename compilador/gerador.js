@@ -146,6 +146,26 @@ class _Rede:
         return True
 
 
+class _Digital:
+    # leitor biométrico: os testes colocam em "fila" as digitais encostadas
+    def __init__(self):
+        self.fila = []
+        self.presente = True
+
+    def begin(self, rx, tx):
+        return self.presente
+
+    def present(self):
+        return self.presente
+
+    def scan(self):
+        return self.fila.pop(0) if self.fila else -1
+
+    def enroll(self, numero):
+        print("[digital] digital " + str(numero) + " cadastrada")
+        return True
+
+
 gpio = _Barramento()
 adc = _Analogico()
 pwm = _Pwm()
@@ -155,6 +175,7 @@ display = _Tela()
 wifi = _Rede()
 mqtt = _Rede()
 time = _Relogio()
+finger = _Digital()
 
 
 ${RUNTIME_CONVERSOES}
@@ -417,6 +438,116 @@ class _Mqtt:
             return False
 
 
+class _Digital:
+    # Leitor biométrico AS608 na UART2, pelo protocolo do fabricante: pacote
+    # EF 01, endereço FF FF FF FF, tipo (1 = comando), tamanho, dados e soma
+    # de 16 bits. Sem o leitor (no Wokwi, por exemplo), as digitais chegam
+    # pela serial como linhas "dedo <n>": o Touch ID do Mac (wokwi.sh dedo)
+    # ou digitadas no terminal. scan() devolve o número da digital, -1 sem
+    # dedo e -2 para digital desconhecida.
+    def __init__(self):
+        self._uart = None
+        self._presente = False
+        self._soltar = False
+        self._poll = None
+        self._linha = ""
+
+    def begin(self, rx, tx):
+        try:
+            self._uart = _machine.UART(2, baudrate=57600, rx=rx, tx=tx, timeout=300)
+            self._presente = self._comando(bytes((0x13, 0, 0, 0, 0)))[0] == 0   # VfyPwd
+        except Exception:
+            self._presente = False
+        if not self._presente:
+            import sys, select
+            self._poll = select.poll()
+            self._poll.register(sys.stdin, select.POLLIN)
+            print("[digital] leitor AS608 ausente: aceitando 'dedo <n>' pela serial")
+        return self._presente
+
+    def present(self):
+        return self._presente
+
+    # envia um comando e devolve os dados da resposta; o primeiro byte é o
+    # código de confirmação (0 = ok). Sem resposta válida devolve (0xFF,).
+    def _comando(self, dados):
+        tamanho = len(dados) + 2
+        corpo = bytes((1, tamanho >> 8, tamanho & 0xFF)) + dados
+        soma = sum(corpo) & 0xFFFF
+        self._uart.read()
+        self._uart.write(bytes((0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF)) + corpo + bytes((soma >> 8, soma & 0xFF)))
+        cabecalho = self._uart.read(9)
+        if not cabecalho or len(cabecalho) < 9 or cabecalho[0] != 0xEF or cabecalho[1] != 0x01:
+            return (0xFF,)
+        n = (cabecalho[7] << 8) | cabecalho[8]
+        resto = self._uart.read(n)
+        if not resto or len(resto) < n or n < 3:
+            return (0xFF,)
+        if (sum(cabecalho[6:9]) + sum(resto[:-2])) & 0xFFFF != (resto[-2] << 8) | resto[-1]:
+            return (0xFF,)
+        return resto[:-2]
+
+    def _tem_dedo(self):
+        return self._comando(bytes((0x01,)))[0] == 0           # GenImg; 0x02 = sem dedo
+
+    def scan(self):
+        if not self._presente:
+            return self._da_serial()
+        dedo = self._tem_dedo()
+        if self._soltar:                                       # mesma encostada: ignora
+            self._soltar = dedo
+            return -1
+        if not dedo:
+            return -1
+        self._soltar = True
+        if self._comando(bytes((0x02, 1)))[0] != 0:            # Img2Tz no buffer 1
+            return -2
+        r = self._comando(bytes((0x04, 1, 0, 0, 0, 200)))     # Search nas posições 0..199
+        if r[0] != 0:
+            return -2
+        return (r[1] << 8) | r[2]
+
+    def _da_serial(self):
+        import sys
+        while self._poll is not None and self._poll.poll(0):
+            c = sys.stdin.read(1)
+            if ord(c) not in (10, 13):                            # fim de linha
+                self._linha += c
+                continue
+            linha, self._linha = self._linha.strip(), ""
+            if linha.startswith("dedo "):
+                try:
+                    return int(linha[5:])
+                except ValueError:
+                    pass
+        return -1
+
+    def _esperar(self, com_dedo, limite_ms):
+        inicio = _time.ticks_ms()
+        while _time.ticks_diff(_time.ticks_ms(), inicio) < limite_ms:
+            if self._tem_dedo() == com_dedo:
+                return True
+            _time.sleep_ms(100)
+        return False
+
+    # cadastro: duas leituras do mesmo dedo viram um modelo guardado na
+    # posição "numero" da memória do leitor
+    def enroll(self, numero, limite_ms=15000):
+        if not self._presente:
+            return False
+        for buffer in (1, 2):
+            print("[digital] encoste o dedo" if buffer == 1 else "[digital] encoste o mesmo dedo de novo")
+            if not self._esperar(True, limite_ms):
+                return False
+            if self._comando(bytes((0x02, buffer)))[0] != 0:   # Img2Tz
+                return False
+            print("[digital] retire o dedo")
+            self._esperar(False, limite_ms)
+        if self._comando(bytes((0x05,)))[0] != 0:             # RegModel: as leituras não batem
+            return False
+        return self._comando(bytes((0x06, 1, numero >> 8, numero & 0xFF)))[0] == 0   # Store
+
+
 gpio = _Gpio()
 adc = _Adc()
 pwm = _Pwm()
@@ -426,6 +557,7 @@ display = _Tela()
 wifi = _Wifi()
 mqtt = _Mqtt()
 time = _Relogio()
+finger = _Digital()
 
 
 ${RUNTIME_CONVERSOES}

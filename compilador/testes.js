@@ -747,6 +747,22 @@
                  "trocar o alvo nao pode mudar o codigo do programa");
   });
 
+  teste("gerador: runtimes sem caracteres de controle (escapes do template JS)", () => {
+    // um "\x13" escrito dentro do template string vira o byte 0x13 no Python
+    for (const alvo of ["simulado", "esp32"]) {
+      const { corpo } = gerarPython("hide(1)\n", { alvo });
+      const ruim = [...corpo].findIndex(c => c < " " && c !== "\n");
+      afirmar(ruim < 0, `alvo ${alvo}: caractere de controle perto de ${JSON.stringify(corpo.slice(ruim - 40, ruim + 10))}`);
+    }
+  });
+
+  teste("gerador: os dois runtimes oferecem o leitor de digital", () => {
+    for (const alvo of ["simulado", "esp32"]) {
+      const { corpo } = gerarPython("supply id = finger.scan()\n", { alvo });
+      afirmar(corpo.includes("finger = _Digital()"), `alvo ${alvo} sem finger`);
+    }
+  });
+
   teste("gerador: alvo desconhecido e recusado", () => {
     const { ast } = analisar("hide(1)\n");
     let mensagem = "";
