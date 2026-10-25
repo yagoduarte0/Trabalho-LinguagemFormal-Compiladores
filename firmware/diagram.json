@@ -3,61 +3,57 @@
   "author": "AEGIS",
   "editor": "wokwi",
   "parts": [
-    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
-
-    { "type": "wokwi-pir-motion-sensor", "id": "pir", "top": -200, "left": -260, "attrs": { "delayTime": "5" } },
-    { "type": "wokwi-hc-sr04", "id": "sonar", "top": -230, "left": -20, "attrs": { "distance": "100" } },
-    { "type": "wokwi-dht22", "id": "dht", "top": -230, "left": 250, "attrs": { "temperature": "25", "humidity": "50" } },
-    { "type": "wokwi-gas-sensor", "id": "mq2", "top": 30, "left": -380, "attrs": { "ppm": "400" } },
-    { "type": "wokwi-potentiometer", "id": "mq135", "top": 170, "left": -300, "attrs": { "value": "0" } },
-
-    { "type": "board-ssd1306", "id": "oled", "top": 20, "left": 260, "attrs": { "i2cAddress": "0x3c" } },
-    { "type": "wokwi-pushbutton", "id": "botao", "top": 150, "left": 290, "attrs": { "color": "red", "label": "silenciar" } },
-    { "type": "wokwi-buzzer", "id": "buzzer", "top": 230, "left": 160, "attrs": { "volume": "0.3" } },
-
-    { "type": "wokwi-led", "id": "led_verde", "top": 250, "left": -110, "attrs": { "color": "green", "label": "normal" } },
-    { "type": "wokwi-led", "id": "led_amarelo", "top": 250, "left": -50, "attrs": { "color": "yellow", "label": "atencao" } },
-    { "type": "wokwi-led", "id": "led_vermelho", "top": 250, "left": 10, "attrs": { "color": "red", "label": "alarme" } },
-    { "type": "wokwi-resistor", "id": "r_verde", "top": 340, "left": -120, "rotate": 90, "attrs": { "value": "220" } },
-    { "type": "wokwi-resistor", "id": "r_amarelo", "top": 340, "left": -60, "rotate": 90, "attrs": { "value": "220" } },
-    { "type": "wokwi-resistor", "id": "r_vermelho", "top": 340, "left": 0, "rotate": 90, "attrs": { "value": "220" } }
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": -220, "left": -10, "attrs": {} },
+    { "type": "wokwi-pir-motion-sensor", "id": "pir", "top": -200, "left": -440, "attrs": {"delayTime": "5"} },
+    { "type": "wokwi-hc-sr04", "id": "sonar", "top": 150, "left": -60, "attrs": {"distance": "100"}, "rotate": 180 },
+    { "type": "wokwi-dht22", "id": "dht", "top": -410, "left": -260, "attrs": {"temperature": "25", "humidity": "50"} },
+    { "type": "wokwi-gas-sensor", "id": "mq2", "top": -400, "left": -90, "attrs": {"ppm": "400"} },
+    { "type": "wokwi-potentiometer", "id": "mq135", "top": -390, "left": 120, "attrs": {"value": "0"} },
+    { "type": "board-ssd1306", "id": "oled", "top": -350, "left": 300, "attrs": {"i2cAddress": "0x3c"} },
+    { "type": "wokwi-pushbutton", "id": "botao", "top": -200, "left": 380, "attrs": {"color": "red", "label": "silenciar"} },
+    { "type": "wokwi-buzzer", "id": "buzzer", "top": -90, "left": 400, "attrs": {"volume": "0.3"} },
+    { "type": "wokwi-led", "id": "led_verde", "top": -80, "left": 240, "attrs": {"color": "green", "label": "normal"} },
+    { "type": "wokwi-led", "id": "led_amarelo", "top": -80, "left": 290, "attrs": {"color": "yellow", "label": "atencao"} },
+    { "type": "wokwi-led", "id": "led_vermelho", "top": -80, "left": 340, "attrs": {"color": "red", "label": "alarme"} },
+    { "type": "wokwi-resistor", "id": "r_verde", "top": 0, "left": 230, "rotate": 90, "attrs": {"value": "220"} },
+    { "type": "wokwi-resistor", "id": "r_amarelo", "top": 0, "left": 280, "rotate": 90, "attrs": {"value": "220"} },
+    { "type": "wokwi-resistor", "id": "r_vermelho", "top": 0, "left": 330, "rotate": 90, "attrs": {"value": "220"} },
+    { "type": "wokwi-text", "id": "t_titulo", "top": -500, "left": -60, "attrs": {"text": "AEGIS  -  abrigo inteligente"} },
+    { "type": "wokwi-text", "id": "t_teto", "top": -450, "left": -420, "attrs": {"text": "TETO\nfumaça, gases e calor sobem"} },
+    { "type": "wokwi-text", "id": "t_mq135", "top": -300, "left": 100, "attrs": {"text": "MQ-135\n(potenciômetro no Wokwi)"} },
+    { "type": "wokwi-text", "id": "t_porta", "top": -90, "left": -440, "attrs": {"text": "PORTA  -  presença"} },
+    { "type": "wokwi-text", "id": "t_sala", "top": -270, "left": -420, "attrs": {"text": "SALA  -  central (ESP32)"} },
+    { "type": "wokwi-text", "id": "t_painel", "top": -385, "left": 300, "attrs": {"text": "PAINEL  -  display, alertas e botão"} },
+    { "type": "wokwi-text", "id": "t_piso", "top": 120, "left": -420, "attrs": {"text": "PISO / PORÃO  -  sensor de nível olhando para baixo"} },
+    { "type": "wokwi-text", "id": "t_agua", "top": 270, "left": -90, "attrs": {"text": "~ ~ ~ ~ ~ ~   nível da água   ~ ~ ~ ~ ~ ~"} }
   ],
   "connections": [
     [ "esp:TX0", "$serialMonitor:RX", "", [] ],
     [ "esp:RX0", "$serialMonitor:TX", "", [] ],
-
     [ "pir:VCC", "esp:VIN", "red", [] ],
     [ "pir:GND", "esp:GND.1", "black", [] ],
     [ "pir:OUT", "esp:D27", "orange", [] ],
-
     [ "sonar:VCC", "esp:VIN", "red", [] ],
     [ "sonar:GND", "esp:GND.1", "black", [] ],
     [ "sonar:TRIG", "esp:D25", "blue", [] ],
     [ "sonar:ECHO", "esp:D26", "violet", [] ],
-
     [ "dht:VCC", "esp:3V3", "red", [] ],
     [ "dht:GND", "esp:GND.2", "black", [] ],
     [ "dht:SDA", "esp:D4", "green", [] ],
-
     [ "mq2:VCC", "esp:VIN", "red", [] ],
     [ "mq2:GND", "esp:GND.1", "black", [] ],
     [ "mq2:AO", "esp:D34", "gray", [] ],
-
     [ "mq135:VCC", "esp:3V3", "red", [] ],
     [ "mq135:GND", "esp:GND.1", "black", [] ],
     [ "mq135:SIG", "esp:D35", "gray", [] ],
-
     [ "oled:VCC", "esp:3V3", "red", [] ],
     [ "oled:GND", "esp:GND.2", "black", [] ],
     [ "oled:SDA", "esp:D21", "blue", [] ],
     [ "oled:SCL", "esp:D22", "yellow", [] ],
-
     [ "botao:1.l", "esp:D14", "white", [] ],
     [ "botao:2.l", "esp:GND.2", "black", [] ],
-
     [ "buzzer:2", "esp:D18", "magenta", [] ],
     [ "buzzer:1", "esp:GND.2", "black", [] ],
-
     [ "esp:D13", "r_verde:1", "green", [] ],
     [ "r_verde:2", "led_verde:A", "green", [] ],
     [ "led_verde:C", "esp:GND.1", "black", [] ],
