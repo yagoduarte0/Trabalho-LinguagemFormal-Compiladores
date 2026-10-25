@@ -1,4 +1,4 @@
-// FASE 1 — Análise léxica da linguagem "Sobrevivência/Surto" (nome de arquivo/projeto: BNKR)
+// FASE 1 — Análise léxica da linguagem AEGIS.
 // Converte o texto-fonte em uma lista de tokens, usando regex sticky (/y)
 // testadas em ordem na posição atual. A primeira que casar vence (maximal munch:
 // símbolos de 2 caracteres antes de 1, comentários antes do operador "/",

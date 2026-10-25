@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BNKR // Compilador</title>
+<title>AEGIS // Compilador</title>
 <link rel="stylesheet" href="estilo.css">
 </head>
 <body>
 
 <header>
-  <h1>BNKR // Compilador</h1>
-  <span class="subtitulo">análise léxica · análise sintática · AST · back end (BNKR → Python)</span>
+  <h1>AEGIS // Compilador</h1>
+  <span class="subtitulo">análise léxica · análise sintática · AST · back end (AEGIS → Python)</span>
 </header>
 
 <main>
@@ -42,7 +42,7 @@
         <div id="codigo-python"></div>
       </div>
       <div id="conteudo-saida">
-        <div class="aviso-fase">Execução via Pyodide — implementada no dia 3.</div>
+        <div class="aviso-fase">A execução não roda no navegador. Copie o código da aba Python e rode com <code>python3</code>, ou compile pela linha de comando: <code>node compilador/aegisc.js programa.aeg | python3</code>. Para o ESP32: <code>--alvo esp32 -o main.py</code>.</div>
       </div>
     </div>
   </section>
@@ -213,8 +213,8 @@
 
   // ---- roda a suite de testes no navegador e mostra o placar no rodape --
   const spanTestes = document.getElementById("resultado-testes");
-  if (window.testesBnkr) {
-    const r = window.testesBnkr.rodarTestes();
+  if (window.testesAegis) {
+    const r = window.testesAegis.rodarTestes();
     spanTestes.textContent = `${r.passou}/${r.total} testes passaram`;
     spanTestes.style.color = r.falhou > 0 ? "var(--ferrugem-clara)" : "var(--verde)";
     if (r.falhou > 0) console.warn("testes falhando:", r.resultados.filter(x => !x.ok));

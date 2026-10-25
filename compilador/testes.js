@@ -768,9 +768,9 @@
     module.exports = api;
   }
   if (typeof global.window !== "undefined") {
-    global.window.testesBnkr = api;
+    global.window.testesAegis = api;
   } else {
-    global.testesBnkr = api;
+    global.testesAegis = api;
   }
 
   // Execução direta via `node testes.js`

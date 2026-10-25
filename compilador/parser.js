@@ -1,4 +1,4 @@
-// FASE 2 — Análise sintática da linguagem BNKR.
+// FASE 2 — Análise sintática da linguagem AEGIS.
 // Descendente recursivo, uma função por regra da gramática (mapeamento 1:1
 // com a EBNF abaixo). Constrói a AST e reporta erros em modo pânico
 // (sincronizar() nos limites de declaração) para acusar vários erros de

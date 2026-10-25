@@ -1,17 +1,17 @@
 // Orquestrador das 3 fases: fonte -> tokens -> AST -> Python.
-// Léxico (dia 1) e sintático (dia 2) já estão encadeados; gerador.js
-// entra no dia 3 e este arquivo passa a encadear as três.
+// Para no primeiro estágio com erro e devolve o que conseguiu produzir até
+// ali (tokens, AST), para a interface mostrar cada fase.
 
 let _analisarLexico, _analisarSintatico, _gerarCodigo;
 
 if (typeof module !== "undefined" && typeof require === "function") {
   _analisarLexico = require("./lexer.js").analisarLexico;
-  try { _analisarSintatico = require("./parser.js").analisarSintatico; } catch (e) { /* dia 2 */ }
-  try { _gerarCodigo = require("./gerador.js").gerarCodigo; } catch (e) { /* dia 3 */ }
+  _analisarSintatico = require("./parser.js").analisarSintatico;
+  _gerarCodigo = require("./gerador.js").gerarCodigo;
 } else {
   _analisarLexico = analisarLexico;
-  _analisarSintatico = typeof analisarSintatico !== "undefined" ? analisarSintatico : undefined;
-  _gerarCodigo = typeof gerarCodigo !== "undefined" ? gerarCodigo : undefined;
+  _analisarSintatico = analisarSintatico;
+  _gerarCodigo = gerarCodigo;
 }
 
 const EXEMPLOS = {
@@ -108,22 +108,12 @@ function compilar(fonte, opcoes = {}) {
 
   const tokensRelevantes = tokens.filter(t => t.categoria !== "comentario");
 
-  if (typeof _analisarSintatico !== "function") {
-    resultado.fase = "lexica-ok (parser ainda não implementado)";
-    return resultado;
-  }
-
   const { ast, erros: errosSintaticos } = _analisarSintatico(tokensRelevantes);
   resultado.ast = ast;
 
   if (errosSintaticos.length > 0) {
     resultado.erros = errosSintaticos;
     resultado.fase = "sintatica";
-    return resultado;
-  }
-
-  if (typeof _gerarCodigo !== "function") {
-    resultado.fase = "sintatica-ok (gerador ainda não implementado)";
     return resultado;
   }
 
