@@ -6,24 +6,53 @@ o firmware (`firmware/abrigo.aeg` → `firmware/main.py`). Se a montagem seguir 
 
 ## 1. Lista de compras
 
-| Qtd | Componente | Observação |
-|---|---|---|
-| 1 | ESP32 DevKit V1 (30 pinos, ESP-WROOM-32) | com cabo micro-USB **de dados** (cabo só de carga não grava) |
-| 1 | Sensor de presença PIR HC-SR501 | |
-| 1 | Sensor ultrassônico HC-SR04 | nível da água |
-| 1 | Sensor de gás/fumaça MQ-2 (módulo com saída AO) | |
-| 1 | Sensor de qualidade do ar MQ-135 (módulo com saída AO) | |
-| 1 | DHT22 (módulo de 3 pinos) | o módulo já tem o pull-up de 10 kΩ |
-| 1 | Display OLED 0,96" SSD1306 **I2C** (4 pinos: GND, VCC, SCL, SDA) | o de 7 pinos é SPI e não serve |
-| 1 | Push button 6×6 mm | silenciar o alarme |
-| 1 | Buzzer **passivo** | o ativo só faz um tom e ignora a frequência |
-| 3 | LEDs 5 mm: verde, amarelo, vermelho | |
-| 3 | Resistores 220 Ω | um para cada LED |
-| 1 + 1 | Resistores 1 kΩ e 2 kΩ (ou 2× 1 kΩ em série) | divisor do ECHO do HC-SR04 |
-| 2 + 2 | Resistores 10 kΩ e 20 kΩ (ou 2× 10 kΩ em série) | divisores das saídas dos MQ |
-| 1 | Fonte 5 V 2 A | |
-| 1 | Protoboard 830 pontos + jumpers macho-macho e macho-fêmea | |
-| 1 | Case | |
+Preços consultados em 24/10/2026 em lojas brasileiras, preço normal (sem o desconto do Pix). Os itens
+da base são os do orçamento do pitch (`pitch/aegis/data.py`). Preço de loja muda: confira antes de
+comprar.
+
+**Base (já no orçamento do pitch)**
+
+| Qtd | Componente | Observação | Preço |
+|---|---|---|---|
+| 1 | ESP32 DevKit V1 (30 pinos, ESP-WROOM-32) | com cabo micro-USB **de dados** (cabo só de carga não grava) | R$ 59,90 |
+| 1 | Sensor de presença PIR HC-SR501 | | R$ 11,90 |
+| 1 | Sensor ultrassônico HC-SR04 | nível da água | R$ 9,90 |
+| 1 | Sensor de gás/fumaça MQ-2 (módulo com saída AO) | | R$ 14,72 |
+| 1 | Sensor de qualidade do ar MQ-135 (módulo com saída AO) | | R$ 16,90 |
+| 1 | DHT22 (módulo de 3 pinos) | o módulo já tem o pull-up de 10 kΩ | R$ 45,00 |
+| 1 | Buzzer **passivo** + LEDs 5 mm verde, amarelo e vermelho | o buzzer ativo só faz um tom e ignora a frequência | R$ 21,40 |
+| 1 | Fonte 5 V 2 A | | R$ 17,00 |
+| 1 | Protoboard 830 pontos | | R$ 11,90 |
+| 1 | Kit de jumpers macho-macho e macho-fêmea | | R$ 8,90 |
+| 1 | Case | | R$ 18,40 |
+| | | **Subtotal da base** | **R$ 235,92** |
+
+**Novos (fora do orçamento do pitch)**
+
+| Qtd | Componente | Para quê | Preço | Loja |
+|---|---|---|---|---|
+| 1 | Display OLED 0,96" SSD1306 **I2C** (4 pinos) | tela; o de 7 pinos é SPI e não serve | R$ 26,90 | Eletrogate |
+| 1 | Leitor biométrico AS608 (com cabo) | arma e desarma o sistema com a digital | R$ 119,90 | MakerHero |
+| 1 | Sensor de chuva FC-37 / YL-83 (placa + módulo) | detecta o início da chuva | R$ 7,90 | Eletrogate |
+| 1 | Sensor capacitivo de umidade do solo v1.2 | solo encharcado: risco de deslizamento | R$ 10,90 | Smartkits |
+| 1 | Módulo relé 5 V, 1 canal | liga exaustor ou sirene externa | R$ 6,90 | Eletrogate |
+| 1 | Push button 6×6 mm | silenciar o alarme | a cotar | |
+| 3 | Resistores 220 Ω | um para cada LED | a cotar | |
+| 1 + 1 | Resistores 1 kΩ e 2 kΩ (ou 2× 1 kΩ em série) | divisor do ECHO do HC-SR04 | a cotar | |
+| 2 + 2 | Resistores 10 kΩ e 20 kΩ (ou 2× 10 kΩ em série) | divisores das saídas dos MQ | a cotar | |
+| | | **Subtotal dos novos** | **R$ 172,50** + botão e resistores | |
+
+**Total: R$ 408,42**, mais o botão e os resistores. Essas peças custam centavos cada, mas não achei
+preço confiável numa loja brasileira para somar.
+
+O leitor biométrico sozinho custa metade da base. Sem ele, o total cai para R$ 288,52.
+
+Fontes dos itens novos:
+[Eletrogate OLED](https://www.eletrogate.com/display-oled-128x64-0.96-i2c-branco),
+[MakerHero AS608](https://www.makerhero.com/produto/modulo-leitor-de-impressao-digital/),
+[Eletrogate chuva](https://www.eletrogate.com/modulo-sensor-de-chuva),
+[Smartkits solo](https://www.smartkits.com.br/sensor-capacitivo-de-umidade-do-solo),
+[Eletrogate relé](https://www.eletrogate.com/modulo-rele-1-canal-5v).
 
 ## 2. Mapa de pinos
 
@@ -45,9 +74,20 @@ também a `law` correspondente.
 | LED verde | anodo (perna longa) | GPIO13 → 220 Ω → LED → GND | |
 | LED amarelo | anodo | GPIO33 → 220 Ω → LED → GND | |
 | LED vermelho | anodo | GPIO32 → 220 Ω → LED → GND | |
+| Sensor de chuva (módulo) | AO | GPIO36 (VP) | VCC → 3V3; a placa de chuva vai nos dois pinos do módulo |
+| Umidade do solo | AOUT | GPIO39 (VN) | VCC → 3V3 |
+| Biometria AS608 | TX / RX | GPIO16 (RX2) / GPIO17 (TX2) | VCC → 3V3; confira no anúncio, porque alguns módulos pedem 3,8 a 7 V |
+| Relé | IN | GPIO23 (D23) | VCC → VIN (5 V) |
 
 Não ligue nada nos pinos D34 a D39 como saída: esses pinos são só de entrada. A saída DO dos módulos
-MQ (o limiar ajustado no trimpot azul) não é usada.
+MQ e do sensor de chuva (o limiar ajustado no trimpot azul) não é usada.
+
+Os sensores de chuva e de solo são alimentados em 3,3 V, então o sinal nunca passa de 3,3 V e eles
+não precisam de divisor.
+
+**Relé:** para a demonstração, ligue no contato do relé uma carga de baixa tensão, como uma ventoinha
+de 12 V ou uma sirene de 12 V com fonte própria. Ligar 127/220 V exige isolamento e conhecimento de
+instalação elétrica. Os contatos do relé aguentam a rede, mas a protoboard não.
 
 ## 3. Alimentação e divisores de tensão
 
