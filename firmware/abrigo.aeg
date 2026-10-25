@@ -17,6 +17,7 @@ scavenge pwm
 scavenge wifi
 scavenge mqtt
 scavenge time
+scavenge finger
 
 // ------------------------------------------------------------------
 // Pinos — mapa completo em docs/hardware.md
@@ -35,6 +36,8 @@ law LED_VERMELHO = 32
 law PINO_CHUVA = 36        // VP: só entrada, ADC1
 law PINO_SOLO = 39         // VN: só entrada, ADC1
 law PINO_RELE = 23         // exaustor ou sirene externa
+law PINO_DIGITAL_RX = 16   // RX2 do ESP32 <- TX do AS608
+law PINO_DIGITAL_TX = 17   // TX2 do ESP32 -> RX do AS608
 
 // ------------------------------------------------------------------
 // Limites — calibrar com os sensores reais (docs/hardware.md, seção 5)
@@ -68,6 +71,11 @@ law SOLO_ALARME = 85       // chuva + solo acima disso: risco de deslizamento
 law HISTERESE_PCT = 10
 law RELE_ATIVO_EM_ALTO = alive // módulos com optoacoplador ligam em nível baixo: use dead
 law RELE_EXTRA_MS = 30000  // o exaustor segue ligado depois que a fumaça some
+// Armado (casa vazia): presença vira alarme de intruso. Como nos alarmes
+// comerciais, há um tempo para sair depois de armar e um tempo para pôr a
+// digital depois de entrar.
+law ATRASO_SAIDA_MS = 30000
+law ATRASO_ENTRADA_MS = 15000
 law AQUECIMENTO_MS = 20000 // os MQ dão leituras falsas enquanto esquentam
 law SILENCIO_MS = 60000    // quanto tempo o botão cala o buzzer
 law CICLO_MS = 500
@@ -122,6 +130,12 @@ supply deslizamento = dead
 supply rele_ligado = dead
 supply houve_fumaca = dead
 supply ultima_fumaca = 0
+supply digital = -1
+supply armado = dead
+supply armado_em = 0
+supply em_entrada = dead
+supply entrada_em = 0
+supply intruso = dead
 
 supply risco_fumaca = 0
 supply risco_ar = 0
@@ -211,12 +225,54 @@ survivor sentinela_calor {
     }
 }
 
-// PIR: presença no perímetro
+// Bipes curtos de resposta ao leitor de digital
+mission bipar(ration vezes) {
+    patrol (vezes) {
+        pwm.tone(radio(PINO_BUZZER), 3000)
+        hide(80)
+        pwm.off(radio(PINO_BUZZER))
+        hide(80)
+    }
+}
+
+// Leitor de digital: cada digital cadastrada alterna armado/desarmado
+survivor vigia_digital {
+    digital = finger.scan()
+    checkpoint (digital >= 0) {
+        armado = !armado
+        em_entrada = dead
+        intruso = dead
+        checkpoint (armado) {
+            armado_em = time.ms()
+            log_entry("[AEGIS] armado pela digital", digital, "- saia em", ATRASO_SAIDA_MS / 1000, "s")
+        } fallback {
+            log_entry("[AEGIS] desarmado pela digital", digital)
+        }
+        bipar(1)
+    } fallback checkpoint (digital == -2) {
+        log_entry("[AEGIS] digital nao reconhecida")
+        bipar(3)
+    }
+}
+
+// PIR: desarmado (alguém em casa) é ignorado. Armado, depois do tempo de
+// saída, presença abre o tempo de entrada; sem digital até o fim dele,
+// vira alarme de intruso.
 survivor sentinela_presenca {
     presenca = gpio.read(radio(PINO_PIR))
+    checkpoint (armado && presenca && !em_entrada && !intruso && time.since(armado_em) >= ATRASO_SAIDA_MS) {
+        em_entrada = alive
+        entrada_em = time.ms()
+    }
+    checkpoint (em_entrada && time.since(entrada_em) >= ATRASO_ENTRADA_MS) {
+        em_entrada = dead
+        intruso = alive
+    }
     risco_presenca = NORMAL
-    checkpoint (presenca) {
+    checkpoint (em_entrada) {
         risco_presenca = ATENCAO
+    } fallback checkpoint (intruso) {
+        risco_presenca = ALARME
     }
 }
 
@@ -292,7 +348,7 @@ mission avaliar() {
     motivo = "tudo em ordem"
     checkpoint (risco_presenca == ATENCAO) {
         estado = ATENCAO
-        motivo = "presenca"
+        motivo = "use a digital"
     }
     checkpoint (risco_ar == ATENCAO) {
         estado = ATENCAO
@@ -313,6 +369,10 @@ mission avaliar() {
     checkpoint (risco_calor == ALARME) {
         estado = ALARME
         motivo = "TEMP ALTA"
+    }
+    checkpoint (risco_presenca == ALARME) {
+        estado = ALARME
+        motivo = "INTRUSO"
     }
     checkpoint (risco_agua == ALARME) {
         estado = ALARME
@@ -406,6 +466,10 @@ mission atualizar_tela() {
         display.write(7, "BUZZER MUDO")
     } fallback checkpoint (rele_ligado) {
         display.write(7, "EXAUSTOR LIGADO")
+    } fallback checkpoint (armado && time.since(armado_em) < ATRASO_SAIDA_MS) {
+        display.write(7, "saia: " + paper(ration((ATRASO_SAIDA_MS - time.since(armado_em)) / 1000)) + " s")
+    } fallback checkpoint (armado) {
+        display.write(7, "ARMADO")
     } fallback checkpoint (rede) {
         display.write(7, "rede: online")
     } fallback {
@@ -424,6 +488,7 @@ mission telemetria() {
             ",\"fumaca\":" + paper(media_fumaca) +
             ",\"ar\":" + paper(media_ar) +
             ",\"agua_cm\":" + paper(distancia_agua) +
+            ",\"armado\":" + paper(ration(armado)) +
             ",\"chuva\":" + paper(chuva_pct) +
             ",\"solo\":" + paper(solo_pct) +
             ",\"temp\":" + paper(temperatura) +
@@ -461,6 +526,7 @@ mission ciclo() {
     filtro_pronto = alive
     sentinela_agua()
     sentinela_calor()
+    vigia_digital()
     sentinela_presenca()
     vigia_botao()
     avaliar()
@@ -478,6 +544,9 @@ mission ciclo() {
 chronicle {
     log_entry("[AEGIS] abrigo iniciando")
     gpio.write(radio(PINO_RELE), !RELE_ATIVO_EM_ALTO)   // relé desligado antes de tudo
+    checkpoint (finger.begin(radio(PINO_DIGITAL_RX), radio(PINO_DIGITAL_TX))) {
+        log_entry("[AEGIS] leitor de digital pronto")
+    }
     inicio = time.ms()
     display.write(0, "AEGIS")
     display.write(2, "iniciando...")

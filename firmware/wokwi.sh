@@ -3,6 +3,8 @@
 #
 #   ./wokwi.sh preparar   baixa o MicroPython e instala o mpremote (uma vez)
 #   ./wokwi.sh enviar     recompila o abrigo.aeg e envia o main.py ao simulador
+#   ./wokwi.sh dedo       lê a digital pelo Touch ID do Mac e manda ao simulador
+#                         (o Wokwi não tem o leitor AS608)
 #
 # O "enviar" exige a simulação rodando: abra firmware/diagram.json no VS Code
 # e aperte play (ou F1 > "Wokwi: Start Simulator").
@@ -14,6 +16,7 @@ VERSAO="1.29.0"
 FIRMWARE="ESP32_GENERIC-20260824-v${VERSAO}.bin"
 URL="https://micropython.org/resources/firmware/${FIRMWARE}"
 MPREMOTE=".venv/bin/mpremote"
+TOUCHID=".venv/touchid"
 PORTA="port:rfc2217://localhost:4000"
 
 compilar() {
@@ -43,8 +46,38 @@ enviar() {
   echo "main.py enviado. Veja a saída no terminal do Wokwi."
 }
 
+dedo() {
+  [ -x "$MPREMOTE" ] || { echo "rode ./wokwi.sh preparar primeiro"; exit 1; }
+  if [ ! -x "$TOUCHID" ]; then
+    echo "compilando o leitor do Touch ID..."
+    swiftc -O touchid.swift -o "$TOUCHID"
+  fi
+  set +e
+  "$TOUCHID"
+  status=$?
+  set -e
+  case $status in
+    0) linha="dedo 1"; echo "digital aceita" ;;
+    1) linha="dedo -2"; echo "digital recusada" ;;
+    *) exit 1 ;;
+  esac
+  # o firmware lê "dedo <n>" da serial quando não encontra o AS608. DTR e RTS
+  # ficam desligados antes de abrir: nas placas ESP32 eles reiniciam o chip.
+  .venv/bin/python - "$linha" <<'PY'
+import sys, serial
+porta = serial.serial_for_url("rfc2217://localhost:4000", do_not_open=True, timeout=1)
+porta.dtr = False
+porta.rts = False
+porta.open()
+porta.write((sys.argv[1] + "\n").encode())
+porta.flush()
+porta.close()
+PY
+}
+
 case "${1:-}" in
   preparar) preparar ;;
   enviar) enviar ;;
-  *) echo "uso: ./wokwi.sh preparar | enviar"; exit 2 ;;
+  dedo) dedo ;;
+  *) echo "uso: ./wokwi.sh preparar | enviar | dedo"; exit 2 ;;
 esac

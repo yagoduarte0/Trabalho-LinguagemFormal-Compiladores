@@ -218,6 +218,30 @@ node ../compilador/aegisc.js abrigo.aeg --alvo esp32 -o main.py
 **Ver o serial:** `.venv/bin/mpremote connect $PORTA repl`. Para sair, `Ctrl+]`. Para parar o
 firmware e cair no prompt `>>>`, `Ctrl+C`.
 
+**Cadastrar as digitais** (uma vez, com o AS608 ligado). As digitais ficam na memória do próprio
+leitor, então o `abrigo.aeg` não precisa ser gravado de novo. O `mpremote run` executa o cadastro sem
+apagar o `main.py`:
+
+```sh
+node ../compilador/aegisc.js cadastro.aeg --alvo esp32 -o cadastro.py
+.venv/bin/mpremote connect $PORTA run cadastro.py
+```
+
+O programa pede cada dedo duas vezes, em `QUANTAS` posições (3 por padrão). Qualquer digital
+cadastrada arma e desarma o abrigo. O driver do AS608 foi testado contra um leitor falso que fala o
+protocolo do fabricante (`python3 firmware/teste_digital.py`). Só dá para confirmar o funcionamento
+com o leitor de verdade em mãos.
+
+**No Wokwi, que não tem o AS608:** ao ligar, o firmware não encontra o leitor e passa a aceitar a
+digital pela serial. Com a simulação rodando, use o Touch ID do Mac:
+
+```sh
+./firmware/wokwi.sh dedo     # aparece o pedido do Touch ID; digital aceita = "dedo 1"
+```
+
+Também dá para digitar `dedo 1` (digital aceita) ou `dedo -2` (digital desconhecida) direto no
+terminal do Wokwi.
+
 ## 7. Roteiro de testes
 
 Teste um sensor de cada vez, voltando ao normal entre um teste e outro. No Wokwi, mude os valores
@@ -226,7 +250,12 @@ clicando no componente com a simulação rodando. Na placa real, provoque cada s
 | Ação | Estado | LEDs / buzzer | Serial |
 |---|---|---|---|
 | Ligar, ar limpo | NORMAL | verde | `abrigo iniciando`, depois de `AQUECIMENTO_MS` `base de ar limpo: ...` |
-| Movimento na frente do PIR | ATENÇÃO | amarelo, sem buzzer | `ATENCAO - presenca` |
+| Movimento no PIR, desarmado | NORMAL | verde | nada: com alguém em casa o PIR é ignorado |
+| Digital (no Wokwi: `./firmware/wokwi.sh dedo`) | armado | um bipe; OLED mostra `saia: 30 s` | `armado pela digital 1` |
+| Movimento no PIR, armado, depois dos 30 s de saída | ATENÇÃO | amarelo | `ATENCAO - use a digital` |
+| Sem digital por 15 s depois disso | ALARME | vermelho + sirene | `ALARME - INTRUSO` |
+| Digital durante os 15 s, ou depois do alarme | desarmado | um bipe | `desarmado pela digital 1` |
+| Digital não cadastrada (no Wokwi: cancelar o Touch ID) | nada muda | três bipes | `digital nao reconhecida` |
 | MQ-135 acima da base (no Wokwi: girar o potenciômetro) | ATENÇÃO | amarelo | `ATENCAO - ar ruim` |
 | Temperatura acima de 40 °C | ATENÇÃO | amarelo | `ATENCAO - calor` |
 | Temperatura acima de 55 °C | ALARME | vermelho + sirene | `ALARME - TEMP ALTA` |
@@ -241,7 +270,9 @@ clicando no componente com a simulação rodando. Na placa real, provoque cada s
 | Situação resolvida | NORMAL | verde | `NORMAL` |
 
 As mudanças de estado aparecem no serial como `[AEGIS] estado: ATENCAO - presenca`.
-Com dois problemas ao mesmo tempo, vale o mais grave: um ALARME de fumaça vence a ATENÇÃO de presença.
+Com dois problemas ao mesmo tempo, vale o mais grave: um ALARME de fumaça vence a ATENÇÃO de chuva.
+Desarmar pela digital só desliga o alarme de intruso. Fumaça, gás, enchente e deslizamento continuam
+tocando.
 No Wokwi não existe MQ-135, nem sensor de chuva ou de solo, então potenciômetros fazem o papel deles,
 ligados nos mesmos pinos. Os de chuva e de solo estão ligados invertidos (VCC no GND e GND no 3V3)
 para imitar o sensor real: girar para a direita derruba a tensão, como a água faz.

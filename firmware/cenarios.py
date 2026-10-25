@@ -45,8 +45,9 @@ def zerar_sensores(g):
                  "media_fumaca", "media_ar", "amostras"):
         g[nome] = 0
     for nome in ("chovendo", "solo_encharcado", "deslizamento",
-                 "rele_ligado", "houve_fumaca"):
+                 "rele_ligado", "houve_fumaca", "armado", "em_entrada", "intruso"):
         g[nome] = False
+    g["finger"].fila.clear()
     g["filtro_pronto"] = False      # a primeira leitura vira a média
     g["base_registrada"] = True
 
@@ -277,12 +278,74 @@ def _(g):
     assert g["estado"] == g["ALARME"] and g["motivo"] == "TEMP ALTA"
 
 
-@cenario("presenca no PIR: ATENCAO sem sirene")
+def passar(g, nome_marca, ms):
+    """Volta a marca de tempo nome_marca em ms, como se esse tempo tivesse passado."""
+    g[nome_marca] -= ms
+
+
+@cenario("desarmado: presenca no PIR e ignorada")
 def _(g):
     g["gpio"].estado[g["PINO_PIR"]] = True
     ciclo(g)
-    assert g["estado"] == g["ATENCAO"] and g["motivo"] == "presenca"
+    assert g["estado"] == g["NORMAL"], g["motivo"]
+
+
+@cenario("digital arma; presenca no tempo de saida e ignorada")
+def _(g):
+    g["finger"].fila.append(1)
+    log = ciclo(g)
+    assert g["armado"] and "armado pela digital 1" in log, log
+    g["gpio"].estado[g["PINO_PIR"]] = True       # a pessoa ainda esta saindo
+    ciclo(g)
+    assert g["estado"] == g["NORMAL"] and not g["em_entrada"]
+
+
+@cenario("armado: presenca abre o tempo de entrada e depois vira INTRUSO")
+def _(g):
+    g["finger"].fila.append(1)
+    ciclo(g)
+    passar(g, "armado_em", g["ATRASO_SAIDA_MS"])
+    g["gpio"].estado[g["PINO_PIR"]] = True
+    ciclo(g)
+    assert g["estado"] == g["ATENCAO"] and g["motivo"] == "use a digital", g["motivo"]
     assert not buzzer_ligado(g)
+    passar(g, "entrada_em", g["ATRASO_ENTRADA_MS"])
+    g["gpio"].estado[g["PINO_PIR"]] = False      # o intruso saiu da frente do PIR
+    log = ciclo(g)
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "INTRUSO", g["motivo"]
+    assert buzzer_ligado(g) and "ALARME - INTRUSO" in log
+
+
+@cenario("digital no tempo de entrada desarma sem alarme")
+def _(g):
+    g["finger"].fila.append(1)
+    ciclo(g)
+    passar(g, "armado_em", g["ATRASO_SAIDA_MS"])
+    g["gpio"].estado[g["PINO_PIR"]] = True
+    ciclo(g)
+    g["finger"].fila.append(2)
+    ciclo(g)
+    passar(g, "entrada_em", g["ATRASO_ENTRADA_MS"])
+    ciclo(g)
+    assert not g["armado"] and g["estado"] == g["NORMAL"], g["motivo"]
+
+
+@cenario("digital desconhecida: tres bipes e nada muda")
+def _(g):
+    g["finger"].fila.append(-2)
+    log = ciclo(g)
+    assert not g["armado"] and "nao reconhecida" in log, log
+    assert log.count("tom de 3000 Hz") == 3, log
+
+
+@cenario("desarmar nao cala o alarme de fumaca")
+def _(g):
+    g["finger"].fila.append(1)
+    ciclo(g)
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    g["finger"].fila.append(1)
+    ciclo(g, vezes=6)                            # a media filtrada sobe aos poucos
+    assert not g["armado"] and g["estado"] == g["ALARME"] and g["motivo"] == "FUMACA/GAS"
 
 
 @cenario("ar ruim no MQ-135: ATENCAO")
@@ -292,9 +355,9 @@ def _(g):
     assert g["estado"] == g["ATENCAO"] and g["motivo"] == "ar ruim"
 
 
-@cenario("fumaca + presenca: o mais grave vence")
+@cenario("chuva + fumaca: o mais grave vence")
 def _(g):
-    g["gpio"].estado[g["PINO_PIR"]] = True
+    molhar(g, "PINO_CHUVA", "CHUVA_SECO", "CHUVA_MOLHADO", 50)
     g["adc"].estado[g["PINO_MQ2"]] = 3000
     ciclo(g)
     assert g["estado"] == g["ALARME"] and g["motivo"] == "FUMACA/GAS"

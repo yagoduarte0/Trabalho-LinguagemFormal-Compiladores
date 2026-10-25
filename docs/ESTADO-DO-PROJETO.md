@@ -51,6 +51,9 @@ repositório. Ficou decidido unificar tudo sob o nome AEGIS.
 | `firmware/abrigo.aeg` | Firmware do abrigo escrito em AEGIS |
 | `firmware/main.py` | MicroPython gerado a partir do `abrigo.aeg` (entra no Git) |
 | `firmware/cenarios.py` | Cenários que testam a lógica do firmware no PC |
+| `firmware/cadastro.aeg` | Cadastro das digitais no leitor AS608 |
+| `firmware/teste_digital.py` | Testa o driver do AS608 contra um leitor falso |
+| `firmware/touchid.swift` | Touch ID do Mac no lugar do AS608 durante a simulação |
 | `firmware/diagram.json`, `wokwi.toml`, `wokwi.sh` | Simulação no Wokwi (VS Code) |
 | `docs/` | Documentação da linguagem e do hardware |
 | `pitch/` | Apresentação animada em Manim |
@@ -78,9 +81,10 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
   quebrar linha dentro de parênteses e colchetes.
 - **Testes** — 80 casos das três fases, todos passando.
 - **Firmware do abrigo** — `abrigo.aeg` com sete sensores (inclui chuva e solo,
-  que juntos dão o alerta de risco de deslizamento), máquina de estados
+  que juntos dão o alerta de risco de deslizamento), relé do exaustor e modo
+  armado/desarmado pela digital (AS608 na placa, Touch ID do Mac no Wokwi), máquina de estados
   NORMAL/ATENÇÃO/ALARME, sirene, botão de silenciar, OLED e MQTT opcional.
-  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 24 cenários
+  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 29 cenários
   passando no PC e circuito testado no simulador Wokwi.
 - **Guia de hardware** — `docs/hardware.md` com lista de compras, mapa de
   pinos, divisores de tensão, calibração e gravação no ESP32 real.

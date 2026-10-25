@@ -1,0 +1,34 @@
+// AEGIS — cadastro de digitais no leitor AS608
+//
+// Roda uma vez, com o leitor ligado, para gravar as digitais que armam e
+// desarmam o abrigo. As digitais ficam na memória do próprio leitor, então
+// depois basta voltar ao abrigo.aeg. Ver docs/hardware.md, seção 6.
+//
+//   node compilador/aegisc.js firmware/cadastro.aeg --alvo esp32 -o firmware/cadastro.py
+//   firmware/.venv/bin/mpremote connect <porta> run firmware/cadastro.py
+
+scavenge finger
+
+law PINO_DIGITAL_RX = 16
+law PINO_DIGITAL_TX = 17
+law QUANTAS = 3            // quantos dedos cadastrar, nas posições 1, 2, 3...
+
+chronicle {
+    checkpoint (!finger.begin(radio(PINO_DIGITAL_RX), radio(PINO_DIGITAL_TX))) {
+        log_entry("[cadastro] leitor AS608 nao respondeu: confira TX/RX e a alimentacao")
+    } fallback {
+        supply numero = 1
+        supply gravadas = 0
+        patrol (QUANTAS) {
+            log_entry("[cadastro] digital", numero, "de", QUANTAS)
+            checkpoint (finger.enroll(numero)) {
+                log_entry("[cadastro] digital", numero, "gravada")
+                gravadas = gravadas + 1
+            } fallback {
+                log_entry("[cadastro] falhou: as duas leituras nao bateram ou o tempo acabou")
+            }
+            numero = numero + 1
+        }
+        log_entry("[cadastro] pronto:", gravadas, "digitais gravadas")
+    }
+}

@@ -239,6 +239,116 @@ class _Mqtt:
             return False
 
 
+class _Digital:
+    # Leitor biométrico AS608 na UART2, pelo protocolo do fabricante: pacote
+    # EF 01, endereço FF FF FF FF, tipo (1 = comando), tamanho, dados e soma
+    # de 16 bits. Sem o leitor (no Wokwi, por exemplo), as digitais chegam
+    # pela serial como linhas "dedo <n>": o Touch ID do Mac (wokwi.sh dedo)
+    # ou digitadas no terminal. scan() devolve o número da digital, -1 sem
+    # dedo e -2 para digital desconhecida.
+    def __init__(self):
+        self._uart = None
+        self._presente = False
+        self._soltar = False
+        self._poll = None
+        self._linha = ""
+
+    def begin(self, rx, tx):
+        try:
+            self._uart = _machine.UART(2, baudrate=57600, rx=rx, tx=tx, timeout=300)
+            self._presente = self._comando(bytes((0x13, 0, 0, 0, 0)))[0] == 0   # VfyPwd
+        except Exception:
+            self._presente = False
+        if not self._presente:
+            import sys, select
+            self._poll = select.poll()
+            self._poll.register(sys.stdin, select.POLLIN)
+            print("[digital] leitor AS608 ausente: aceitando 'dedo <n>' pela serial")
+        return self._presente
+
+    def present(self):
+        return self._presente
+
+    # envia um comando e devolve os dados da resposta; o primeiro byte é o
+    # código de confirmação (0 = ok). Sem resposta válida devolve (0xFF,).
+    def _comando(self, dados):
+        tamanho = len(dados) + 2
+        corpo = bytes((1, tamanho >> 8, tamanho & 0xFF)) + dados
+        soma = sum(corpo) & 0xFFFF
+        self._uart.read()
+        self._uart.write(bytes((0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF)) + corpo + bytes((soma >> 8, soma & 0xFF)))
+        cabecalho = self._uart.read(9)
+        if not cabecalho or len(cabecalho) < 9 or cabecalho[0] != 0xEF or cabecalho[1] != 0x01:
+            return (0xFF,)
+        n = (cabecalho[7] << 8) | cabecalho[8]
+        resto = self._uart.read(n)
+        if not resto or len(resto) < n or n < 3:
+            return (0xFF,)
+        if (sum(cabecalho[6:9]) + sum(resto[:-2])) & 0xFFFF != (resto[-2] << 8) | resto[-1]:
+            return (0xFF,)
+        return resto[:-2]
+
+    def _tem_dedo(self):
+        return self._comando(bytes((0x01,)))[0] == 0           # GenImg; 0x02 = sem dedo
+
+    def scan(self):
+        if not self._presente:
+            return self._da_serial()
+        dedo = self._tem_dedo()
+        if self._soltar:                                       # mesma encostada: ignora
+            self._soltar = dedo
+            return -1
+        if not dedo:
+            return -1
+        self._soltar = True
+        if self._comando(bytes((0x02, 1)))[0] != 0:            # Img2Tz no buffer 1
+            return -2
+        r = self._comando(bytes((0x04, 1, 0, 0, 0, 200)))     # Search nas posições 0..199
+        if r[0] != 0:
+            return -2
+        return (r[1] << 8) | r[2]
+
+    def _da_serial(self):
+        import sys
+        while self._poll is not None and self._poll.poll(0):
+            c = sys.stdin.read(1)
+            if ord(c) not in (10, 13):                            # fim de linha
+                self._linha += c
+                continue
+            linha, self._linha = self._linha.strip(), ""
+            if linha.startswith("dedo "):
+                try:
+                    return int(linha[5:])
+                except ValueError:
+                    pass
+        return -1
+
+    def _esperar(self, com_dedo, limite_ms):
+        inicio = _time.ticks_ms()
+        while _time.ticks_diff(_time.ticks_ms(), inicio) < limite_ms:
+            if self._tem_dedo() == com_dedo:
+                return True
+            _time.sleep_ms(100)
+        return False
+
+    # cadastro: duas leituras do mesmo dedo viram um modelo guardado na
+    # posição "numero" da memória do leitor
+    def enroll(self, numero, limite_ms=15000):
+        if not self._presente:
+            return False
+        for buffer in (1, 2):
+            print("[digital] encoste o dedo" if buffer == 1 else "[digital] encoste o mesmo dedo de novo")
+            if not self._esperar(True, limite_ms):
+                return False
+            if self._comando(bytes((0x02, buffer)))[0] != 0:   # Img2Tz
+                return False
+            print("[digital] retire o dedo")
+            self._esperar(False, limite_ms)
+        if self._comando(bytes((0x05,)))[0] != 0:             # RegModel: as leituras não batem
+            return False
+        return self._comando(bytes((0x06, 1, numero >> 8, numero & 0xFF)))[0] == 0   # Store
+
+
 gpio = _Gpio()
 adc = _Adc()
 pwm = _Pwm()
@@ -248,6 +358,7 @@ display = _Tela()
 wifi = _Wifi()
 mqtt = _Mqtt()
 time = _Relogio()
+finger = _Digital()
 
 
 def radio(pino):
@@ -296,6 +407,7 @@ def silence(pino):
 # scavenge wifi — módulo fornecido pelo runtime
 # scavenge mqtt — módulo fornecido pelo runtime
 # scavenge time — módulo fornecido pelo runtime
+# scavenge finger — módulo fornecido pelo runtime
 PINO_PIR = 27  # constante
 PINO_TRIG = 25  # constante
 PINO_ECHO = 26  # constante
@@ -310,6 +422,8 @@ LED_VERMELHO = 32  # constante
 PINO_CHUVA = 36  # constante
 PINO_SOLO = 39  # constante
 PINO_RELE = 23  # constante
+PINO_DIGITAL_RX = 16  # constante
+PINO_DIGITAL_TX = 17  # constante
 MARGEM_FUMACA = 800  # constante
 HISTERESE_FUMACA = 300  # constante
 MARGEM_AR = 800  # constante
@@ -329,6 +443,8 @@ SOLO_ALARME = 85  # constante
 HISTERESE_PCT = 10  # constante
 RELE_ATIVO_EM_ALTO = True  # constante
 RELE_EXTRA_MS = 30000  # constante
+ATRASO_SAIDA_MS = 30000  # constante
+ATRASO_ENTRADA_MS = 15000  # constante
 AQUECIMENTO_MS = 20000  # constante
 SILENCIO_MS = 60000  # constante
 CICLO_MS = 500  # constante
@@ -370,6 +486,12 @@ deslizamento = False
 rele_ligado = False
 houve_fumaca = False
 ultima_fumaca = 0
+digital = -1
+armado = False
+armado_em = 0
+em_entrada = False
+entrada_em = 0
+intruso = False
 risco_fumaca = 0
 risco_ar = 0
 risco_agua = 0
@@ -440,13 +562,46 @@ def sentinela_calor():
     elif temperatura >= TEMP_ATENCAO:
         risco_calor = ATENCAO
 
+def bipar(vezes):
+    for _ in range(vezes):
+        pwm.tone(radio(PINO_BUZZER), 3000)
+        hide(80)
+        pwm.off(radio(PINO_BUZZER))
+        hide(80)
+
+# survivor: roda como tarefa concorrente no alvo
+def vigia_digital():
+    global digital, armado, em_entrada, intruso, armado_em
+    digital = finger.scan()
+    if digital >= 0:
+        armado = not armado
+        em_entrada = False
+        intruso = False
+        if armado:
+            armado_em = time.ms()
+            log_entry("[AEGIS] armado pela digital", digital, "- saia em", ATRASO_SAIDA_MS / 1000, "s")
+        else:
+            log_entry("[AEGIS] desarmado pela digital", digital)
+        bipar(1)
+    elif digital == -2:
+        log_entry("[AEGIS] digital nao reconhecida")
+        bipar(3)
+
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_presenca():
-    global presenca, risco_presenca
+    global presenca, em_entrada, entrada_em, intruso, risco_presenca
     presenca = gpio.read(radio(PINO_PIR))
+    if armado and presenca and not em_entrada and not intruso and time.since(armado_em) >= ATRASO_SAIDA_MS:
+        em_entrada = True
+        entrada_em = time.ms()
+    if em_entrada and time.since(entrada_em) >= ATRASO_ENTRADA_MS:
+        em_entrada = False
+        intruso = True
     risco_presenca = NORMAL
-    if presenca:
+    if em_entrada:
         risco_presenca = ATENCAO
+    elif intruso:
+        risco_presenca = ALARME
 
 def percentual_molhado(leitura, seco, molhado):
     pct = ration((seco - leitura) * 100 / (seco - molhado))
@@ -504,7 +659,7 @@ def avaliar():
     motivo = "tudo em ordem"
     if risco_presenca == ATENCAO:
         estado = ATENCAO
-        motivo = "presenca"
+        motivo = "use a digital"
     if risco_ar == ATENCAO:
         estado = ATENCAO
         motivo = "ar ruim"
@@ -520,6 +675,9 @@ def avaliar():
     if risco_calor == ALARME:
         estado = ALARME
         motivo = "TEMP ALTA"
+    if risco_presenca == ALARME:
+        estado = ALARME
+        motivo = "INTRUSO"
     if risco_agua == ALARME:
         estado = ALARME
         motivo = "ENCHENTE"
@@ -589,6 +747,10 @@ def atualizar_tela():
         display.write(7, "BUZZER MUDO")
     elif rele_ligado:
         display.write(7, "EXAUSTOR LIGADO")
+    elif armado and time.since(armado_em) < ATRASO_SAIDA_MS:
+        display.write(7, "saia: " + paper(ration((ATRASO_SAIDA_MS - time.since(armado_em)) / 1000)) + " s")
+    elif armado:
+        display.write(7, "ARMADO")
     elif rede:
         display.write(7, "rede: online")
     else:
@@ -600,7 +762,7 @@ def telemetria():
     rede = mqtt.connected()
     if rede and time.since(ultima_telemetria) >= TELEMETRIA_MS:
         ultima_telemetria = time.ms()
-        mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(media_fumaca) + ",\"ar\":" + paper(media_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"chuva\":" + paper(chuva_pct) + ",\"solo\":" + paper(solo_pct) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
+        mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(media_fumaca) + ",\"ar\":" + paper(media_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"armado\":" + paper(ration(armado)) + ",\"chuva\":" + paper(chuva_pct) + ",\"solo\":" + paper(solo_pct) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
 
 def depurar():
     global ultima_depuracao
@@ -623,6 +785,7 @@ def ciclo():
     filtro_pronto = True
     sentinela_agua()
     sentinela_calor()
+    vigia_digital()
     sentinela_presenca()
     vigia_botao()
     avaliar()
@@ -637,6 +800,8 @@ def main():
     global inicio, rede
     log_entry("[AEGIS] abrigo iniciando")
     gpio.write(radio(PINO_RELE), not RELE_ATIVO_EM_ALTO)
+    if finger.begin(radio(PINO_DIGITAL_RX), radio(PINO_DIGITAL_TX)):
+        log_entry("[AEGIS] leitor de digital pronto")
     inicio = time.ms()
     display.write(0, "AEGIS")
     display.write(2, "iniciando...")

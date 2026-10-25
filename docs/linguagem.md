@@ -157,6 +157,9 @@ alvos de compilação (seção 3): o mesmo programa roda no PC e no ESP32.
 | `wifi.connect(ssid, senha, limite_ms)` | conecta ao WiFi, devolve `alive`/`dead` | `network.WLAN` |
 | `mqtt.connect(broker)` / `mqtt.publish(topico, msg)` / `mqtt.connected()` | avisos pela rede; falhas nunca derrubam o programa | `umqtt.simple` |
 | `time.ms()` / `time.since(marca)` | relógio em milissegundos | `time.ticks_ms` / `ticks_diff` |
+| `finger.begin(rx, tx)` / `finger.present()` | liga o leitor de digital, diz se ele respondeu | AS608 na UART2, 57600 bps |
+| `finger.scan()` | número da digital encostada, `-1` sem dedo, `-2` desconhecida | sem o leitor, lê linhas `dedo <n>` da serial |
+| `finger.enroll(n)` | cadastra um dedo na posição `n` (duas leituras) | comandos GenImg, Img2Tz, RegModel e Store |
 
 ### Conversões de tipo
 

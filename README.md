@@ -77,14 +77,17 @@ erros com linha e coluna.
 `firmware/abrigo.aeg` é o programa do abrigo escrito em AEGIS. Um ESP32 lê
 presença (PIR), nível da água (HC-SR04), fumaça (MQ-2), qualidade do ar
 (MQ-135), temperatura (DHT22), chuva e umidade do solo (risco de
-deslizamento), classifica cada leitura em NORMAL, ATENÇÃO ou
-ALARME e reage com LEDs, sirene, display OLED e, se houver WiFi, avisos por
-MQTT. Funciona offline: a rede é só um canal a mais.
+deslizamento), classifica cada leitura em NORMAL, ATENÇÃO ou ALARME e reage
+com LEDs, sirene, display OLED, relé do exaustor e, se houver WiFi, avisos
+por MQTT. Uma digital arma e desarma o alarme de intruso. Funciona offline: a
+rede é só um canal a mais.
 
 ```bash
-python3 firmware/cenarios.py      # 24 cenários testando a lógica no PC
+python3 firmware/cenarios.py      # 29 cenários testando a lógica no PC
+python3 firmware/teste_digital.py # driver do leitor de digital contra um AS608 falso
 ./firmware/wokwi.sh preparar      # uma vez: baixa o MicroPython e o mpremote
 ./firmware/wokwi.sh enviar        # com a simulação aberta no VS Code (Wokwi)
+./firmware/wokwi.sh dedo          # Touch ID do Mac no lugar do leitor de digital
 ```
 
 O circuito do Wokwi (`firmware/diagram.json`) usa as mesmas ligações da placa
