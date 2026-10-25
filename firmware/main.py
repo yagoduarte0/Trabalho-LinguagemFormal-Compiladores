@@ -127,22 +127,42 @@ _SSD1306_INICIO = (0xAE, 0x20, 0x00, 0x40, 0xA1, 0xA8, 0x3F, 0xC8, 0xD3, 0x00,
                    0xA4, 0xA6, 0x8D, 0x14, 0xAF)
 
 
+# Desenhos 1 bit por pixel, linha a linha, bit mais alto à esquerda
+# (framebuf.MONO_HLSB). Gerados a partir de arte em texto ("#" = aceso).
+_LOGO = bytes((0x00, 0x00, 0x00, 0x00, 0x3F, 0xFF, 0xFF, 0xFC, 0x3F, 0xFF, 0xFF, 0xFC, 0x30, 0x00, 0x00, 0x0C, 0x30, 0x00, 0x00, 0x0C, 0x30, 0x01, 0x80, 0x0C, 0x30, 0x03, 0xC0, 0x0C, 0x30, 0x06, 0x60, 0x0C, 0x30, 0x06, 0x60, 0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x30, 0x18, 0x18, 0x0C, 0x30, 0x18, 0x18, 0x0C, 0x30, 0x3F, 0xFC, 0x0C, 0x30, 0x3F, 0xFC, 0x0C, 0x30, 0x60, 0x06, 0x0C, 0x18, 0x60, 0x06, 0x18, 0x0C, 0xC0, 0x03, 0x30, 0x06, 0x00, 0x00, 0x60, 0x03, 0x00, 0x00, 0xC0, 0x01, 0x80, 0x01, 0x80, 0x00, 0xC0, 0x03, 0x00, 0x00, 0x60, 0x06, 0x00, 0x00, 0x30, 0x0C, 0x00, 0x00, 0x18, 0x18, 0x00, 0x00, 0x0C, 0x30, 0x00, 0x00, 0x06, 0x60, 0x00, 0x00, 0x03, 0xC0, 0x00, 0x00, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+_ICONES = {
+    "termometro": bytes((0x18, 0x24, 0x24, 0x24, 0x3C, 0x7E, 0x7E, 0x3C)),
+    "gota": bytes((0x18, 0x18, 0x3C, 0x7E, 0x7E, 0x7E, 0x3C, 0x00)),
+    "chuva": bytes((0x38, 0x7C, 0xFF, 0xFF, 0x00, 0x49, 0x92, 0x00)),
+    "solo": bytes((0x28, 0x10, 0x38, 0x10, 0xFF, 0xAA, 0x55, 0xFF)),
+    "fogo": bytes((0x10, 0x18, 0x3A, 0x3E, 0x6E, 0x46, 0x46, 0x3C)),
+    "onda": bytes((0x00, 0x66, 0x99, 0x00, 0x66, 0x99, 0x00, 0x00)),
+    "cadeado": bytes((0x3C, 0x42, 0x42, 0xFF, 0xE7, 0xE7, 0xFF, 0x00)),
+    "aberto": bytes((0x3C, 0x42, 0x40, 0xFF, 0xE7, 0xE7, 0xFF, 0x00)),
+    "wifi": bytes((0x3C, 0x42, 0x99, 0x24, 0x00, 0x18, 0x18, 0x00)),
+    "mudo": bytes((0x10, 0x30, 0xE9, 0xE6, 0xE6, 0xE9, 0x30, 0x10)),
+    "ventoinha": bytes((0x18, 0x99, 0x5A, 0x3C, 0x3C, 0x5A, 0x99, 0x18)),
+}
+
+
 class _Tela:
     ENDERECO = 0x3C
 
+    # Cada comando desenha no framebuffer; show() só envia a imagem ao
+    # display. Sem display (OSError no I2C), desenha à toa e segue.
     def __init__(self, sda=21, scl=22):
         self._sda = sda
         self._scl = scl
         self._pronta = None
-        self._linhas = {}
+        self._buffer = bytearray(1024)
+        self._fb = _framebuf.FrameBuffer(self._buffer, 128, 64, _framebuf.MONO_VLSB)
+        self._imagens = {}
 
     def _iniciar(self):
         if self._pronta is None:
             try:
                 self._i2c = _machine.I2C(0, sda=_machine.Pin(self._sda),
                                          scl=_machine.Pin(self._scl), freq=400000)
-                self._buffer = bytearray(1024)
-                self._fb = _framebuf.FrameBuffer(self._buffer, 128, 64, _framebuf.MONO_VLSB)
                 for c in _SSD1306_INICIO:
                     self._comando(c)
                 self._pronta = True
@@ -154,15 +174,49 @@ class _Tela:
     def _comando(self, c):
         self._i2c.writeto(self.ENDERECO, bytearray((0x80, c)))
 
+    def clear(self):
+        self._fb.fill(0)
+
+    # linha de texto 0..7, como antes: apaga só a faixa da linha
     def write(self, linha, texto):
-        self._linhas[linha] = str(texto)
+        self._fb.fill_rect(0, int(linha) * 8, 128, 8, 0)
+        self._fb.text(str(texto)[:16], 0, int(linha) * 8, 1)
+
+    def text(self, texto, x, y, cor=1):
+        self._fb.text(str(texto), int(x), int(y), 1 if cor else 0)
+
+    def center(self, texto, y, cor=1):
+        texto = str(texto)[:16]
+        self.text(texto, (128 - 8 * len(texto)) // 2, y, cor)
+
+    def rect(self, x, y, largura, altura, cheio=False):
+        desenhar = self._fb.fill_rect if cheio else self._fb.rect
+        desenhar(int(x), int(y), int(largura), int(altura), 1)
+
+    def bar(self, x, y, largura, altura, valor, maximo):
+        x, y, largura, altura = int(x), int(y), int(largura), int(altura)
+        self._fb.rect(x, y, largura, altura, 1)
+        cheio = int((largura - 2) * min(max(valor, 0), maximo) / maximo) if maximo > 0 else 0
+        self._fb.fill_rect(x + 1, y + 1, cheio, altura - 2, 1)
+
+    def _imagem(self, nome, dados, largura, altura):
+        img = self._imagens.get(nome)
+        if img is None:
+            img = _framebuf.FrameBuffer(bytearray(dados), largura, altura, _framebuf.MONO_HLSB)
+            self._imagens[nome] = img
+        return img
+
+    def icon(self, nome, x, y):
+        dados = _ICONES.get(nome)
+        if dados is not None:
+            self._fb.blit(self._imagem(nome, dados, 8, 8), int(x), int(y))
+
+    def logo(self, x, y):
+        self._fb.blit(self._imagem("logo", _LOGO, 32, 32), int(x), int(y))
 
     def show(self):
         if not self._iniciar():
             return
-        self._fb.fill(0)
-        for linha in self._linhas:
-            self._fb.text(self._linhas[linha][:16], 0, linha * 8, 1)
         try:
             for c in (0x21, 0, 127, 0x22, 0, 7):
                 self._comando(c)
@@ -451,6 +505,7 @@ CICLO_MS = 500  # constante
 TELEMETRIA_MS = 10000  # constante
 DEPURAR = True  # constante
 DEPURAR_MS = 2000  # constante
+PAGINA_MS = 3000  # constante
 USAR_REDE = True  # constante
 WIFI_SSID = "Wokwi-GUEST"  # constante
 WIFI_SENHA = ""  # constante
@@ -507,6 +562,8 @@ sirene_alta = False
 rede = False
 ultima_telemetria = 0
 ultima_depuracao = 0
+pagina = 0
+pagina_desde = 0
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_fumaca():
     global leitura_fumaca, media_fumaca, base_fumaca, risco_fumaca
@@ -683,7 +740,7 @@ def avaliar():
         motivo = "ENCHENTE"
     if deslizamento:
         estado = ALARME
-        motivo = "RISCO DESLIZAMENTO"
+        motivo = "DESLIZAMENTO"
     if risco_fumaca == ALARME:
         estado = ALARME
         motivo = "FUMACA/GAS"
@@ -733,28 +790,88 @@ def relatar():
         estado_anterior = estado
         motivo_anterior = motivo
 
-def atualizar_tela():
-    display.write(0, "AEGIS " + NOMES_ESTADO[estado])
-    display.write(1, motivo)
-    display.write(2, "Chuva " + paper(chuva_pct) + "% S" + paper(solo_pct) + "%")
-    display.write(3, "Fumaca  " + paper(media_fumaca))
-    display.write(4, "Ar      " + paper(media_ar))
-    display.write(5, "Agua    " + paper(ration(distancia_agua)) + " cm")
-    display.write(6, "T " + paper(temperatura) + "C U " + paper(ration(umidade)) + "%")
-    if not aquecido:
-        display.write(7, "aquecendo MQ...")
-    elif silenciado:
-        display.write(7, "BUZZER MUDO")
-    elif rele_ligado:
-        display.write(7, "EXAUSTOR LIGADO")
-    elif armado and time.since(armado_em) < ATRASO_SAIDA_MS:
-        display.write(7, "saia: " + paper(ration((ATRASO_SAIDA_MS - time.since(armado_em)) / 1000)) + " s")
-    elif armado:
-        display.write(7, "ARMADO")
-    elif rede:
-        display.write(7, "rede: online")
+def titulo():
+    if estado == ALARME and sirene_alta:
+        display.rect(0, 0, 128, 11, False)
+        display.text("AEGIS", 2, 2, 1)
+        display.text(NOMES_ESTADO[estado], 64, 2, 1)
     else:
-        display.write(7, "rede: offline")
+        display.rect(0, 0, 128, 11, True)
+        display.text("AEGIS", 2, 2, 0)
+        display.text(NOMES_ESTADO[estado], 64, 2, 0)
+    display.center(motivo, 14, 1)
+    display.rect(0, 24, 128, 1, True)
+
+def pagina_clima():
+    display.icon("termometro", 0, 28)
+    display.text(paper(temperatura) + "C", 10, 28, 1)
+    display.icon("gota", 72, 28)
+    display.text(paper(ration(umidade)) + "%", 82, 28, 1)
+    display.icon("chuva", 0, 37)
+    display.bar(10, 38, 80, 7, chuva_pct, 100)
+    display.text(paper(chuva_pct) + "%", 92, 37, 1)
+    display.icon("solo", 0, 46)
+    display.bar(10, 47, 80, 7, solo_pct, 100)
+    display.text(paper(solo_pct) + "%", 92, 46, 1)
+
+def pagina_gases():
+    display.icon("fogo", 0, 28)
+    display.text("Fumaca", 10, 28, 1)
+    display.bar(62, 29, 64, 7, media_fumaca - base_fumaca, MARGEM_FUMACA)
+    display.text("Ar", 10, 37, 1)
+    display.bar(62, 38, 64, 7, media_ar - base_ar, MARGEM_AR)
+    if not aquecido:
+        display.text("aquecendo MQ", 10, 46, 1)
+    else:
+        display.text("base " + paper(base_fumaca) + "/" + paper(base_ar), 10, 46, 1)
+
+def pagina_agua():
+    display.icon("onda", 0, 28)
+    if distancia_agua < 0.0:
+        display.text("agua: sem eco", 10, 28, 1)
+    else:
+        display.text("agua a " + paper(ration(distancia_agua)) + " cm", 10, 28, 1)
+    display.text("alarme < " + paper(ration(LIMITE_AGUA_CM)) + " cm", 10, 37, 1)
+    if presenca:
+        display.text("PIR: movimento", 10, 46, 1)
+    else:
+        display.text("PIR: livre", 10, 46, 1)
+
+def rodape():
+    if armado:
+        display.icon("cadeado", 0, 56)
+    else:
+        display.icon("aberto", 0, 56)
+    if rede:
+        display.icon("wifi", 12, 56)
+    if silenciado:
+        display.icon("mudo", 24, 56)
+    if rele_ligado:
+        display.icon("ventoinha", 36, 56)
+    if armado and time.since(armado_em) < ATRASO_SAIDA_MS:
+        display.text("saia " + paper(ration((ATRASO_SAIDA_MS - time.since(armado_em)) / 1000)) + "s", 38, 56, 1)
+    elif em_entrada:
+        display.text("digital!", 38, 56, 1)
+    display.rect(112, 58, 4, 4, pagina == 0)
+    display.rect(118, 58, 4, 4, pagina == 1)
+    display.rect(124, 58, 4, 4, pagina == 2)
+
+def atualizar_tela():
+    global pagina_desde, pagina
+    if time.since(pagina_desde) >= PAGINA_MS:
+        pagina_desde = time.ms()
+        pagina = pagina + 1
+        if pagina > 2:
+            pagina = 0
+    display.clear()
+    titulo()
+    if pagina == 0:
+        pagina_clima()
+    elif pagina == 1:
+        pagina_gases()
+    else:
+        pagina_agua()
+    rodape()
     display.show()
 
 def telemetria():
@@ -803,8 +920,10 @@ def main():
     if finger.begin(radio(PINO_DIGITAL_RX), radio(PINO_DIGITAL_TX)):
         log_entry("[AEGIS] leitor de digital pronto")
     inicio = time.ms()
-    display.write(0, "AEGIS")
-    display.write(2, "iniciando...")
+    display.clear()
+    display.logo(48, 2)
+    display.center("AEGIS", 38, 1)
+    display.center("protecao offline", 50, 1)
     display.show()
     if USAR_REDE:
         if wifi.connect(WIFI_SSID, WIFI_SENHA, 10000):

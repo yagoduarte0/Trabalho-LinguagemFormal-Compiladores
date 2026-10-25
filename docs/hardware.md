@@ -264,10 +264,17 @@ clicando no componente com a simulação rodando. Na placa real, provoque cada s
 | Água na placa de chuva (no Wokwi: girar o potenciômetro do telhado) | ATENÇÃO | amarelo | `ATENCAO - chovendo` |
 | Solo molhado sem chuva (no Wokwi: girar o potenciômetro do quintal) | ATENÇÃO | amarelo | `ATENCAO - solo encharcado` |
 | Fumaça/gás | relé liga | exaustor (no Wokwi: LED azul) | `exaustor ligado`; desliga 30 s depois que a fumaça some |
-| Chuva + solo acima de 85% | ALARME | vermelho + sirene | `ALARME - RISCO DESLIZAMENTO` |
+| Chuva + solo acima de 85% | ALARME | vermelho + sirene | `ALARME - DESLIZAMENTO` |
 | A chuva para, o solo continua acima de 75% | ALARME continua | vermelho + sirene | o risco só acaba quando o solo seca |
 | Apertar o botão durante um ALARME | ALARME | vermelho, buzzer mudo por `SILENCIO_MS` | `buzzer silenciado por 60 s` |
 | Situação resolvida | NORMAL | verde | `NORMAL` |
+
+**Tela.** Na inicialização aparece o escudo AEGIS. Depois, a barra de cima mostra o estado (e pisca no
+ALARME), embaixo vem o motivo, e o meio alterna a cada 3 s entre três páginas: clima (temperatura,
+umidade, chuva e solo), gases (barras do MQ-2 e do MQ-135, cheias no limite de alarme) e água/PIR.
+O rodapé tem ícones de armado/desarmado, rede, buzzer mudo e exaustor.
+
+![Telas do OLED](img/telas-oled.png)
 
 As mudanças de estado aparecem no serial como `[AEGIS] estado: ATENCAO - presenca`.
 Com dois problemas ao mesmo tempo, vale o mais grave: um ALARME de fumaça vence a ATENÇÃO de chuva.

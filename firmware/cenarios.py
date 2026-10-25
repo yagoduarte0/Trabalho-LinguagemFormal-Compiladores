@@ -202,7 +202,7 @@ def _(g):
     molhar(g, "PINO_CHUVA", "CHUVA_SECO", "CHUVA_MOLHADO", 60)
     molhar(g, "PINO_SOLO", "SOLO_SECO", "SOLO_MOLHADO", 90)
     ciclo(g)
-    assert g["estado"] == g["ALARME"] and g["motivo"] == "RISCO DESLIZAMENTO", g["motivo"]
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "DESLIZAMENTO", g["motivo"]
     assert buzzer_ligado(g)
 
 
@@ -214,7 +214,7 @@ def _(g):
     molhar(g, "PINO_CHUVA", "CHUVA_SECO", "CHUVA_MOLHADO", 0)
     ciclo(g, vezes=20)
     assert not g["chovendo"]
-    assert g["estado"] == g["ALARME"] and g["motivo"] == "RISCO DESLIZAMENTO", g["motivo"]
+    assert g["estado"] == g["ALARME"] and g["motivo"] == "DESLIZAMENTO", g["motivo"]
     molhar(g, "PINO_SOLO", "SOLO_SECO", "SOLO_MOLHADO", 40)      # solo secou
     ciclo(g, vezes=20)
     assert g["estado"] == g["NORMAL"], g["motivo"]

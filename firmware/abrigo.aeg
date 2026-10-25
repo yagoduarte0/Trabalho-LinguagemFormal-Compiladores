@@ -82,6 +82,7 @@ law CICLO_MS = 500
 law TELEMETRIA_MS = 10000
 law DEPURAR = alive        // imprime as leituras cruas no serial (calibração)
 law DEPURAR_MS = 2000
+law PAGINA_MS = 3000       // a tela alterna entre 3 páginas de leituras
 
 // ------------------------------------------------------------------
 // Rede — opcional. "Wokwi-GUEST" é a rede aberta do simulador.
@@ -154,6 +155,8 @@ supply sirene_alta = dead
 supply rede = dead
 supply ultima_telemetria = 0
 supply ultima_depuracao = 0
+supply pagina = 0
+supply pagina_desde = 0
 
 // ------------------------------------------------------------------
 // Sentinelas: um por sensor
@@ -380,7 +383,7 @@ mission avaliar() {
     }
     checkpoint (deslizamento) {
         estado = ALARME
-        motivo = "RISCO DESLIZAMENTO"
+        motivo = "DESLIZAMENTO"
     }
     checkpoint (risco_fumaca == ALARME) {
         estado = ALARME
@@ -452,29 +455,111 @@ mission relatar() {
 }
 
 // OLED 128x64: 8 linhas de 16 caracteres
-mission atualizar_tela() {
-    display.write(0, "AEGIS " + NOMES_ESTADO[estado])
-    display.write(1, motivo)
-    display.write(2, "Chuva " + paper(chuva_pct) + "% S" + paper(solo_pct) + "%")
-    display.write(3, "Fumaca  " + paper(media_fumaca))
-    display.write(4, "Ar      " + paper(media_ar))
-    display.write(5, "Agua    " + paper(ration(distancia_agua)) + " cm")
-    display.write(6, "T " + paper(temperatura) + "C U " + paper(ration(umidade)) + "%")
-    checkpoint (!aquecido) {
-        display.write(7, "aquecendo MQ...")
-    } fallback checkpoint (silenciado) {
-        display.write(7, "BUZZER MUDO")
-    } fallback checkpoint (rele_ligado) {
-        display.write(7, "EXAUSTOR LIGADO")
-    } fallback checkpoint (armado && time.since(armado_em) < ATRASO_SAIDA_MS) {
-        display.write(7, "saia: " + paper(ration((ATRASO_SAIDA_MS - time.since(armado_em)) / 1000)) + " s")
-    } fallback checkpoint (armado) {
-        display.write(7, "ARMADO")
-    } fallback checkpoint (rede) {
-        display.write(7, "rede: online")
+// Tela OLED 128x64:
+//   y  0-10  barra de título com o estado (pisca junto com a sirene)
+//   y 14     motivo
+//   y 28-53  página de leituras, alternando a cada PAGINA_MS
+//   y 56     rodapé: ícones de armado, rede, buzzer mudo, exaustor e
+//            o indicador de página
+mission titulo() {
+    checkpoint (estado == ALARME && sirene_alta) {
+        display.rect(0, 0, 128, 11, dead)
+        display.text("AEGIS", 2, 2, 1)
+        display.text(NOMES_ESTADO[estado], 64, 2, 1)
     } fallback {
-        display.write(7, "rede: offline")
+        display.rect(0, 0, 128, 11, alive)
+        display.text("AEGIS", 2, 2, 0)
+        display.text(NOMES_ESTADO[estado], 64, 2, 0)
     }
+    display.center(motivo, 14, 1)
+    display.rect(0, 24, 128, 1, alive)
+}
+
+mission pagina_clima() {
+    display.icon("termometro", 0, 28)
+    display.text(paper(temperatura) + "C", 10, 28, 1)
+    display.icon("gota", 72, 28)
+    display.text(paper(ration(umidade)) + "%", 82, 28, 1)
+    display.icon("chuva", 0, 37)
+    display.bar(10, 38, 80, 7, chuva_pct, 100)
+    display.text(paper(chuva_pct) + "%", 92, 37, 1)
+    display.icon("solo", 0, 46)
+    display.bar(10, 47, 80, 7, solo_pct, 100)
+    display.text(paper(solo_pct) + "%", 92, 46, 1)
+}
+
+// barras cheias = limite de alarme (base + margem)
+mission pagina_gases() {
+    display.icon("fogo", 0, 28)
+    display.text("Fumaca", 10, 28, 1)
+    display.bar(62, 29, 64, 7, media_fumaca - base_fumaca, MARGEM_FUMACA)
+    display.text("Ar", 10, 37, 1)
+    display.bar(62, 38, 64, 7, media_ar - base_ar, MARGEM_AR)
+    checkpoint (!aquecido) {
+        display.text("aquecendo MQ", 10, 46, 1)
+    } fallback {
+        display.text("base " + paper(base_fumaca) + "/" + paper(base_ar), 10, 46, 1)
+    }
+}
+
+mission pagina_agua() {
+    display.icon("onda", 0, 28)
+    checkpoint (distancia_agua < 0.0) {
+        display.text("agua: sem eco", 10, 28, 1)
+    } fallback {
+        display.text("agua a " + paper(ration(distancia_agua)) + " cm", 10, 28, 1)
+    }
+    display.text("alarme < " + paper(ration(LIMITE_AGUA_CM)) + " cm", 10, 37, 1)
+    checkpoint (presenca) {
+        display.text("PIR: movimento", 10, 46, 1)
+    } fallback {
+        display.text("PIR: livre", 10, 46, 1)
+    }
+}
+
+mission rodape() {
+    checkpoint (armado) {
+        display.icon("cadeado", 0, 56)
+    } fallback {
+        display.icon("aberto", 0, 56)
+    }
+    checkpoint (rede) {
+        display.icon("wifi", 12, 56)
+    }
+    checkpoint (silenciado) {
+        display.icon("mudo", 24, 56)
+    }
+    checkpoint (rele_ligado) {
+        display.icon("ventoinha", 36, 56)
+    }
+    checkpoint (armado && time.since(armado_em) < ATRASO_SAIDA_MS) {
+        display.text("saia " + paper(ration((ATRASO_SAIDA_MS - time.since(armado_em)) / 1000)) + "s", 38, 56, 1)
+    } fallback checkpoint (em_entrada) {
+        display.text("digital!", 38, 56, 1)
+    }
+    display.rect(112, 58, 4, 4, pagina == 0)
+    display.rect(118, 58, 4, 4, pagina == 1)
+    display.rect(124, 58, 4, 4, pagina == 2)
+}
+
+mission atualizar_tela() {
+    checkpoint (time.since(pagina_desde) >= PAGINA_MS) {
+        pagina_desde = time.ms()
+        pagina = pagina + 1
+        checkpoint (pagina > 2) {
+            pagina = 0
+        }
+    }
+    display.clear()
+    titulo()
+    checkpoint (pagina == 0) {
+        pagina_clima()
+    } fallback checkpoint (pagina == 1) {
+        pagina_gases()
+    } fallback {
+        pagina_agua()
+    }
+    rodape()
     display.show()
 }
 
@@ -548,8 +633,10 @@ chronicle {
         log_entry("[AEGIS] leitor de digital pronto")
     }
     inicio = time.ms()
-    display.write(0, "AEGIS")
-    display.write(2, "iniciando...")
+    display.clear()
+    display.logo(48, 2)
+    display.center("AEGIS", 38, 1)
+    display.center("protecao offline", 50, 1)
     display.show()
 
     checkpoint (USAR_REDE) {

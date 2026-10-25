@@ -64,8 +64,9 @@ machine = types.SimpleNamespace(Pin=Pin, UART=UART)
 tempo = types.ModuleType("time")
 tempo.sleep_ms = lambda ms: None; tempo.sleep_us = lambda us: None
 tempo.ticks_ms = lambda: int(_t.time() * 1000); tempo.ticks_diff = lambda a, b: a - b
+framebuf = types.SimpleNamespace(FrameBuffer=lambda *a: None, MONO_VLSB=0, MONO_HLSB=3)
 sys.modules.update(machine=machine, dht=types.SimpleNamespace(),
-                   framebuf=types.SimpleNamespace(), time=tempo)
+                   framebuf=framebuf, time=tempo)
 g = {"__name__": "teste"}
 exec(compile(python_esp32, "runtime esp32", "exec"), g)
 f = g["finger"]

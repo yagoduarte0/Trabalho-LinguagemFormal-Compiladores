@@ -153,7 +153,10 @@ alvos de compilação (seção 3): o mesmo programa roda no PC e no ESP32.
 | `pwm.tone(p, hz)` / `pwm.off(p)` | toca ou cala um buzzer passivo | `machine.PWM` |
 | `sonar.distance(trig, echo)` | distância do HC-SR04 em cm, `-1` sem eco | pulso de 10 µs + `time_pulse_us` |
 | `climate.temperature(p)` / `climate.humidity(p)` | DHT22, `-1` se a leitura falhar | `dht.DHT22`, uma leitura a cada 2 s |
-| `display.write(linha, texto)` / `display.show()` | OLED SSD1306 128×64, linhas 0 a 7 | driver mínimo embutido, I2C SDA 21 / SCL 22 |
+| `display.write(linha, texto)` / `display.show()` | OLED SSD1306 128×64: texto nas linhas 0 a 7; `show()` envia a imagem | driver mínimo embutido, I2C SDA 21 / SCL 22 |
+| `display.clear()` / `display.text(t, x, y, cor)` / `display.center(t, y, cor)` | limpa; texto em pixels ou centralizado (`cor` 0 = apagado sobre fundo aceso) | `framebuf`, fonte 8×8 |
+| `display.rect(x, y, l, a, cheio)` / `display.bar(x, y, l, a, valor, maximo)` | retângulo; barra de nível proporcional | `framebuf.fill_rect` |
+| `display.icon(nome, x, y)` / `display.logo(x, y)` | ícone 8×8 (`termometro`, `gota`, `chuva`, `solo`, `fogo`, `onda`, `cadeado`, `aberto`, `wifi`, `mudo`, `ventoinha`); escudo AEGIS 32×32 | bitmaps embutidos no runtime |
 | `wifi.connect(ssid, senha, limite_ms)` | conecta ao WiFi, devolve `alive`/`dead` | `network.WLAN` |
 | `mqtt.connect(broker)` / `mqtt.publish(topico, msg)` / `mqtt.connected()` | avisos pela rede; falhas nunca derrubam o programa | `umqtt.simple` |
 | `time.ms()` / `time.since(marca)` | relógio em milissegundos | `time.ticks_ms` / `ticks_diff` |

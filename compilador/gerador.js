@@ -109,15 +109,41 @@ class _Clima:
 
 
 class _Tela:
+    # resume em texto o que seria desenhado: textos, <ícones> e barras em %
     def __init__(self):
         self.linhas = {}
+        self.quadro = []
         self.ultima = None
 
     def write(self, linha, texto):
         self.linhas[linha] = str(texto)
 
+    def clear(self):
+        self.linhas = {}
+        self.quadro = []
+
+    def text(self, texto, x, y, cor=1):
+        self.quadro.append(str(texto))
+
+    def center(self, texto, y, cor=1):
+        self.quadro.append(str(texto))
+
+    def rect(self, x, y, largura, altura, cheio=False):
+        pass
+
+    def bar(self, x, y, largura, altura, valor, maximo):
+        pct = int(100 * min(max(valor, 0), maximo) / maximo) if maximo > 0 else 0
+        self.quadro.append("[" + str(pct) + "%]")
+
+    def icon(self, nome, x, y):
+        self.quadro.append("<" + str(nome) + ">")
+
+    def logo(self, x, y):
+        self.quadro.append("<logo>")
+
     def show(self):
-        quadro = " | ".join(self.linhas[k] for k in sorted(self.linhas))
+        quadro = " | ".join([self.linhas[k] for k in sorted(self.linhas)] + self.quadro)
+        self.quadro = []
         if quadro != self.ultima:
             print("[oled] " + quadro)
             self.ultima = quadro
@@ -326,22 +352,42 @@ _SSD1306_INICIO = (0xAE, 0x20, 0x00, 0x40, 0xA1, 0xA8, 0x3F, 0xC8, 0xD3, 0x00,
                    0xA4, 0xA6, 0x8D, 0x14, 0xAF)
 
 
+# Desenhos 1 bit por pixel, linha a linha, bit mais alto à esquerda
+# (framebuf.MONO_HLSB). Gerados a partir de arte em texto ("#" = aceso).
+_LOGO = bytes((0x00, 0x00, 0x00, 0x00, 0x3F, 0xFF, 0xFF, 0xFC, 0x3F, 0xFF, 0xFF, 0xFC, 0x30, 0x00, 0x00, 0x0C, 0x30, 0x00, 0x00, 0x0C, 0x30, 0x01, 0x80, 0x0C, 0x30, 0x03, 0xC0, 0x0C, 0x30, 0x06, 0x60, 0x0C, 0x30, 0x06, 0x60, 0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x30, 0x0C, 0x30, 0x18, 0x18, 0x0C, 0x30, 0x18, 0x18, 0x0C, 0x30, 0x3F, 0xFC, 0x0C, 0x30, 0x3F, 0xFC, 0x0C, 0x30, 0x60, 0x06, 0x0C, 0x18, 0x60, 0x06, 0x18, 0x0C, 0xC0, 0x03, 0x30, 0x06, 0x00, 0x00, 0x60, 0x03, 0x00, 0x00, 0xC0, 0x01, 0x80, 0x01, 0x80, 0x00, 0xC0, 0x03, 0x00, 0x00, 0x60, 0x06, 0x00, 0x00, 0x30, 0x0C, 0x00, 0x00, 0x18, 0x18, 0x00, 0x00, 0x0C, 0x30, 0x00, 0x00, 0x06, 0x60, 0x00, 0x00, 0x03, 0xC0, 0x00, 0x00, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+_ICONES = {
+    "termometro": bytes((0x18, 0x24, 0x24, 0x24, 0x3C, 0x7E, 0x7E, 0x3C)),
+    "gota": bytes((0x18, 0x18, 0x3C, 0x7E, 0x7E, 0x7E, 0x3C, 0x00)),
+    "chuva": bytes((0x38, 0x7C, 0xFF, 0xFF, 0x00, 0x49, 0x92, 0x00)),
+    "solo": bytes((0x28, 0x10, 0x38, 0x10, 0xFF, 0xAA, 0x55, 0xFF)),
+    "fogo": bytes((0x10, 0x18, 0x3A, 0x3E, 0x6E, 0x46, 0x46, 0x3C)),
+    "onda": bytes((0x00, 0x66, 0x99, 0x00, 0x66, 0x99, 0x00, 0x00)),
+    "cadeado": bytes((0x3C, 0x42, 0x42, 0xFF, 0xE7, 0xE7, 0xFF, 0x00)),
+    "aberto": bytes((0x3C, 0x42, 0x40, 0xFF, 0xE7, 0xE7, 0xFF, 0x00)),
+    "wifi": bytes((0x3C, 0x42, 0x99, 0x24, 0x00, 0x18, 0x18, 0x00)),
+    "mudo": bytes((0x10, 0x30, 0xE9, 0xE6, 0xE6, 0xE9, 0x30, 0x10)),
+    "ventoinha": bytes((0x18, 0x99, 0x5A, 0x3C, 0x3C, 0x5A, 0x99, 0x18)),
+}
+
+
 class _Tela:
     ENDERECO = 0x3C
 
+    # Cada comando desenha no framebuffer; show() só envia a imagem ao
+    # display. Sem display (OSError no I2C), desenha à toa e segue.
     def __init__(self, sda=21, scl=22):
         self._sda = sda
         self._scl = scl
         self._pronta = None
-        self._linhas = {}
+        self._buffer = bytearray(1024)
+        self._fb = _framebuf.FrameBuffer(self._buffer, 128, 64, _framebuf.MONO_VLSB)
+        self._imagens = {}
 
     def _iniciar(self):
         if self._pronta is None:
             try:
                 self._i2c = _machine.I2C(0, sda=_machine.Pin(self._sda),
                                          scl=_machine.Pin(self._scl), freq=400000)
-                self._buffer = bytearray(1024)
-                self._fb = _framebuf.FrameBuffer(self._buffer, 128, 64, _framebuf.MONO_VLSB)
                 for c in _SSD1306_INICIO:
                     self._comando(c)
                 self._pronta = True
@@ -353,15 +399,49 @@ class _Tela:
     def _comando(self, c):
         self._i2c.writeto(self.ENDERECO, bytearray((0x80, c)))
 
+    def clear(self):
+        self._fb.fill(0)
+
+    # linha de texto 0..7, como antes: apaga só a faixa da linha
     def write(self, linha, texto):
-        self._linhas[linha] = str(texto)
+        self._fb.fill_rect(0, int(linha) * 8, 128, 8, 0)
+        self._fb.text(str(texto)[:16], 0, int(linha) * 8, 1)
+
+    def text(self, texto, x, y, cor=1):
+        self._fb.text(str(texto), int(x), int(y), 1 if cor else 0)
+
+    def center(self, texto, y, cor=1):
+        texto = str(texto)[:16]
+        self.text(texto, (128 - 8 * len(texto)) // 2, y, cor)
+
+    def rect(self, x, y, largura, altura, cheio=False):
+        desenhar = self._fb.fill_rect if cheio else self._fb.rect
+        desenhar(int(x), int(y), int(largura), int(altura), 1)
+
+    def bar(self, x, y, largura, altura, valor, maximo):
+        x, y, largura, altura = int(x), int(y), int(largura), int(altura)
+        self._fb.rect(x, y, largura, altura, 1)
+        cheio = int((largura - 2) * min(max(valor, 0), maximo) / maximo) if maximo > 0 else 0
+        self._fb.fill_rect(x + 1, y + 1, cheio, altura - 2, 1)
+
+    def _imagem(self, nome, dados, largura, altura):
+        img = self._imagens.get(nome)
+        if img is None:
+            img = _framebuf.FrameBuffer(bytearray(dados), largura, altura, _framebuf.MONO_HLSB)
+            self._imagens[nome] = img
+        return img
+
+    def icon(self, nome, x, y):
+        dados = _ICONES.get(nome)
+        if dados is not None:
+            self._fb.blit(self._imagem(nome, dados, 8, 8), int(x), int(y))
+
+    def logo(self, x, y):
+        self._fb.blit(self._imagem("logo", _LOGO, 32, 32), int(x), int(y))
 
     def show(self):
         if not self._iniciar():
             return
-        self._fb.fill(0)
-        for linha in self._linhas:
-            self._fb.text(self._linhas[linha][:16], 0, linha * 8, 1)
         try:
             for c in (0x21, 0, 127, 0x22, 0, 7):
                 self._comando(c)
