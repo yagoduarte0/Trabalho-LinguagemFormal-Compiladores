@@ -1,0 +1,426 @@
+% =====================================================================
+% AEGIS — artigo no modelo IEEE (conferência, duas colunas)
+% Trabalho de Linguagens Formais e Compiladores
+%
+% Como usar no Overleaf: New Project > Upload Project > este arquivo
+% (ou cole no main.tex de um projeto "IEEE Conference Template").
+%
+% Marcadores:
+%   \pendente{...}  -> trecho que ainda falta escrever (sai em vermelho)
+%   \figura{...}    -> lugar reservado para uma imagem sua; troque por
+%                      \includegraphics quando subir o arquivo
+% =====================================================================
+\documentclass[conference]{IEEEtran}
+
+\usepackage[brazil]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{url}
+
+% ---------- marcadores de rascunho -----------------------------------
+\newcommand{\pendente}[1]{\textcolor{red}{[\textbf{PENDENTE:} #1]}}
+\newcommand{\figura}[1]{%
+  \fbox{\parbox[c][3.2cm][c]{0.92\columnwidth}{\centering\small\textit{#1}}}}
+
+% ---------- realce de código AEGIS -----------------------------------
+\lstdefinelanguage{AEGIS}{
+  morekeywords={chronicle,scavenge,mission,supply,law,survivor,cache,stash,
+    checkpoint,fallback,watch,patrol,extract,quarantine,catch,outbreak,
+    ambush,broadcast,silence,hide,log_entry},
+  morekeywords=[2]{ration,vital,status,paper,radio,silent,alive,dead},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+}
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\bfseries\color{blue!60!black},
+  keywordstyle=[2]\color{teal!70!black},
+  commentstyle=\itshape\color{gray},
+  stringstyle=\color{red!60!black},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+  captionpos=b,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  xleftmargin=1.5em,
+  framexleftmargin=1.5em,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+           {ã}{{\~a}}1 {õ}{{\~o}}1 {ç}{{\c{c}}}1 {ê}{{\^e}}1 {â}{{\^a}}1,
+}
+\renewcommand{\lstlistingname}{Listagem}
+
+\begin{document}
+
+\title{AEGIS: uma Linguagem de Domínio Específico para Automação\\
+de Abrigos Residenciais em Microcontroladores}
+
+\author{\IEEEauthorblockN{Yago Duarte de Andrade}
+\IEEEauthorblockA{\textit{\pendente{curso}} \\
+\textit{\pendente{instituição}}\\
+\pendente{cidade}, Brasil \\
+\pendente{e-mail}}
+}
+
+\maketitle
+
+% =====================================================================
+\begin{abstract}
+Este artigo apresenta a AEGIS, uma linguagem de domínio específico (DSL)
+para descrever as regras de um sistema de monitoramento de abrigos
+residenciais em áreas de risco de desastre, e o compilador que a traduz
+para Python. O compilador, escrito em JavaScript, é organizado em três
+fases: análise léxica por expressões regulares com \textit{maximal munch},
+análise sintática descendente recursiva sobre uma gramática LL(1) que
+produz uma árvore sintática abstrata (AST) de 26 tipos de nó, e geração de
+código com dois alvos, um simulado para PC e outro em MicroPython para o
+ESP32. Como estudo de caso, o firmware completo de um abrigo, com sete
+sensores, máquina de estados de risco, display OLED, sirene, relé e leitor
+biométrico, foi escrito em AEGIS. O compilador passa em 82 testes
+automatizados e o firmware em 29 cenários executados no PC e no simulador
+Wokwi. \pendente{fechar com uma frase de conclusão}
+\end{abstract}
+
+\begin{IEEEkeywords}
+compiladores, linguagem de domínio específico, análise sintática LL(1),
+sistemas embarcados, ESP32, prevenção de desastres
+\end{IEEEkeywords}
+
+% =====================================================================
+\section{Introdução}
+
+% Ideia do parágrafo: o problema real (desastres) motiva o produto.
+O Brasil tem cerca de 8,27 milhões de pessoas vivendo em áreas de risco de
+desastres naturais~\cite{ibge2018}, e mais de 1.600 desastres foram
+registrados em 2024~\cite{cemaden2024}. Sistemas comerciais de automação
+residencial priorizam o conforto e costumam depender de serviços em
+nuvem, o que os torna frágeis justamente quando a energia ou a internet
+falham.
+
+% Ideia do parágrafo: por que criar uma linguagem em vez de escrever o
+% firmware direto em Python/C.
+\pendente{explicar a motivação para uma DSL: as regras de reação a
+emergências ficam legíveis como um ``diário de operação'' do abrigo, e o
+mesmo programa roda no PC e na placa}
+
+% Ideia do parágrafo: contribuições.
+As contribuições deste trabalho são:
+\begin{itemize}
+  \item a especificação da linguagem AEGIS, com 29 palavras reservadas,
+        25 símbolos e uma gramática LL(1) em EBNF;
+  \item um compilador de três fases com recuperação de erros e dois alvos
+        de geração de código;
+  \item o firmware de um abrigo escrito na própria linguagem, validado em
+        simulação.
+\end{itemize}
+
+O restante do artigo está organizado assim: a Seção~\ref{sec:fundamentos}
+revisa os conceitos de linguagens formais usados; a
+Seção~\ref{sec:linguagem} apresenta a linguagem; a
+Seção~\ref{sec:compilador} descreve o compilador; a
+Seção~\ref{sec:firmware} mostra o estudo de caso; a
+Seção~\ref{sec:resultados} relata os testes; e a
+Seção~\ref{sec:conclusao} conclui.
+
+% =====================================================================
+\section{Fundamentação Teórica}
+\label{sec:fundamentos}
+
+\subsection{Linguagens regulares e análise léxica}
+\pendente{expressões regulares, autômatos finitos, nível 3 da hierarquia
+de Chomsky; por que tokens são uma linguagem regular~\cite{hopcroft2006}}
+
+\subsection{Gramáticas livres de contexto e análise sintática}
+\pendente{GLC, nível 2 da hierarquia, derivação, árvore de derivação vs.
+AST; gramáticas LL(1) e análise descendente recursiva~\cite{aho2007}}
+
+\subsection{Geração de código}
+\pendente{tradução dirigida pela sintaxe, visitante sobre a AST,
+compilação para outra linguagem de alto nível (\textit{transpiling})}
+
+% =====================================================================
+\section{A Linguagem AEGIS}
+\label{sec:linguagem}
+
+A AEGIS usa um vocabulário temático de sobrevivência: em vez de
+\texttt{function}, \texttt{if} e \texttt{print}, o programador escreve
+\texttt{mission}, \texttt{checkpoint} e \texttt{log\_entry}. Os blocos são
+delimitados por chaves, como em C, e a quebra de linha ou o ponto e vírgula
+encerram um comando. A Tabela~\ref{tab:palavras} resume as palavras
+reservadas.
+
+\begin{table}[htbp]
+\caption{Palavras reservadas da AEGIS por categoria}
+\label{tab:palavras}
+\centering
+\small
+\begin{tabular}{@{}lp{5.2cm}@{}}
+\toprule
+\textbf{Categoria} & \textbf{Palavras} \\
+\midrule
+Declaração (8) & \texttt{chronicle scavenge mission supply law survivor cache stash} \\
+Tipo (6)       & \texttt{ration vital status paper radio silent} \\
+Controle (5)   & \texttt{checkpoint fallback watch patrol extract} \\
+Hardware (3)   & \texttt{broadcast silence hide} \\
+Erro (3)       & \texttt{quarantine catch outbreak} \\
+Evento/E-S (2) & \texttt{ambush log\_entry} \\
+Booleanos (2)  & \texttt{alive dead} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A Listagem~\ref{lst:exemplo} mostra um programa completo: uma função que
+lê um sensor de presença e uma tarefa que aciona um alarme.
+
+\begin{lstlisting}[language=AEGIS,caption={Programa de exemplo em AEGIS},label={lst:exemplo}]
+scavenge gpio
+
+law MOTION_PIN = 27
+law ALARM_RADIO = 5
+
+mission check_perimeter() -> status {
+    supply detected = gpio.read(radio(MOTION_PIN))
+    extract detected
+}
+
+survivor perimeter_watch {
+    watch {
+        checkpoint (check_perimeter()) {
+            broadcast(radio(ALARM_RADIO))
+            hide(10000)
+            silence(radio(ALARM_RADIO))
+        } fallback {
+            log_entry("area limpa, nenhum sinal")
+        }
+        hide(500)
+    }
+}
+\end{lstlisting}
+
+\pendente{comentar a biblioteca de módulos embutidos (gpio, adc, sonar,
+climate, display, wifi, mqtt, finger): não são palavras reservadas, e a
+API é a mesma nos dois alvos}
+
+% =====================================================================
+\section{O Compilador}
+\label{sec:compilador}
+
+O compilador foi escrito em JavaScript sem dependências externas, o que
+permite executá-lo tanto pela linha de comando (Node.js) quanto numa
+interface web que exibe cada fase. A Fig.~\ref{fig:pipeline} mostra o
+encadeamento das fases; a compilação para na primeira fase que acusar
+erro.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.35cm,
+  fase/.style={draw, rounded corners, fill=blue!8, align=center,
+               font=\scriptsize, minimum height=0.9cm, text width=1.35cm},
+  dado/.style={align=center, font=\scriptsize\itshape},
+  seta/.style={-{Stealth[length=1.6mm]}}]
+  \node[dado] (fonte) {fonte\\.aeg};
+  \node[fase, right=of fonte] (lex) {Análise\\léxica};
+  \node[fase, right=of lex] (sin) {Análise\\sintática};
+  \node[fase, right=of sin] (ger) {Geração\\de código};
+  \node[dado, right=of ger] (py) {Python};
+  \draw[seta] (fonte) -- (lex);
+  \draw[seta] (lex) -- node[above, font=\tiny]{tokens} (sin);
+  \draw[seta] (sin) -- node[above, font=\tiny]{AST} (ger);
+  \draw[seta] (ger) -- (py);
+\end{tikzpicture}
+\caption{Fases do compilador AEGIS.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Análise léxica}
+
+O analisador léxico percorre o fonte uma única vez, testando na posição
+atual uma lista ordenada de expressões regulares. A primeira que casar
+vence, e a ordem implementa a regra do \textit{maximal munch}: símbolos de
+dois caracteres antes dos de um (\texttt{->} antes de \texttt{-}),
+comentários antes da divisão e literais decimais antes de inteiros. Cada
+token registra tipo, categoria, lexema, valor convertido, linha e coluna.
+
+Três erros léxicos são registrados sem interromper a análise: aspas não
+fechadas, comentário de bloco não fechado e caractere não reconhecido.
+Assim o programador vê todos os erros de uma vez.
+
+\pendente{explicar a quebra de linha dentro de parênteses (como no Python)
+e a heurística que evita que um parêntese esquecido engula o resto do
+programa}
+
+\figura{Figura: tabela de tokens na interface web\\
+(sugestão: print da aba ``Tokens'' do compilador/index.html)}
+
+\subsection{Análise sintática}
+
+O analisador sintático é descendente recursivo, com uma função por regra
+da gramática. A gramática é LL(1), com um único ponto que exige olhar dois
+tokens à frente: distinguir uma atribuição (\texttt{x = 1}) de uma chamada
+solta (\texttt{hide(500)}). A Listagem~\ref{lst:ebnf} mostra a parte da
+gramática que define as expressões; a precedência dos operadores está
+codificada na ordem das regras, da menor para a maior.
+
+\begin{lstlisting}[caption={Regras de expressão da gramática (EBNF)},label={lst:ebnf},numbers=none]
+expressao     = ou ;
+ou            = e , { "||" , e } ;
+e             = igualdade , { "&&" , igualdade } ;
+igualdade     = comparacao , { ("==" | "!=") , comparacao } ;
+comparacao    = adicao , { ("<"|">"|"<="|">=") , adicao } ;
+adicao        = multiplicacao , { ("+"|"-") , multiplicacao } ;
+multiplicacao = unario , { ("*"|"/") , unario } ;
+unario        = ("!"|"-") , unario | chamada ;
+chamada       = primario , { "(" , [argumentos] , ")"
+                           | "." , IDENT | "[" , expressao , "]" } ;
+\end{lstlisting}
+
+O resultado é uma AST com 26 tipos de nó, divididos em estrutura do
+programa, comandos e expressões. Todo nó guarda linha e coluna, o que
+permite apontar erros com precisão.
+
+\pendente{recuperação de erros em modo pânico: o que \texttt{sincronizar()}
+descarta e por que sincronizar em qualquer separador}
+
+\pendente{decisões de projeto: palavras chamáveis (\texttt{broadcast},
+\texttt{hide}) como identificadores contextuais; encadeamento
+\texttt{fallback checkpoint} gerando \texttt{elif}}
+
+\figura{Figura: AST desenhada pela interface web\\
+(sugestão: print da aba ``AST'' para o exemplo do checkpoint)}
+
+\subsection{Geração de código}
+
+O gerador é um visitante recursivo sobre a AST. A Tabela~\ref{tab:traducao}
+mostra a correspondência das principais construções.
+
+\begin{table}[htbp]
+\caption{Tradução de AEGIS para Python}
+\label{tab:traducao}
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{AEGIS} & \textbf{Python} \\
+\midrule
+\texttt{supply x = 1}                 & \texttt{x = 1} \\
+\texttt{mission f(ration a)}          & \texttt{def f(a):} \\
+\texttt{checkpoint (c) \{\} fallback} & \texttt{if c: ... else:} \\
+\texttt{watch \{\}}                   & \texttt{while True:} \\
+\texttt{patrol(n) \{\}}               & \texttt{for \_ in range(n):} \\
+\texttt{quarantine \{\} catch (e)}    & \texttt{try: ... except} \\
+\texttt{extract x}                    & \texttt{return x} \\
+\texttt{\&\& || !}                    & \texttt{and or not} \\
+\texttt{alive / dead}                 & \texttt{True / False} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Como a linguagem tem construções de hardware que não existem em Python, o
+gerador emite um \textit{runtime} embutido no topo do arquivo, e o código
+gerado roda sem dependências. Há dois runtimes com a mesma API, escolhidos
+pela opção de alvo: \texttt{simulado}, para o PC, com sensores falsos; e
+\texttt{esp32}, que usa os módulos \texttt{machine}, \texttt{dht},
+\texttt{network} e \texttt{umqtt} do MicroPython. O corpo do programa
+traduzido é idêntico nos dois.
+
+\pendente{as outras decisões do gerador: emissão automática de
+\texttt{global}, bloco vazio vira \texttt{pass}, mapa de linha gerada
+para linha de origem, preservação do tipo \texttt{vital} em \texttt{10.0}}
+
+% =====================================================================
+\section{Estudo de Caso: o Firmware do Abrigo}
+\label{sec:firmware}
+
+O firmware do abrigo (\texttt{abrigo.aeg}, cerca de 650 linhas) foi
+escrito inteiramente em AEGIS e compilado para MicroPython. Um ESP32 lê
+presença (PIR), nível da água (HC-SR04), fumaça (MQ-2), qualidade do ar
+(MQ-135), temperatura e umidade (DHT22), chuva e umidade do solo. Cada
+sensor tem uma tarefa (\texttt{survivor}) que classifica a leitura em
+NORMAL, ATENÇÃO ou ALARME; a cada ciclo, o pior risco decide os LEDs, a
+sirene, o display OLED, o relé do exaustor e, se houver WiFi, um aviso
+por MQTT. O sistema funciona sem internet: a rede é só um canal a mais.
+
+\figura{Figura: diagrama do circuito no Wokwi ou foto da montagem\\
+(sugestão: print do firmware/diagram.json aberto no VS Code)}
+
+\pendente{explicar a máquina de estados NORMAL/ATENÇÃO/ALARME e a
+prioridade dos riscos (função \texttt{avaliar})}
+
+\pendente{tratamento dos sensores MQ: média móvel, base de ar limpo
+adaptativa e histerese; risco de deslizamento combinando chuva e solo}
+
+\pendente{arme e desarme pela digital (AS608 na placa, Touch ID do Mac
+na simulação)}
+
+\figura{Figura: telas do display OLED\\
+(arquivo pronto em docs/img/telas-oled.png)}
+
+% =====================================================================
+\section{Testes e Resultados}
+\label{sec:resultados}
+
+O compilador tem uma suíte de 82 testes automatizados, sem dependências
+externas, que cobre as três fases e os dois alvos; todos passam. O
+firmware é verificado por 29 cenários executados no PC sobre o alvo
+simulado, que forçam leituras de sensor e conferem o estado resultante;
+todos passam. O circuito também foi executado no simulador
+Wokwi~\cite{wokwi}, com as mesmas ligações da placa real, de modo que o
+mesmo \texttt{main.py} roda nos dois.
+
+\pendente{tabela com o tamanho de cada módulo do compilador (linhas de
+código) e o número de testes por fase}
+
+\pendente{exemplo de mensagem de erro com linha e coluna, mostrando a
+recuperação em modo pânico reportando mais de um erro}
+
+\pendente{custo do protótipo (R\$ 235,92 a base; R\$ 408,42 com OLED,
+biometria e sensores extras), se o professor quiser a parte de hardware}
+
+% =====================================================================
+\section{Conclusão}
+\label{sec:conclusao}
+
+\pendente{retomar o objetivo e o que foi entregue}
+
+Como trabalhos futuros, destacam-se: uma fase de análise semântica, já
+que os tipos declarados (\texttt{ration}, \texttt{vital}, \texttt{status})
+são registrados na AST mas ainda não verificados; alertas pelo Telegram;
+um painel web servido pelo próprio ESP32 na rede local; e a montagem do
+hardware real.
+
+% =====================================================================
+% Referências: confira cada uma antes de entregar.
+\begin{thebibliography}{00}
+\bibitem{aho2007} A. V. Aho, M. S. Lam, R. Sethi e J. D. Ullman,
+\textit{Compilers: Principles, Techniques, and Tools}, 2.\ ed.
+Boston: Addison-Wesley, 2007.
+
+\bibitem{hopcroft2006} J. E. Hopcroft, R. Motwani e J. D. Ullman,
+\textit{Introduction to Automata Theory, Languages, and Computation},
+3.\ ed. Boston: Addison-Wesley, 2006.
+
+\bibitem{ibge2018} IBGE, \textit{População em Áreas de Risco no Brasil}.
+Rio de Janeiro: IBGE, 2018. \pendente{conferir dados e link}
+
+\bibitem{cemaden2024} Cemaden, \pendente{relatório de desastres de 2024:
+título e link}
+
+\bibitem{wokwi} Wokwi, ``World's most advanced ESP32 simulator''.
+[Online]. Disponível: \url{https://wokwi.com}
+
+\bibitem{micropython} MicroPython. [Online]. Disponível:
+\url{https://micropython.org} \pendente{citar no texto ou remover}
+\end{thebibliography}
+
+\end{document}
