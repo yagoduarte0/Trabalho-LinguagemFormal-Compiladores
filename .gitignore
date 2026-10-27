@@ -14,3 +14,6 @@ slides/
 # Firmware: binario do MicroPython (baixado por firmware/wokwi.sh) e venv do mpremote
 firmware/*.bin
 firmware/.venv/
+
+# Indice local do CodeGraph (regeneravel)
+.codegraph/
