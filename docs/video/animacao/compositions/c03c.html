@@ -1,21 +1,183 @@
-<!-- Cena 03c (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 03c — geração de código.
+     G  o gerador percorre o programa: cada linha AEGIS acende e a linha
+        Python que ela gera é escrita ao lado (mapa de linhas real);
+     A  os dois alvos: mesmo programa, runtime diferente (imports reais);
+     T  a saída real da suíte de testes rolando até 84/84. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .c03c-ed { width: 820px; overflow: hidden; }
+    .c03c-ed .lista { position: absolute; left: 18px; top: 66px; right: 0; }
+    .c03c-ed .codigo { font-size: 24px; line-height: 40px; height: 40px; }
+    .c03c-ed .codigo .ln { width: 46px; margin-right: 18px; }
+    .c03c-luz { height: 40px; background: rgba(168, 208, 74, 0.13); border-left: 4px solid #a8d04a; }
+    #c03c-feixe { left: 0; top: 0; width: 1920px; height: 2000px; overflow: visible; }
+    #c03c-rot-g { left: 120px; top: 140px; width: 1680px; display: flex; justify-content: space-between; font-size: 24px; }
+
+    .c03c-alvo { top: 1500px; width: 740px; padding: 26px; border: 2px solid rgba(200, 184, 138, 0.4); border-radius: 12px; background: rgba(17, 22, 16, 0.95); }
+    .c03c-alvo .cab { display: flex; align-items: center; gap: 20px; }
+    .c03c-alvo .cab svg { width: 74px; height: 60px; }
+    .c03c-alvo .nome { font-family: "League Gothic", sans-serif; font-size: 58px; letter-spacing: 0.05em; color: #ede4cc; line-height: 1; }
+    .c03c-alvo .cab .rotulo { margin-top: 6px; }
+    .c03c-camada { margin-top: 22px; padding: 14px 18px; border: 2px solid rgba(240, 181, 69, 0.6); border-radius: 8px; background: rgba(240, 181, 69, 0.07); }
+    .c03c-prog { margin-top: 14px; padding: 14px 18px; border: 2px solid rgba(168, 208, 74, 0.55); border-radius: 8px; background: rgba(168, 208, 74, 0.06); }
+    .c03c-camada .rotulo { color: #f0b545; }
+    .c03c-prog .rotulo { color: #a8d04a; }
+    .c03c-alvo .codigo { font-size: 22px; line-height: 34px; }
+    #c03c-igual { left: 876px; top: 1930px; width: 110px; text-align: center; font-family: "League Gothic", sans-serif; font-size: 130px; color: #a8d04a; }
+
+    #c03c-term { left: 2500px; top: 1480px; width: 1500px; height: 760px; overflow: hidden; }
+    #c03c-term .lista { position: absolute; left: 26px; top: 66px; right: 26px; }
+    #c03c-term .lt { font-family: "JetBrains Mono", monospace; font-size: 24px; line-height: 36px; white-space: pre; color: #ede4cc; }
+    #c03c-term .lt b { color: #a8d04a; }
+    #c03c-final { left: 2500px; top: 2280px; width: 1500px; display: flex; align-items: baseline; gap: 28px; }
+    #c03c-final .v { font-size: 220px; line-height: 1; }
+    #c03c-final .r { font-size: 44px; color: #ede4cc; }
   </style>
+
   <div id="root" data-composition-id="c03c" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">03c</span><span id="c03c-cap"></span></div>
-      <div id="c03c-titulo" class="prov display"></div>
+      <div id="c03c-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <div id="c03c-rot-g"><span class="rotulo">AEGIS · exemplo de referência</span><span class="rotulo">Python gerado</span></div>
+        <div class="painel c03c-ed" id="c03c-src" style="left: 120px; top: 190px; height: 1100px">
+          <div class="barra"><i></i><i></i><i></i><span style="margin-left: 10px">sentinela.aeg</span></div>
+          <div class="lista" id="c03c-src-l"></div>
+        </div>
+        <div class="painel c03c-ed" id="c03c-py" style="left: 980px; top: 190px; height: 1100px">
+          <div class="barra"><i></i><i></i><i></i><span style="margin-left: 10px">sentinela.py</span></div>
+          <div class="lista" id="c03c-py-l"></div>
+        </div>
+        <div class="c03c-luz" id="c03c-luz-src" style="left: 120px; width: 820px"></div>
+        <div class="c03c-luz" id="c03c-luz-py" style="left: 980px; width: 820px"></div>
+        <svg id="c03c-feixe" viewBox="0 0 1920 2000"><path id="c03c-feixe-p" d="" fill="none" stroke="#A8D04A" stroke-width="4" stroke-opacity="0.85"/></svg>
+
+        <div class="c03c-alvo" id="c03c-a1" style="left: 60px">
+          <div class="cab">
+            <svg viewBox="0 0 74 60"><rect x="10" y="6" width="54" height="36" rx="3" fill="none" stroke="#C8B88A" stroke-width="4"/><path d="M2 50 H72 L66 42 H8 Z" fill="#C8B88A"/></svg>
+            <div><div class="nome">simulado</div><div class="rotulo">roda no computador · PC</div></div>
+          </div>
+          <div class="c03c-camada"><div class="rotulo">camada de hardware (runtime)</div><div class="codigo" id="c03c-rt1"></div></div>
+          <div class="c03c-prog"><div class="rotulo">programa traduzido</div><div class="codigo" id="c03c-pg1"></div></div>
+        </div>
+        <div id="c03c-igual">=</div>
+        <div class="c03c-alvo" id="c03c-a2" style="left: 1010px">
+          <div class="cab">
+            <svg viewBox="0 0 74 60"><rect x="16" y="10" width="42" height="40" rx="3" fill="none" stroke="#A8D04A" stroke-width="4"/><g stroke="#A8D04A" stroke-width="3"><path d="M24 2v8M37 2v8M50 2v8M24 50v8M37 50v8M50 50v8M8 20h8M8 30h8M8 40h8M58 20h8M58 30h8M58 40h8"/></g></svg>
+            <div><div class="nome">esp32</div><div class="rotulo">MicroPython · na placa</div></div>
+          </div>
+          <div class="c03c-camada"><div class="rotulo">camada de hardware (runtime)</div><div class="codigo" id="c03c-rt2"></div></div>
+          <div class="c03c-prog"><div class="rotulo">programa traduzido</div><div class="codigo" id="c03c-pg2"></div></div>
+        </div>
+
+        <div class="painel" id="c03c-term">
+          <div class="barra"><i></i><i></i><i></i><span style="margin-left: 10px">$ node compilador/testes.js</span></div>
+          <div class="lista" id="c03c-term-l"></div>
+        </div>
+        <div id="c03c-final"><div class="v display verde" id="c03c-84">00</div><div class="r">de 84 testes passaram</div></div>
+      </div>
+      <div class="cap" id="c03c-cap"><span class="ponto"></span><span class="num">03</span><span>Geração de código</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("03c", p, n);
+    const FIM = AEGIS.dur("03c");
+    const D = window.AEGIS_DADOS.perimetro;
+    const T = window.AEGIS_DADOS.testes;
+    const P = "#c03c-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["03c"].titulo;
-    document.querySelector("#c03c-cap").textContent = titulo;
-    document.querySelector("#c03c-titulo").textContent = titulo;
-    tl.fromTo("#c03c-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    const LH = 40, TOPO = 190 + 66;
+    const yL = (i) => TOPO + i * LH;                          // i 0-based
+    const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+    // fonte AEGIS e Python real
+    const src = document.querySelector("#c03c-src-l");
+    D.html.forEach((h, i) => src.insertAdjacentHTML("beforeend",
+      `<div class="codigo"><span class="ln">${i + 1}</span><span class="txt">${h || " "}</span></div>`));
+    const py = document.querySelector("#c03c-py-l");
+    // colore uma linha de Python lendo caractere a caractere
+    const PY_KW = new Set(["def", "return", "while", "if", "else", "True", "False", "raise", "try", "except"]);
+    function corPy(l) {
+      let out = "", i = 0;
+      while (i < l.length) {
+        const c = l[i];
+        if (c === "#") { out += `<span class="co">${esc(l.slice(i))}</span>`; break; }
+        if (c === '"') {
+          const f = l.indexOf('"', i + 1) + 1 || l.length;
+          out += `<span class="st">${esc(l.slice(i, f))}</span>`; i = f; continue;
+        }
+        const m = /^[A-Za-z_]\w*|^\d+/.exec(l.slice(i));
+        if (m) {
+          const w = m[0];
+          out += PY_KW.has(w) ? `<span class="kw">${w}</span>` : /^\d/.test(w) ? `<span class="nu">${w}</span>` : w;
+          i += w.length; continue;
+        }
+        out += esc(c); i++;
+      }
+      return out;
+    }
+    D.python.forEach((l, i) => py.insertAdjacentHTML("beforeend",
+      `<div class="codigo"><span class="ln">${i + 1}</span><span class="txt">${corPy(l) || " "}</span></div>`));
+    const linhasPy = gsap.utils.toArray("#c03c-py-l .txt");
+
+    // alvos: runtime real de cada um e o mesmo começo de programa
+    document.querySelector("#c03c-rt1").innerHTML = D.runtimeSimulado.map(esc).join("<br>") + "<br><span class='co'># sensores falsos, tela no terminal</span>";
+    document.querySelector("#c03c-rt2").innerHTML = D.runtimeEsp32.map(esc).join("<br>");
+    const trechoPy = D.python.slice(3, 8).map(corPy).join("<br>");
+    document.querySelector("#c03c-pg1").innerHTML = trechoPy;
+    document.querySelector("#c03c-pg2").innerHTML = trechoPy;
+
+    // terminal com a saída real dos testes
+    const term = document.querySelector("#c03c-term-l");
+    T.forEach((l) => term.insertAdjacentHTML("beforeend",
+      `<div class="lt">${esc(l).replace(/^OK/, "<b>OK</b>").replace(/(\d+\/\d+ testes passaram\.)/, "<b>$1</b>")}</div>`));
+
+    tl.set(linhasPy, { clipPath: "inset(0 100% 0 0)" }, 0);
+    tl.set(["#c03c-luz-src", "#c03c-luz-py", "#c03c-feixe-p", "#c03c-a1", "#c03c-a2", "#c03c-igual", "#c03c-final"], { opacity: 0 }, 0);
+
+    // ---- G: entra com o chicote, o gerador percorre o programa ---------------
+    AEGIS.cameraEm(tl, P, 0, { x: -500, y: 520, s: 1 });
+    cam(0, { x: 960, y: 520, s: 1 }, 0.8, "expo.out");
+    tl.fromTo("#c03c-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    const tG0 = W("gerador") - 0.1, tG1 = W("Python") + 0.4;
+    const passo = (tG1 - tG0) / D.python.length;
+    tl.set(["#c03c-luz-src", "#c03c-luz-py", "#c03c-feixe-p"], { opacity: 1 }, tG0);
+    D.python.forEach((l, i) => {
+      const t = tG0 + i * passo;
+      const orig = D.pythonMapa[i];
+      tl.set("#c03c-luz-py", { y: yL(i) }, t);
+      AEGIS.digitar(tl, linhasPy[i], t, passo * 0.9);
+      if (orig) {
+        const ys = yL(orig - 1) + LH / 2, yp = yL(i) + LH / 2;
+        tl.set("#c03c-luz-src", { y: yL(orig - 1) }, t);
+        tl.set("#c03c-feixe-p", { attr: { d: `M940 ${ys} C 960 ${ys}, 960 ${yp}, 980 ${yp}` } }, t);
+      }
+    });
+    cam(tG0, { x: 960, y: 900, s: 1 }, tG1 - tG0, "power1.inOut");
+    tl.to(["#c03c-luz-src", "#c03c-luz-py", "#c03c-feixe-p"], { opacity: 0, duration: 0.3 }, tG1 + 0.1);
+
+    // ---- A: dois alvos --------------------------------------------------------
+    cam(W("São") - 0.35, { x: 931, y: 1860, s: 1 }, 0.9, "power3.inOut");
+    tl.fromTo("#c03c-a1", { opacity: 0, x: 200, scale: 0.9 }, { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "expo.out", immediateRender: false }, W("simulado") - 0.2);
+    tl.fromTo("#c03c-a2", { opacity: 0, x: -200, scale: 0.9 }, { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "expo.out", immediateRender: false }, W("MicroPython") - 0.2);
+    tl.fromTo("#c03c-igual", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)", immediateRender: false }, W("igual") - 0.1);
+    tl.to(".c03c-prog", { borderColor: "#a8d04a", boxShadow: "0 0 40px rgba(168,208,74,0.35)", duration: 0.3 }, W("igual"));
+    tl.to(".c03c-camada", { borderColor: "#f0b545", boxShadow: "0 0 40px rgba(240,181,69,0.35)", duration: 0.3 }, W("camada"));
+    tl.fromTo(".c03c-camada", { rotationX: 0 }, { rotationX: 360, duration: 0.8, ease: "power3.inOut", stagger: 0.15 }, W("camada") + 0.1);
+
+    // ---- T: chicote até o terminal dos testes --------------------------------
+    cam(W("Tudo") - 0.35, { x: 3250, y: 1900, s: 1 }, 0.7, "power3.inOut");
+    const rolar = T.length * 36 - 640;
+    tl.fromTo("#c03c-term-l", { y: 0 }, { y: -rolar, duration: W("testes") - W("Tudo"), ease: "power2.in" }, W("Tudo"));
+    cam(W("84") - 0.4, { x: 3250, y: 2130, s: 0.95 }, 0.7);
+    tl.to("#c03c-final", { opacity: 1, duration: 0.3 }, W("84") - 0.25);
+    AEGIS.placar(tl, "#c03c-84", W("84") - 0.25, "84", 1.0);
+
+    // ---- saída ------------------------------------------------------------
+    cam(FIM - 0.55, { x: 3250, y: 2130, s: 7 }, 0.55, "power3.in");
+    tl.to(".cena", { opacity: 0, duration: 0.2, ease: "power2.in" }, FIM - 0.22);
     window.__timelines["c03c"] = tl;
   </script>
 </template>

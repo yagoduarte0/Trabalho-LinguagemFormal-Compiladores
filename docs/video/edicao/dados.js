@@ -90,9 +90,21 @@ function resumirNo(no) {
   return no.tipo ? { tipo: no.tipo, rotulo, filhos } : null;
 }
 
+// corpo do programa (sem o runtime): índice 0-based de cada linha no arquivo
+// gerado, para consultar o mapa de linhas (que é 1-based)
 const pyLinhas = r.python.split("\n");
 const fimRuntime = pyLinhas.findIndex((l) => l.startsWith("# --- fim do runtime"));
-const corpoPython = pyLinhas.slice(fimRuntime + 1).join("\n").trim().split("\n");
+let inicioCorpo = fimRuntime + 1;
+while (pyLinhas[inicioCorpo].trim() === "") inicioCorpo++;
+let fimCorpo = pyLinhas.length;
+while (pyLinhas[fimCorpo - 1].trim() === "") fimCorpo--;
+const corpoPython = pyLinhas.slice(inicioCorpo, fimCorpo);
+const mapaCorpo = corpoPython.map((_, i) => r.linhaOrigem(inicioCorpo + i + 1));
+
+// saída real da suíte de testes
+const { execFileSync } = require("child_process");
+const saidaTestes = execFileSync("node", [path.join(RAIZ, "compilador/testes.js")], { encoding: "utf8" })
+  .split("\n").filter((l) => l.trim() !== "");
 
 // começo de cada runtime: é a única parte que muda entre os alvos
 const rEsp = compilar(perimetro, { alvo: "esp32" });
@@ -120,10 +132,11 @@ const dados = {
     totalTokens: r.tokens.length,
     ast: resumirNo(r.ast),
     python: corpoPython,
-    pythonMapa: r.linhaOrigem ? corpoPython.map((_, i) => r.linhaOrigem(fimRuntime + 2 + i)) : [],
+    pythonMapa: mapaCorpo,
     runtimeSimulado: inicioRuntime(r.python),
     runtimeEsp32: inicioRuntime(rEsp.python),
   },
+  testes: saidaTestes,
   erro: {
     html: realcar(exemploErro.fonte),
     erros: comErro.erros,
