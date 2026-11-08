@@ -52,7 +52,7 @@ const PALAVRAS_RESERVADAS = {
 // palavras reservadas — são só convenção da biblioteca padrão reconhecida
 // pelo gerador/semântica, não pelo lexer. Um programa pode, tecnicamente,
 // usar um desses nomes como identificador comum (o lexer não impede isso).
-const MODULOS_EMBUTIDOS = ["gpio", "adc", "pwm", "wifi", "mqtt", "time"];
+const MODULOS_EMBUTIDOS = ["gpio", "adc", "pwm", "wifi", "mqtt", "time", "config", "web", "telegram"];
 
 // Símbolos: ordenados por tamanho (maior primeiro) para maximal munch.
 // "->" precisa vencer antes de "-"; "&&"/"||" antes de operadores de 1 char.

@@ -763,6 +763,28 @@
     }
   });
 
+  teste("gerador: os dois runtimes oferecem config, painel web e Telegram", () => {
+    for (const alvo of ["simulado", "esp32"]) {
+      const { corpo } = gerarPython('supply t = config.get("telegram_token", "")\n', { alvo });
+      afirmar(/^config = _Config\(/m.test(corpo), `alvo ${alvo} sem config`);
+      afirmar(/^web = _Painel(Pc)?\(\)/m.test(corpo), `alvo ${alvo} sem web`);
+      afirmar(corpo.includes("telegram = _Telegram()"), `alvo ${alvo} sem telegram`);
+      afirmar(corpo.includes("def waiting(self):") && corpo.includes("def command(self, intervalo_ms=15000):"),
+              `alvo ${alvo} sem a API de rede completa`);
+    }
+    const esp32 = gerarPython("hide(1)\n", { alvo: "esp32" }).corpo;
+    afirmar(esp32.includes("import requests"), "o Telegram do esp32 usa o requests do MicroPython");
+  });
+
+  teste("gerador: a pagina do painel entra como string no runtime", () => {
+    const { corpo } = gerarPython("hide(1)\n");
+    const linha = corpo.split("\n").find(l => l.startsWith("_PAINEL_HTML = "));
+    afirmar(linha, "faltou _PAINEL_HTML");
+    // o literal emitido pelo JSON.stringify precisa voltar ao HTML original
+    const html = JSON.parse(linha.slice("_PAINEL_HTML = ".length));
+    afirmar(html.startsWith("<!doctype html>") && html.includes('fetch("/dados"'), html.slice(0, 80));
+  });
+
   teste("gerador: alvo desconhecido e recusado", () => {
     const { ast } = analisar("hide(1)\n");
     let mensagem = "";

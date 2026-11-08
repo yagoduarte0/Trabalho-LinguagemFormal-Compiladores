@@ -51,6 +51,179 @@ def status(valor):
 def log_entry(*args):
     print(*args)`;
 
+// A página do painel web: no Node vem do require, no navegador já foi
+// carregada pelo <script src="painel.js"> do index.html.
+const PAINEL_HTML_TEXTO = (typeof require === "function" && typeof module !== "undefined")
+  ? require("./painel.js").PAINEL_HTML
+  : PAINEL_HTML;
+
+// Módulos de rede que os dois runtimes compartilham. Só o transporte do
+// Telegram muda (urllib no PC, requests no MicroPython), por isso _Telegram
+// é definido em cada runtime sobre a base _TelegramBase. O HTML entra como
+// literal de string pelo JSON.stringify, que também é um literal válido em
+// Python.
+const RUNTIME_REDE = `class _Config:
+    # ajustes desta placa (rede, token do bot) num config.json gravado ao
+    # lado do main.py e fora do Git; sem o arquivo, valem os padrões
+    def __init__(self, arquivo):
+        self._arquivo = arquivo
+        self._dados = None
+
+    def get(self, chave, padrao):
+        if self._dados is None:
+            self._dados = {}
+            try:
+                import json
+                with open(self._arquivo) as f:
+                    self._dados = json.load(f)
+                print("[config] ajustes lidos de", self._arquivo)
+            except OSError:
+                pass
+            except ValueError:
+                print("[config]", self._arquivo, "tem JSON invalido: usando os padroes")
+        return self._dados.get(chave, padrao)
+
+
+_PAINEL_HTML = ${JSON.stringify(PAINEL_HTML_TEXTO)}
+
+
+class _Painel:
+    # Servidor HTTP mínimo e não bloqueante, para o painel na rede local.
+    # waiting() aceita no máximo um pedido por ciclo, para não atrasar os
+    # sensores: GET / devolve a página, POST /silenciar vira o comando
+    # "/silenciar" (lido por command()) e GET /dados fica esperando o
+    # programa responder com serve(), que recebe as leituras em JSON.
+    def __init__(self):
+        self._servidor = None
+        self._cliente = None
+        self._porta = 80
+        self.fila = []
+
+    def _porta_real(self, porta):
+        return porta
+
+    def start(self, porta=80):
+        try:
+            import socket
+            self._porta = self._porta_real(int(porta))
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(("0.0.0.0", self._porta))
+            s.listen(2)
+            s.setblocking(False)
+            self._servidor = s
+            return True
+        except Exception as erro:
+            print("[painel] nao abriu:", erro)
+            return False
+
+    def url(self, ip):
+        return "http://" + str(ip) + ("/" if self._porta == 80 else ":" + str(self._porta) + "/")
+
+    def waiting(self):
+        if self._cliente is not None:
+            return True
+        if self._servidor is None:
+            return False
+        try:
+            cliente, _ = self._servidor.accept()
+        except OSError:
+            return False
+        try:
+            cliente.settimeout(1)
+            pedido = cliente.recv(1024).split(b"\\r\\n", 1)[0].decode().split(" ")
+        except Exception:
+            cliente.close()
+            return False
+        metodo = pedido[0]
+        caminho = pedido[1] if len(pedido) > 1 else "/"
+        if caminho.startswith("/dados"):
+            self._cliente = cliente
+            return True
+        if caminho.startswith("/silenciar") and metodo == "POST":
+            self.fila.append("/silenciar")
+            self._responder(cliente, "200 OK", "application/json", '{"ok":true}')
+        elif caminho == "/" or caminho.startswith("/?"):
+            self._responder(cliente, "200 OK", "text/html; charset=utf-8", _PAINEL_HTML)
+        else:
+            self._responder(cliente, "404 Not Found", "text/plain", "nao encontrado")
+        return False
+
+    def serve(self, dados):
+        cliente, self._cliente = self._cliente, None
+        if cliente is not None:
+            self._responder(cliente, "200 OK", "application/json", dados)
+
+    def command(self):
+        return self.fila.pop(0) if self.fila else ""
+
+    def _responder(self, cliente, situacao, tipo, corpo):
+        corpo = str(corpo).encode()
+        cabecalho = ("HTTP/1.1 " + situacao + "\\r\\nContent-Type: " + tipo +
+                     "\\r\\nContent-Length: " + str(len(corpo)) +
+                     "\\r\\nCache-Control: no-store\\r\\nConnection: close\\r\\n\\r\\n")
+        try:
+            enviar = getattr(cliente, "sendall", None) or cliente.write
+            enviar(cabecalho.encode() + corpo)
+        except Exception:
+            pass
+        cliente.close()
+
+
+class _TelegramBase:
+    # Bot do Telegram pela API HTTPS. send() manda uma mensagem ao chat
+    # configurado; command() devolve o próximo comando ("/status", ...) que
+    # chegou desse chat, consultando a API no máximo a cada intervalo_ms
+    # (no ESP32 cada consulta segura o laço por 1 a 2 s). Mensagens de outros
+    # chats são ignoradas: só o dono do abrigo manda no bot.
+    def __init__(self):
+        self.fila = []
+        self._token = ""
+        self._chat = ""
+        self._offset = -1      # -1: a primeira consulta só descarta o que chegou antes de ligar
+        self._ultima = None
+
+    def begin(self, token, chat):
+        self._token = str(token or "")
+        self._chat = str(chat or "")
+        if self._token and not self._chat:
+            print("[telegram] falta o telegram_chat no config.json: rode firmware/telegram_chat.py")
+        return self._ativo()
+
+    def _ativo(self):
+        return self._token != "" and self._chat != ""
+
+    def _url(self, metodo):
+        return "https://api.telegram.org/bot" + self._token + "/" + metodo
+
+    def send(self, texto):
+        if not self._ativo():
+            return False
+        resposta = self._pedir("sendMessage", {"chat_id": self._chat, "text": str(texto)})
+        return resposta is not None and resposta.get("ok", False)
+
+    def command(self, intervalo_ms=15000):
+        if not self.fila and self._ativo():
+            agora = self._ms()
+            if self._ultima is None or self._diff(agora, self._ultima) >= intervalo_ms:
+                self._ultima = agora
+                self._consultar()
+        return self.fila.pop(0) if self.fila else ""
+
+    def _consultar(self):
+        resposta = self._pedir("getUpdates", {"offset": self._offset, "timeout": 0, "limit": 10})
+        if not resposta or not resposta.get("ok"):
+            return
+        primeira = self._offset == -1
+        self._offset = max(self._offset, 0)
+        for u in resposta.get("result", []):
+            self._offset = u["update_id"] + 1
+            m = u.get("message") or {}
+            texto = m.get("text") or ""
+            if primeira or str(m.get("chat", {}).get("id")) != self._chat or not texto.startswith("/"):
+                continue
+            self.fila.append(texto.split()[0].split("@")[0].lower())`;
+
 // Alvo "simulado": roda no PC com Python comum. Os sensores devolvem valores
 // fixos (alteráveis pelos atributos) e o hardware só imprime o que faria.
 const RUNTIME = `# --- runtime AEGIS (gerado automaticamente) ---
@@ -171,6 +344,53 @@ class _Rede:
         print("[" + str(topico) + "] " + str(mensagem))
         return True
 
+    def ip(self):
+        return "localhost"
+
+
+${RUNTIME_REDE}
+
+
+class _PainelPc(_Painel):
+    # no PC, portas abaixo de 1024 exigem administrador: a 80 vira 8080
+    def _porta_real(self, porta):
+        return 8080 if porta < 1024 else porta
+
+
+class _Telegram(_TelegramBase):
+    # Sem token e chat, só imprime e guarda em "enviadas" (é o que os
+    # cenários usam). Com os dois no config.json, fala com o bot de verdade.
+    def __init__(self):
+        _TelegramBase.__init__(self)
+        self.enviadas = []
+
+    def begin(self, token, chat):
+        _TelegramBase.begin(self, token, chat)
+        return True
+
+    def send(self, texto):
+        self.enviadas.append(str(texto))
+        print("[telegram] " + str(texto).replace("\\n", " / "))
+        return _TelegramBase.send(self, texto) if self._ativo() else True
+
+    def _ms(self):
+        return int(_time.time() * 1000)
+
+    def _diff(self, a, b):
+        return a - b
+
+    def _pedir(self, metodo, dados):
+        import json
+        import urllib.request
+        try:
+            pedido = urllib.request.Request(self._url(metodo), data=json.dumps(dados).encode(),
+                                            headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(pedido, timeout=10) as r:
+                return json.loads(r.read().decode())
+        except Exception as erro:
+            print("[telegram] falhou:", erro)
+            return None
+
 
 class _Digital:
     # leitor biométrico: os testes colocam em "fila" as digitais encostadas
@@ -202,6 +422,9 @@ wifi = _Rede()
 mqtt = _Rede()
 time = _Relogio()
 finger = _Digital()
+config = _Config(__import__("os").environ.get("AEGIS_CONFIG", "config.json"))
+web = _PainelPc()
+telegram = _Telegram()
 
 
 ${RUNTIME_CONVERSOES}
@@ -485,6 +708,14 @@ class _Wifi:
     def connected(self):
         return self._wlan is not None and self._wlan.isconnected()
 
+    def ip(self):
+        if not self.connected():
+            return ""
+        try:
+            return self._wlan.ipconfig("addr4")[0]
+        except Exception:
+            return self._wlan.ifconfig()[0]
+
 
 class _Mqtt:
     def __init__(self):
@@ -628,6 +859,33 @@ class _Digital:
         return self._comando(bytes((0x06, 1, numero >> 8, numero & 0xFF)))[0] == 0   # Store
 
 
+${RUNTIME_REDE}
+
+
+class _Telegram(_TelegramBase):
+    # o requests do MicroPython faz o HTTPS; o TLS precisa de uns 40 KB de
+    # memória livre, por isso o gc.collect() antes de cada pedido
+    def _ms(self):
+        return _time.ticks_ms()
+
+    def _diff(self, a, b):
+        return _time.ticks_diff(a, b)
+
+    def _pedir(self, metodo, dados):
+        import gc
+        gc.collect()
+        try:
+            import requests
+            r = requests.post(self._url(metodo), json=dados)
+            try:
+                return r.json()
+            finally:
+                r.close()
+        except Exception as erro:
+            print("[telegram] falhou:", erro)
+            return None
+
+
 gpio = _Gpio()
 adc = _Adc()
 pwm = _Pwm()
@@ -638,6 +896,9 @@ wifi = _Wifi()
 mqtt = _Mqtt()
 time = _Relogio()
 finger = _Digital()
+config = _Config("config.json")
+web = _Painel()
+telegram = _Telegram()
 
 
 ${RUNTIME_CONVERSOES}
