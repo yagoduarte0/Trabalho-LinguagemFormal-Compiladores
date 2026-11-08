@@ -327,9 +327,19 @@ Três erros léxicos são registrados sem interromper a análise: aspas não
 fechadas, comentário de bloco não fechado e caractere não reconhecido.
 Assim o programador vê todos os erros de uma vez.
 
-\pendente{explicar a quebra de linha dentro de parênteses (como no Python)
-e a heurística que evita que um parêntese esquecido engula o resto do
-programa}
+Como no Python, a quebra de linha dentro de parênteses e colchetes não
+encerra o comando, o que permite escrever uma chamada longa em várias
+linhas. O analisador mantém um contador de profundidade, que sobe em
+\texttt{(} e \texttt{[} e desce em \texttt{)} e \texttt{]}; enquanto ele
+é positivo, a quebra de linha é descartada. O risco é que um parêntese
+esquecido transforme o resto do programa numa única expressão, com o erro
+apontado muito longe da causa. Para evitar isso, ao encontrar uma quebra
+de linha com parêntese aberto, o analisador olha o começo da linha
+seguinte: se ela começa com uma palavra que só pode abrir um comando
+(\texttt{supply}, \texttt{checkpoint}, \texttt{watch} e outras 14) ou com
+\texttt{\}}, o parêntese é dado como esquecido, o contador volta a zero e
+a quebra de linha é emitida. O erro passa a ser acusado perto do
+parêntese, e a análise sintática se recupera a partir dali.
 
 \figura{Figura: tabela de tokens na interface web\\
 (sugestão: print da aba ``Tokens'' do compilador/index.html)}
