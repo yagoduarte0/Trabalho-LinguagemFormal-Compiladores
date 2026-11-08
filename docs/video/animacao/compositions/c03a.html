@@ -1,0 +1,21 @@
+<!-- Cena 03a (provisória): só o título do bloco, até a animação ficar pronta -->
+<template>
+  <style>
+    #root { position: absolute; inset: 0; }
+    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+  </style>
+  <div id="root" data-composition-id="c03a" data-width="1920" data-height="1080">
+    <div class="cena">
+      <div class="cap"><span class="ponto"></span><span class="num">03a</span><span id="c03a-cap"></span></div>
+      <div id="c03a-titulo" class="prov display"></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const titulo = window.AEGIS_TEMPOS["03a"].titulo;
+    document.querySelector("#c03a-cap").textContent = titulo;
+    document.querySelector("#c03a-titulo").textContent = titulo;
+    tl.fromTo("#c03a-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    window.__timelines["c03a"] = tl;
+  </script>
+</template>

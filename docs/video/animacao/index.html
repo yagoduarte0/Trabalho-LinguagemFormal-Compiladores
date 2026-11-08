@@ -1,0 +1,255 @@
+<!doctype html>
+<!-- Modelo da raiz do vídeo. O docs/video/animacao/index.html é gerado a partir dele por
+     docs/video/edicao/montar.py, que preenche as cenas, os áudios e a duração. -->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <script src="assets/tempos.js"></script>
+    <script src="assets/aegis.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0a0d0a;
+      }
+      #root { width: 100%; height: 100%; position: relative; }
+      /* tema.css entra aqui inteiro (o HyperFrames só embute as fontes citadas no HTML) */
+/* Identidade visual do AEGIS (a mesma do pitch), compartilhada pelas cenas.
+   Fundo #0A0D0A, cáqui #C8B88A, verde radar #A8D04A, creme #EDE4CC.
+   A Impact do pitch não vem com o HyperFrames; a League Gothic tem o mesmo
+   desenho condensado. Código em JetBrains Mono, texto corrido em Inter. */
+
+.cena {
+  position: absolute;
+  inset: 0;
+  color: #ede4cc;
+  font-family: "Inter", sans-serif;
+}
+
+/* rótulo do capítulo, no alto à esquerda */
+.cap {
+  position: absolute;
+  left: 120px;
+  top: 92px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: "League Gothic", sans-serif;
+  font-size: 40px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c8b88a;
+}
+.cap .num { color: #a8d04a; }
+.cap .ponto {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #a8d04a;
+  box-shadow: 0 0 18px #a8d04a;
+}
+
+.display {
+  font-family: "League Gothic", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 0.92;
+  color: #ede4cc;
+}
+.verde { color: #a8d04a; }
+.caqui { color: #c8b88a; }
+.creme { color: #ede4cc; }
+.atencao { color: #f0b545; }
+.alarme { color: #ef5a4c; }
+.apagado { color: rgba(237, 228, 204, 0.45); }
+
+/* cartão com moldura fina e cantos marcados */
+.painel {
+  position: absolute;
+  background: rgba(17, 22, 16, 0.92);
+  border: 1.5px solid rgba(200, 184, 138, 0.35);
+  border-radius: 6px;
+}
+.painel .barra {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  border-bottom: 1.5px solid rgba(200, 184, 138, 0.22);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 20px;
+  color: rgba(237, 228, 204, 0.6);
+}
+.painel .barra i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(200, 184, 138, 0.35);
+}
+
+/* código AEGIS e Python */
+.codigo {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 28px;
+  line-height: 1.5;
+  white-space: pre;
+  color: #ede4cc;
+}
+.codigo .kw { color: #a8d04a; font-weight: 700; }
+.codigo .ti { color: #c8b88a; }
+.codigo .st { color: #e3a669; }
+.codigo .nu { color: #e8cf6a; }
+.codigo .co { color: #6f7a66; font-style: italic; }
+.codigo .fn { color: #9fd1c9; }
+.codigo .ln { color: #4b5545; display: inline-block; width: 2.6em; text-align: right; margin-right: 1em; }
+
+/* realce que corre por trás de uma linha ou palavra */
+.marca {
+  position: absolute;
+  background: rgba(168, 208, 74, 0.16);
+  border-left: 4px solid #a8d04a;
+}
+
+/* ficha de token */
+.chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(168, 208, 74, 0.55);
+  border-radius: 6px;
+  background: rgba(168, 208, 74, 0.07);
+}
+.chip .lx { font-family: "JetBrains Mono", monospace; font-size: 32px; color: #ede4cc; }
+.chip .tp { font-family: "JetBrains Mono", monospace; font-size: 15px; color: #c8b88a; letter-spacing: 0.04em; }
+.chip .lc { font-family: "JetBrains Mono", monospace; font-size: 14px; color: #6f7a66; }
+
+/* etiqueta pequena em caixa alta */
+.rotulo {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 20px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c8b88a;
+}
+
+      /* fundo fixo: grade de radar e cantos de mira, como no pitch */
+      #fundo { position: absolute; inset: 0; z-index: 0; }
+      #fundo .grade {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(168, 208, 74, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(168, 208, 74, 0.045) 1px, transparent 1px);
+        background-size: 80px 80px;
+        background-position: -1px -1px;
+      }
+      #fundo .vinheta {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+      }
+      #fundo .canto { position: absolute; width: 56px; height: 56px; border-color: rgba(200, 184, 138, 0.55); border-style: solid; }
+      #fundo .ce { left: 48px; top: 40px; border-width: 2px 0 0 2px; }
+      #fundo .cd { right: 48px; top: 40px; border-width: 2px 2px 0 0; }
+      #fundo .be { left: 48px; bottom: 40px; border-width: 0 0 2px 2px; }
+      #fundo .bd { right: 48px; bottom: 40px; border-width: 0 2px 2px 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="288.24"
+      data-width="1920" data-height="1080">
+      <div id="fundo" data-layout-ignore>
+        <div class="grade"></div>
+        <div class="vinheta"></div>
+        <div class="canto ce"></div><div class="canto cd"></div>
+        <div class="canto be"></div><div class="canto bd"></div>
+      </div>
+
+      <div id="c01" data-composition-id="c01" data-composition-src="compositions/c01.html"
+        data-start="0.00" data-duration="28.05" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c02" data-composition-id="c02" data-composition-src="compositions/c02.html"
+        data-start="28.05" data-duration="39.34" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c03a" data-composition-id="c03a" data-composition-src="compositions/c03a.html"
+        data-start="67.39" data-duration="33.97" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c03b" data-composition-id="c03b" data-composition-src="compositions/c03b.html"
+        data-start="101.36" data-duration="12.23" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c03c" data-composition-id="c03c" data-composition-src="compositions/c03c.html"
+        data-start="113.59" data-duration="21.45" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c04" data-composition-id="c04" data-composition-src="compositions/c04.html"
+        data-start="135.04" data-duration="17.11" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c05a" data-composition-id="c05a" data-composition-src="compositions/c05a.html"
+        data-start="152.15" data-duration="16.98" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c05b" data-composition-id="c05b" data-composition-src="compositions/c05b.html"
+        data-start="169.13" data-duration="14.35" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c05c" data-composition-id="c05c" data-composition-src="compositions/c05c.html"
+        data-start="183.48" data-duration="11.04" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c05d" data-composition-id="c05d" data-composition-src="compositions/c05d.html"
+        data-start="194.52" data-duration="19.68" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c05e" data-composition-id="c05e" data-composition-src="compositions/c05e.html"
+        data-start="214.20" data-duration="13.74" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c05f" data-composition-id="c05f" data-composition-src="compositions/c05f.html"
+        data-start="227.94" data-duration="16.33" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c06" data-composition-id="c06" data-composition-src="compositions/c06.html"
+        data-start="244.27" data-duration="17.61" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="c07" data-composition-id="c07" data-composition-src="compositions/c07.html"
+        data-start="261.88" data-duration="26.36" data-track-index="1"
+        data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+
+      <div id="legendas" data-composition-id="legendas" data-composition-src="compositions/legendas.html"
+        data-start="0" data-duration="288.24" data-track-index="3" data-track-kind="captions"
+        data-width="1920" data-height="1080" style="z-index: 10"></div>
+
+      <audio id="voz-01" class="clip" src="assets/narracao/01.wav"
+        data-start="0.35" data-duration="27.25" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-02" class="clip" src="assets/narracao/02.wav"
+        data-start="28.40" data-duration="38.54" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-03a" class="clip" src="assets/narracao/03a.wav"
+        data-start="67.74" data-duration="33.17" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-03b" class="clip" src="assets/narracao/03b.wav"
+        data-start="101.71" data-duration="11.43" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-03c" class="clip" src="assets/narracao/03c.wav"
+        data-start="113.94" data-duration="20.65" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-04" class="clip" src="assets/narracao/04.wav"
+        data-start="135.39" data-duration="16.31" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-05a" class="clip" src="assets/narracao/05a.wav"
+        data-start="152.50" data-duration="16.18" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-05b" class="clip" src="assets/narracao/05b.wav"
+        data-start="169.48" data-duration="13.55" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-05c" class="clip" src="assets/narracao/05c.wav"
+        data-start="183.83" data-duration="10.24" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-05d" class="clip" src="assets/narracao/05d.wav"
+        data-start="194.87" data-duration="18.88" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-05e" class="clip" src="assets/narracao/05e.wav"
+        data-start="214.55" data-duration="12.94" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-05f" class="clip" src="assets/narracao/05f.wav"
+        data-start="228.29" data-duration="15.53" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-06" class="clip" src="assets/narracao/06.wav"
+        data-start="244.62" data-duration="16.81" data-track-index="2" data-volume="1"></audio>
+      <audio id="voz-07" class="clip" src="assets/narracao/07.wav"
+        data-start="262.23" data-duration="25.56" data-track-index="2" data-volume="1"></audio>
+    </div>
+    <script>
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

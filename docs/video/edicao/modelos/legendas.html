@@ -1,0 +1,48 @@
+<!-- Modelo das legendas. O compositions/legendas.html é gerado por docs/video/edicao/montar.py,
+     que troca o marcador GRUPOS pelos grupos de palavras com os tempos do Whisper. -->
+<template>
+  <style>
+    #root { position: absolute; inset: 0; pointer-events: none; }
+    #root .grupo {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 62px;
+      text-align: center;
+      opacity: 0;
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 44px;
+      line-height: 1.2;
+      color: #ede4cc;
+      overflow: visible;
+    }
+    #root .grupo .pal {
+      display: inline-block;
+      padding: 4px 6px;
+      background: rgba(10, 13, 10, 0.78);
+      color: rgba(237, 228, 204, 0.62);
+    }
+    #root .grupo .pal.dita { color: #ede4cc; }
+  </style>
+  <div id="root" data-composition-id="legendas" data-width="1920" data-height="1080">
+<!-- GRUPOS -->
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    document.querySelectorAll("#root .grupo").forEach((grupo) => {
+      const s = parseFloat(grupo.dataset.s);
+      const e = parseFloat(grupo.dataset.e);
+      tl.set(grupo, { opacity: 0, visibility: "visible" }, 0);
+      tl.to(grupo, { opacity: 1, duration: 0.1, ease: "power2.out" }, s);
+      // cada palavra acende quando é dita
+      grupo.querySelectorAll(".pal").forEach((pal) => {
+        tl.set(pal, { color: "rgba(237, 228, 204, 0.62)" }, 0);
+        tl.set(pal, { color: "#ede4cc" }, parseFloat(pal.dataset.s));
+      });
+      tl.to(grupo, { opacity: 0, duration: 0.1, ease: "power2.in" }, e - 0.1);
+      tl.set(grupo, { opacity: 0, visibility: "hidden" }, e);
+    });
+    window.__timelines["legendas"] = tl;
+  </script>
+</template>

@@ -1,0 +1,120 @@
+/* Identidade visual do AEGIS (a mesma do pitch), compartilhada pelas cenas.
+   Fundo #0A0D0A, cáqui #C8B88A, verde radar #A8D04A, creme #EDE4CC.
+   A Impact do pitch não vem com o HyperFrames; a League Gothic tem o mesmo
+   desenho condensado. Código em JetBrains Mono, texto corrido em Inter. */
+
+.cena {
+  position: absolute;
+  inset: 0;
+  color: #ede4cc;
+  font-family: "Inter", sans-serif;
+}
+
+/* rótulo do capítulo, no alto à esquerda */
+.cap {
+  position: absolute;
+  left: 120px;
+  top: 92px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: "League Gothic", sans-serif;
+  font-size: 40px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c8b88a;
+}
+.cap .num { color: #a8d04a; }
+.cap .ponto {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #a8d04a;
+  box-shadow: 0 0 18px #a8d04a;
+}
+
+.display {
+  font-family: "League Gothic", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 0.92;
+  color: #ede4cc;
+}
+.verde { color: #a8d04a; }
+.caqui { color: #c8b88a; }
+.creme { color: #ede4cc; }
+.atencao { color: #f0b545; }
+.alarme { color: #ef5a4c; }
+.apagado { color: rgba(237, 228, 204, 0.45); }
+
+/* cartão com moldura fina e cantos marcados */
+.painel {
+  position: absolute;
+  background: rgba(17, 22, 16, 0.92);
+  border: 1.5px solid rgba(200, 184, 138, 0.35);
+  border-radius: 6px;
+}
+.painel .barra {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  border-bottom: 1.5px solid rgba(200, 184, 138, 0.22);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 20px;
+  color: rgba(237, 228, 204, 0.6);
+}
+.painel .barra i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(200, 184, 138, 0.35);
+}
+
+/* código AEGIS e Python */
+.codigo {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 28px;
+  line-height: 1.5;
+  white-space: pre;
+  color: #ede4cc;
+}
+.codigo .kw { color: #a8d04a; font-weight: 700; }
+.codigo .ti { color: #c8b88a; }
+.codigo .st { color: #e3a669; }
+.codigo .nu { color: #e8cf6a; }
+.codigo .co { color: #6f7a66; font-style: italic; }
+.codigo .fn { color: #9fd1c9; }
+.codigo .ln { color: #4b5545; display: inline-block; width: 2.6em; text-align: right; margin-right: 1em; }
+
+/* realce que corre por trás de uma linha ou palavra */
+.marca {
+  position: absolute;
+  background: rgba(168, 208, 74, 0.16);
+  border-left: 4px solid #a8d04a;
+}
+
+/* ficha de token */
+.chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(168, 208, 74, 0.55);
+  border-radius: 6px;
+  background: rgba(168, 208, 74, 0.07);
+}
+.chip .lx { font-family: "JetBrains Mono", monospace; font-size: 32px; color: #ede4cc; }
+.chip .tp { font-family: "JetBrains Mono", monospace; font-size: 15px; color: #c8b88a; letter-spacing: 0.04em; }
+.chip .lc { font-family: "JetBrains Mono", monospace; font-size: 14px; color: #6f7a66; }
+
+/* etiqueta pequena em caixa alta */
+.rotulo {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 20px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c8b88a;
+}

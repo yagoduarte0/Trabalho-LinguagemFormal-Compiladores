@@ -23,3 +23,10 @@ firmware/config.json
 
 # Gravações e edição do vídeo de demonstração (pesadas; roteiro em docs/video/)
 /video/
+
+# Projeto HyperFrames do vídeo: áudios copiados pelo montar.py, artefatos e renders
+docs/video/animacao/assets/narracao/
+docs/video/animacao/.hyperframes/
+docs/video/animacao/renders/
+docs/video/animacao/CLAUDE.md
+docs/video/animacao/AGENTS.md
