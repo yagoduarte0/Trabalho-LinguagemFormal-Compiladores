@@ -774,6 +774,8 @@
     }
     const esp32 = gerarPython("hide(1)\n", { alvo: "esp32" }).corpo;
     afirmar(esp32.includes("import requests"), "o Telegram do esp32 usa o requests do MicroPython");
+    // sem timeout, um pedido sem resposta prendia o laço do firmware para sempre
+    afirmar(/requests\.post\(.*timeout=\d+/.test(esp32), "o pedido HTTPS do esp32 precisa de timeout");
   });
 
   teste("gerador: a pagina do painel entra como string no runtime", () => {

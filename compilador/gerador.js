@@ -877,8 +877,11 @@ ${RUNTIME_REDE}
 
 
 class _Telegram(_TelegramBase):
-    # o requests do MicroPython faz o HTTPS; o TLS precisa de uns 40 KB de
-    # memória livre, por isso o gc.collect() antes de cada pedido
+    # O requests do MicroPython faz o HTTPS; o TLS precisa de uns 40 KB de
+    # memória livre, por isso o gc.collect() antes de cada pedido. Sem
+    # timeout, um pedido sem resposta prendia o laço para sempre (sensores,
+    # sirene e painel juntos); com ele, o pedido desiste e tenta de novo na
+    # próxima consulta. Cada pedido leva 1 a 2 s na placa e ~5 s no Wokwi.
     def _ms(self):
         return _time.ticks_ms()
 
@@ -890,7 +893,7 @@ class _Telegram(_TelegramBase):
         gc.collect()
         try:
             import requests
-            r = requests.post(self._url(metodo), json=dados)
+            r = requests.post(self._url(metodo), json=dados, timeout=10)
             try:
                 return r.json()
             finally:
