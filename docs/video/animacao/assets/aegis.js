@@ -86,11 +86,14 @@
         const seq = [];
         for (let v = 0; v < voltas; v++) for (let k = 0; k < 10; k++) seq.push(k);
         for (let k = 0; k <= d; k++) seq.push(k);
+        // a janela tem a largura do dígito final (um "molde" invisível); a
+        // coluna que rola fica por cima, centralizada
         const janela = document.createElement("span");
-        janela.style.cssText = "display:inline-block;height:1em;line-height:1;overflow:hidden;vertical-align:top";
-        janela.innerHTML = `<span style="display:block">${seq.map((k) => `<span style="display:block;height:1em">${k}</span>`).join("")}</span>`;
+        janela.style.cssText = "display:inline-block;position:relative;height:1em;line-height:1;overflow:hidden;vertical-align:top";
+        janela.innerHTML = `<span style="visibility:hidden">${d}</span>` +
+          `<span style="position:absolute;left:-50%;right:-50%;top:0;text-align:center">${seq.map((k) => `<span style="display:block;height:1em">${k}</span>`).join("")}</span>`;
         alvo.appendChild(janela);
-        colunas.push([janela.firstChild, seq.length]);
+        colunas.push([janela.lastChild, seq.length]);
       });
       colunas.forEach(([col, n], i) => {
         tl.fromTo(col, { yPercent: 0 }, { yPercent: -((n - 1) / n) * 100, duration: dur + i * 0.12, ease: "power3.out" }, t);

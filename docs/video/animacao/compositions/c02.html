@@ -1,71 +1,70 @@
-<!-- Cena 02 — a linguagem.
-     Editor com trechos reais do firmware (coloridos pelo léxico do AEGIS) que
-     rola até cada palavra-chave quando a narração a cita; ao lado, o
-     dicionário AEGIS -> significado. No fim, a miniatura das 810 linhas. -->
+<!-- Cena 02 — a linguagem. Uma câmera só:
+     T  o título com as palavras da linguagem em órbita;
+     E  as palavras caem num editor gigante; cada trecho real do abrigo.aeg é
+        digitado quando a narração o cita, e um cartão explica a palavra;
+     (plano geral do editor com todos os cartões)
+     M  a cascata das 810 linhas do firmware e o contador; sai mergulhando. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #c02-abre { position: absolute; left: 0; right: 0; top: 330px; text-align: center; }
-    #c02-abre .t { font-size: 170px; }
-    #c02-abre .s { font-size: 40px; margin-top: 18px; color: #c8b88a; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c02-titulo { left: 0; top: 440px; width: 1920px; text-align: center; font-size: 190px; }
+    #c02-sub { left: 0; top: 650px; width: 1920px; text-align: center; font-size: 46px; color: #c8b88a; }
+    .c02-orb { left: 0; top: 0; font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 40px; color: #a8d04a; white-space: nowrap; }
 
-    #c02-editor { left: 120px; top: 180px; width: 1040px; height: 700px; overflow: hidden; }
-    #c02-janela { position: absolute; left: 0; right: 0; top: 46px; bottom: 0; overflow: hidden; }
-    #c02-lista { position: absolute; left: 0; right: 0; top: 14px; }
-    #c02-lista .codigo { font-size: 26px; line-height: 38px; }
+    #c02-editor { left: 150px; top: 1300px; width: 1250px; height: 2620px; overflow: hidden; }
+    #c02-editor .barra { height: 56px; font-size: 24px; }
+    #c02-lista { position: absolute; left: 20px; top: 76px; right: 0; }
+    #c02-lista .codigo { font-size: 30px; line-height: 46px; height: 46px; }
+    #c02-lista .codigo .ln { width: 78px; margin-right: 30px; }
     #c02-lista .sep { color: #4b5545; }
-    #c02-lista .kw { border-radius: 4px; padding: 0 2px; margin: 0 -2px; }
+    #c02-lista .kw { border-radius: 4px; }
+    #c02-cursor { left: 0; top: 0; width: 17px; height: 36px; background: #a8d04a; box-shadow: 0 0 14px #a8d04a; }
 
-    #c02-dic { position: absolute; left: 1220px; top: 190px; width: 600px; }
-    #c02-dic .linha { display: flex; align-items: center; gap: 18px; height: 82px; border-bottom: 1px solid rgba(200, 184, 138, 0.16); }
-    #c02-dic .pal { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 26px; color: #a8d04a; width: 320px; }
-    #c02-dic .sig { font-size: 28px; color: #ede4cc; }
-    #c02-dic .sig small { display: block; font-family: "JetBrains Mono", monospace; font-size: 18px; color: #c8b88a; margin-top: 4px; }
+    .c02-cartao { left: 1440px; width: 560px; display: flex; align-items: center; gap: 0; }
+    .c02-cartao .fio { width: 60px; height: 3px; background: #a8d04a; transform-origin: 0% 50%; }
+    .c02-cartao .corpo {
+      padding: 16px 24px; border: 2px solid rgba(168, 208, 74, 0.6); border-radius: 8px;
+      background: rgba(17, 22, 16, 0.96);
+    }
+    .c02-cartao .pal { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 30px; color: #a8d04a; }
+    .c02-cartao .sig { font-size: 34px; color: #ede4cc; margin-top: 4px; }
+    .c02-cartao .sig small { font-family: "JetBrains Mono", monospace; font-size: 22px; color: #c8b88a; margin-left: 12px; }
 
-    #c02-mapa { position: absolute; inset: 0; }
-    #c02-mapa .titulo { position: absolute; left: 160px; top: 190px; font-size: 26px; }
-    #c02-cols { position: absolute; left: 160px; top: 250px; display: flex; gap: 22px; }
+    #c02-mapa-rot { left: 2700px; top: 1430px; font-size: 26px; white-space: nowrap; }
+    #c02-cols { left: 2700px; top: 1500px; display: flex; gap: 22px; }
     #c02-cols .col { width: 200px; }
     #c02-cols .l { height: 3px; margin-bottom: 1px; border-radius: 2px; background: rgba(237, 228, 204, 0.32); }
     #c02-cols .l.kw { background: #a8d04a; }
     #c02-cols .l.co { background: rgba(111, 122, 102, 0.7); }
-    #c02-conta { position: absolute; right: 150px; top: 610px; text-align: right; }
-    #c02-conta .n { font-size: 200px; }
-    #c02-conta .u { font-size: 30px; }
+
+    #c02-conta { position: absolute; right: 150px; top: 560px; text-align: right; }
+    #c02-conta .n { font-size: 230px; line-height: 1; }
+    #c02-conta .u { font-size: 30px; margin-top: 8px; }
   </style>
 
   <div id="root" data-composition-id="c02" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap" id="c02-cap"><span class="ponto"></span><span class="num">02</span><span>A linguagem</span></div>
+      <div id="c02-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <div id="c02-titulo" class="display"><span class="caqui">a linguagem</span> <span class="verde">AEGIS</span></div>
+        <div id="c02-sub">um vocabulário de sobrevivência</div>
+        <div id="c02-orbita"></div>
 
-      <div id="c02-abre">
-        <div class="t display"><span class="caqui">a linguagem</span> <span class="verde">AEGIS</span></div>
-        <div class="s" id="c02-abre-s">um vocabulário de sobrevivência</div>
-      </div>
-
-      <div class="painel" id="c02-editor">
-        <div class="barra"><i></i><i></i><i></i><span style="margin-left: 10px">firmware/abrigo.aeg</span></div>
-        <div id="c02-janela"><div id="c02-lista"></div></div>
-      </div>
-
-      <div id="c02-dic">
-        <div class="linha" id="c02-d1"><span class="pal">scavenge</span><span class="sig">traz um módulo<small>import</small></span></div>
-        <div class="linha" id="c02-d2"><span class="pal">law</span><span class="sig">constante</span></div>
-        <div class="linha" id="c02-d3"><span class="pal">supply</span><span class="sig">variável</span></div>
-        <div class="linha" id="c02-d4"><span class="pal">survivor</span><span class="sig">sentinela<small>lê e classifica um sensor</small></span></div>
-        <div class="linha" id="c02-d5"><span class="pal">checkpoint · fallback</span><span class="sig">decisão<small>if / else</small></span></div>
-        <div class="linha" id="c02-d6"><span class="pal">watch · patrol</span><span class="sig">laços<small>while / for</small></span></div>
-        <div class="linha" id="c02-d7"><span class="pal">mission</span><span class="sig">função<small>def</small></span></div>
-        <div class="linha" id="c02-d8"><span class="pal">chronicle</span><span class="sig">programa principal</span></div>
-      </div>
-
-      <div id="c02-mapa">
-        <div class="titulo rotulo">firmware/abrigo.aeg — o arquivo inteiro</div>
-        <div id="c02-cols"></div>
-        <div id="c02-conta">
-          <div class="n display verde" id="c02-conta-n">0</div>
-          <div class="u rotulo">linhas escritas em AEGIS</div>
+        <div class="painel" id="c02-editor">
+          <div class="barra"><i></i><i></i><i></i><span style="margin-left: 12px">firmware/abrigo.aeg</span></div>
+          <div id="c02-lista"></div>
         </div>
+        <div id="c02-cursor"></div>
+        <div id="c02-cartoes"></div>
+
+        <div id="c02-mapa-rot" class="rotulo">firmware/abrigo.aeg — o arquivo inteiro</div>
+        <div id="c02-cols"></div>
+      </div>
+
+      <div class="cap" id="c02-cap"><span class="ponto"></span><span class="num">02</span><span>A linguagem</span></div>
+      <div id="c02-conta">
+        <div class="n display verde" id="c02-conta-n">000</div>
+        <div class="u rotulo">linhas escritas em AEGIS</div>
       </div>
     </div>
   </div>
@@ -74,72 +73,155 @@
     const W = (p, n) => AEGIS.w("02", p, n);
     const FIM = AEGIS.dur("02");
     const F = window.AEGIS_DADOS.firmware;
+    const P = "#c02-palco";
     const tl = gsap.timeline({ paused: true });
-    const LINHA = 38;
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
 
-    // ---- monta a listagem: trechos reais com o número de linha original ----
+    // geometria do editor no palco
+    const ED_X = 150, ED_Y = 1300, LINHA = 46, CHAR = 18;     // JetBrains Mono: 0,6 em
+    const TOPO_LISTA = ED_Y + 76;
+    const X_TEXTO = ED_X + 20 + 78 + 30;
+    const yLinha = (i) => TOPO_LISTA + i * LINHA;
+
+    // ---- listagem real, linha a linha --------------------------------------
     const lista = document.querySelector("#c02-lista");
     const ordem = [["scavenge", 13], ["law", 5], ["supply", 3], ["survivor", 14], ["patrol", 7], ["chronicle", 2], ["watch", 4]];
+    const trecho = {};   // nome -> [primeira linha, quantas]
     let n = 0;
-    const topo = {}; // primeira linha de cada trecho na listagem
     ordem.forEach(([nome, quantas], i) => {
       if (i > 0) {
         lista.insertAdjacentHTML("beforeend", '<div class="codigo sep"><span class="ln"></span>⋮</div>');
         n++;
       }
-      topo[nome] = n;
+      trecho[nome] = [n, quantas];
       F[nome].html.slice(0, quantas).forEach((h, k) => {
         lista.insertAdjacentHTML("beforeend",
-          `<div class="codigo"><span class="ln">${F[nome].linha + k}</span>${h || " "}</div>`);
+          `<div class="codigo"><span class="ln">${F[nome].linha + k}</span><span class="txt">${h}</span></div>`);
         n++;
       });
     });
-    const rolar = (nome, t, folga = 0) =>
-      tl.to("#c02-lista", { y: -(topo[nome] - folga) * LINHA, duration: 0.6, ease: "power3.inOut" }, t - 0.35);
-
-    // acende todas as ocorrências visíveis de uma palavra-chave
-    const kws = (palavra) => gsap.utils.toArray("#c02-lista .kw").filter((s) => s.textContent === palavra);
-    const acende = (palavra, t) => {
-      const alvo = kws(palavra);
-      tl.to(alvo, { backgroundColor: "rgba(168, 208, 74, 0.32)", color: "#f4f9e6", duration: 0.2 }, t);
-      tl.to(alvo, { backgroundColor: "rgba(168, 208, 74, 0)", color: "#a8d04a", duration: 0.5 }, t + 1.6);
+    const linhas = gsap.utils.toArray("#c02-lista .codigo");
+    const centro = (nome, extra = 0) => {
+      const [a, q] = trecho[nome];
+      return yLinha(a) + ((q + extra) * LINHA) / 2;
     };
-    const linhaDic = (id, t) =>
-      tl.fromTo(id, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, t);
 
-    // ---- abertura ----------------------------------------------------------
-    tl.set(["#c02-editor", ".linha", "#c02-mapa"], { opacity: 0 }, 0);
-    tl.fromTo("#c02-cap", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4 }, 0.1);
-    tl.fromTo("#c02-abre .t", { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0.3);
-    tl.fromTo("#c02-abre-s", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4 }, W("vocabulário"));
-    tl.to("#c02-abre", { opacity: 0, y: -30, duration: 0.4, ease: "power2.in" }, W("Um programa") - 0.2);
+    // digita um trecho inteiro em "dur" segundos, com o cursor acompanhando
+    function digitarTrecho(nomes, t, dur) {
+      const idx = [];
+      nomes.forEach((nome) => {
+        const [a, q] = trecho[nome];
+        if (idx.length) idx.push(a - 1);       // a linha "⋮" entre trechos
+        for (let i = a; i < a + q; i++) idx.push(i);
+      });
+      const tam = idx.map((i) => Math.max(1, linhas[i].querySelector(".txt") ? linhas[i].querySelector(".txt").textContent.length : 1));
+      const total = tam.reduce((x, y) => x + y, 0);
+      let tt = t;
+      idx.forEach((i, k) => {
+        const d = Math.max(0.05, (dur * tam[k]) / total);
+        const txt = linhas[i].querySelector(".txt");
+        tl.set(linhas[i], { opacity: 1 }, tt);
+        if (txt) {
+          const recuo = txt.textContent.length - txt.textContent.trimStart().length;
+          AEGIS.digitar(tl, txt, tt, d);
+          tl.set("#c02-cursor", { y: yLinha(i) + 5, x: X_TEXTO + recuo * CHAR }, tt);
+          tl.to("#c02-cursor", { x: X_TEXTO + tam[k] * CHAR, duration: d, ease: `steps(${Math.max(1, tam[k] - recuo)})` }, tt);
+        }
+        tt += d;
+      });
+      return tt;
+    }
 
-    // ---- editor + dicionário, no ritmo da fala ------------------------------
-    tl.fromTo("#c02-editor", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, W("Um programa") + 0.2);
-    acende("scavenge", W("scavenge"));
-    linhaDic("#c02-d1", W("scavenge"));
-    rolar("law", W("law"));
+    // acende as ocorrências de uma palavra-chave
+    const acende = (palavra, t, onde = "#c02-lista") => {
+      const alvo = gsap.utils.toArray(onde + " .kw").filter((s) => s.textContent === palavra);
+      tl.to(alvo, { backgroundColor: "rgba(168, 208, 74, 0.38)", color: "#ffffff", duration: 0.15 }, t);
+      tl.to(alvo, { backgroundColor: "rgba(168, 208, 74, 0)", color: "#a8d04a", duration: 0.6 }, t + 1.5);
+    };
+
+    // cartão explicativo ao lado de uma linha
+    const cartoes = document.querySelector("#c02-cartoes");
+    function cartao(id, linha, pal, sig, py, t) {
+      cartoes.insertAdjacentHTML("beforeend",
+        `<div class="c02-cartao" id="${id}" style="position:absolute;top:${yLinha(linha) - 26}px">` +
+        `<div class="fio"></div><div class="corpo"><div class="pal">${pal}</div>` +
+        `<div class="sig">${sig}${py ? `<small>${py}</small>` : ""}</div></div></div>`);
+      tl.fromTo(`#${id} .fio`, { scaleX: 0 }, { scaleX: 1, duration: 0.25, ease: "power2.out" }, t);
+      tl.fromTo(`#${id} .corpo`, { opacity: 0, x: 60, filter: "blur(8px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, t + 0.1);
+    }
+
+    // ---- T: entrada (vem do mergulho no radar) e órbita ---------------------
+    tl.set(linhas, { opacity: 0 }, 0);
+    tl.set(["#c02-cursor", "#c02-conta", "#c02-mapa-rot"], { opacity: 0 }, 0);
+    AEGIS.cameraEm(tl, P, 0, { x: 960, y: 560, s: 3.2 });
+    cam(0, { x: 960, y: 560, s: 1 }, 1.2, "expo.out");
+    tl.fromTo("#c02-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    const tit = AEGIS.letras("#c02-titulo .caqui").concat(AEGIS.letras("#c02-titulo .verde"));
+    tl.fromTo(tit, { opacity: 0, y: 60, filter: "blur(10px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out", stagger: 0.04 }, 0.25);
+    const sub = AEGIS.palavras("#c02-sub");
+    tl.fromTo(sub, { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.15, stagger: 0.08 }, W("vocabulário"));
+
+    const vocab = ["scavenge", "law", "supply", "survivor", "checkpoint", "fallback", "watch", "patrol", "mission",
+      "chronicle", "broadcast", "silence", "hide", "quarantine", "ambush", "extract", "log_entry"];
+    const orbita = document.querySelector("#c02-orbita");
+    vocab.forEach((p) => orbita.insertAdjacentHTML("beforeend", `<div class="c02-orb">${p}</div>`));
+    const orbs = gsap.utils.toArray(".c02-orb");
+    const giro = { a: 0 };
+    const posicionar = () => orbs.forEach((el, i) => {
+      const ang = giro.a * Math.PI * 2 + (i * Math.PI * 2) / orbs.length;
+      const prof = (Math.sin(ang) + 1) / 2;
+      gsap.set(el, { x: 960 + 800 * Math.cos(ang), y: 560 + 320 * Math.sin(ang), xPercent: -50, yPercent: -50,
+        scale: 0.6 + 0.6 * prof, opacity: 0.25 + 0.75 * prof, zIndex: Math.round(prof * 10) });
+    });
+    const tVoo = W("Um programa") - 0.15;
+    tl.set(orbita, { opacity: 0 }, 0);
+    tl.to(orbita, { opacity: 1, duration: 0.8 }, 0.6);
+    tl.fromTo(giro, { a: 0 }, { a: 0.3, duration: tVoo, ease: "none", onUpdate: posicionar }, 0);
+
+    // ---- as palavras caem no editor; a câmera inclina para baixo ------------
+    tl.to(["#c02-titulo", "#c02-sub"], { opacity: 0, y: -60, filter: "blur(8px)", duration: 0.35, ease: "power3.in" }, tVoo);
+    tl.to(orbs, { x: 700, y: ED_Y + 300, scale: 0.15, opacity: 0, duration: 0.7, ease: "power3.in", stagger: 0.025 }, tVoo);
+    tl.fromTo("#c02-editor", { opacity: 0, scale: 0.85, transformOrigin: "50% 0%" }, { opacity: 1, scale: 1, duration: 0.8, ease: "expo.out" }, tVoo + 0.45);
+    cam(tVoo + 0.1, { x: 1075, y: centro("scavenge"), s: 1.0 }, 1.1, "power3.inOut");
+
+    // ---- E: digitação no ritmo da fala --------------------------------------
+    tl.set("#c02-cursor", { opacity: 1 }, W("scavenge") - 0.35);
+    digitarTrecho(["scavenge"], W("scavenge") - 0.35, 1.3);
+    acende("scavenge", W("scavenge") + 1.0);
+    cartao("c02-k1", trecho.scavenge[0], "scavenge", "traz um módulo", "import", W("módulos"));
+
+    cam(W("Constantes") - 0.2, { x: 1075, y: (yLinha(trecho.law[0]) + yLinha(trecho.supply[0] + 3)) / 2, s: 1.0 }, 0.9, "power3.inOut");
+    digitarTrecho(["law"], W("Constantes") + 0.1, 0.8);
     acende("law", W("law"));
-    linhaDic("#c02-d2", W("law"));
+    cartao("c02-k2", trecho.law[0], "law", "constante", "", W("law"));
+    digitarTrecho(["supply"], W("variáveis"), 0.6);
     acende("supply", W("supply"));
-    linhaDic("#c02-d3", W("supply"));
-    rolar("survivor", W("survivor"));
+    cartao("c02-k3", trecho.supply[0], "supply", "variável", "", W("supply"));
+
+    cam(W("Cada sensor") - 0.3, { x: 1075, y: centro("survivor"), s: 1.0 }, 0.9, "power3.inOut");
+    digitarTrecho(["survivor"], W("Cada sensor"), 2.6);
     acende("survivor", W("survivor"));
-    linhaDic("#c02-d4", W("survivor"));
+    cartao("c02-k4", trecho.survivor[0], "survivor", "sentinela de um sensor", "", W("survivor"));
     acende("checkpoint", W("checkpoint"));
     acende("fallback", W("fallback"));
-    linhaDic("#c02-d5", W("checkpoint"));
-    rolar("patrol", W("watch"));
+    cartao("c02-k5", trecho.survivor[0] + 4, "checkpoint · fallback", "decisão", "if / else", W("checkpoint"));
+
+    cam(W("Os laços") - 0.4, { x: 1075, y: (yLinha(trecho.patrol[0]) + yLinha(trecho.watch[0] + 4)) / 2, s: 1.0 }, 0.9, "power3.inOut");
+    digitarTrecho(["patrol", "chronicle", "watch"], W("Os laços") - 0.2, 1.3);
     acende("watch", W("watch"));
     acende("patrol", W("patrol"));
-    linhaDic("#c02-d6", W("watch"));
+    cartao("c02-k6", trecho.watch[0], "watch · patrol", "laços", "while / for", W("watch"));
+    tl.to("#c02-cursor", { opacity: 0, duration: 0.2 }, W("patrol") + 0.6);
+    // punch-in na mission e depois no chronicle
+    cam(W("funções") - 0.1, { x: 1125, y: yLinha(trecho.patrol[0]) + 23, s: 1.1 }, 0.7, "power3.inOut");
     acende("mission", W("mission"));
-    linhaDic("#c02-d7", W("mission"));
+    cartao("c02-k7", trecho.patrol[0], "mission", "função", "def", W("mission"));
+    cam(W("principal") - 0.2, { x: 1125, y: yLinha(trecho.chronicle[0]) + 23, s: 1.1 }, 0.8, "power3.inOut");
     acende("chronicle", W("chronicle"));
-    linhaDic("#c02-d8", W("chronicle"));
-    tl.to(["#c02-editor", "#c02-dic"], { opacity: 0, y: -24, duration: 0.4, ease: "power2.in" }, W("Este") - 0.1);
+    cartao("c02-k8", trecho.chronicle[0], "chronicle", "programa principal", "", W("chronicle"));
 
-    // ---- o firmware inteiro --------------------------------------------------
+    // ---- plano geral e viagem até o arquivo inteiro --------------------------
+    cam(W("Este") - 0.45, { x: 1080, y: ED_Y + 1290, s: 0.33 }, 0.75, "power3.inOut");
     const cols = document.querySelector("#c02-cols");
     const porColuna = Math.ceil(F.miniatura.length / 5);
     let col;
@@ -153,16 +235,20 @@
       col.insertAdjacentHTML("beforeend",
         `<div class="l ${tipo}" style="margin-left:${recuo * 4}px;width:${tipo === "vazio" ? 0 : w}px"></div>`);
     });
-    tl.set("#c02-mapa", { opacity: 1 }, W("Este"));
-    tl.fromTo("#c02-mapa .titulo", { opacity: 0 }, { opacity: 1, duration: 0.3 }, W("Este"));
-    tl.fromTo("#c02-cols .l", { opacity: 0 }, { opacity: 1, duration: 0.05, stagger: 2.6 / F.miniatura.length }, W("firmware"));
-    tl.fromTo("#c02-conta", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4 }, W("Cerca") - 0.2);
-    const conta = { v: 0 };
-    tl.to(conta, { v: F.total, duration: 1.2, ease: "power2.out",
-      onUpdate: () => (document.querySelector("#c02-conta-n").textContent = Math.round(conta.v)) }, W("Cerca") - 0.1);
-    tl.to("#c02-cols .l.kw", { backgroundColor: "#d6f08a", duration: 0.25 }, W("AEGIS", 2));
+    const MX = 2700 + 544, MY = 1500 + 324;
+    cam(W("firmware") + 0.25, { x: MX, y: 1640, s: 1.5 }, 0.8, "power3.inOut");
+    tl.fromTo("#c02-cols .l", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.12, stagger: 2.8 / F.miniatura.length }, W("firmware") + 0.3);
+    tl.to("#c02-mapa-rot", { opacity: 1, duration: 0.3 }, W("firmware") + 0.5);
+    cam(W("completo") + 0.4, { x: MX + 60, y: 2000, s: 1.2 }, 2.0, "power1.inOut");
+    cam(W("Cerca") - 0.2, { x: MX + 400, y: MY - 40, s: 0.98 }, 0.9, "power3.inOut");
+    tl.to("#c02-conta", { opacity: 1, duration: 0.3 }, W("Cerca") - 0.1);
+    AEGIS.placar(tl, "#c02-conta-n", W("Cerca"), String(F.total), 1.3);
+    tl.to("#c02-cols .l.kw", { backgroundColor: "#e3f7a0", duration: 0.2, stagger: 0.002 }, W("AEGIS", 2) - 0.1);
 
-    tl.to(".cena", { opacity: 0, duration: 0.35, ease: "power2.in" }, FIM - 0.4);
+    // ---- saída: mergulho nas linhas -----------------------------------------
+    tl.to("#c02-conta", { opacity: 0, duration: 0.2 }, FIM - 0.75);
+    cam(FIM - 0.65, { x: MX, y: MY, s: 10 }, 0.65, "power3.in");
+    tl.to(".cena", { opacity: 0, duration: 0.2, ease: "power2.in" }, FIM - 0.25);
     window.__timelines["c02"] = tl;
   </script>
 </template>
