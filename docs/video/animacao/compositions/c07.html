@@ -150,7 +150,7 @@
 
     // ---- F: próximos passos e o fim -------------------------------------------
     cam(W("Como próximos") - 0.4, { x: 960, y: 1760, s: 1.0 }, 0.9, "power3.inOut");
-    tl.fromTo("#c07-passos .t", { opacity: 0, letterSpacing: "0.3em" }, { opacity: 1, letterSpacing: "0.06em", duration: 0.6, ease: "expo.out" }, W("próximos") - 0.2);
+    tl.fromTo("#c07-passos .t", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.6, ease: "expo.out" }, W("próximos") - 0.2);
     tl.fromTo("#c07-p1", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("análise") - 0.2);
     tl.fromTo("#c07-p2", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("montagem") - 0.2);
     // obrigado: a câmera desce até o radar
@@ -158,7 +158,7 @@
     cam(tO, { x: 960, y: 2800 + 540, s: 1.0 }, 0.9, "power3.inOut");
     tl.fromTo("#c07-radar", { opacity: 0, scale: 0.6, rotation: -40 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.8, ease: "power3.out", immediateRender: false }, tO + 0.3);
     tl.fromTo("#c07-varre", { rotation: 0, svgOrigin: "0 0" }, { rotation: 720, svgOrigin: "0 0", duration: FIM - tO, ease: "none" }, tO);
-    tl.fromTo("#c07-marca", { opacity: 0, letterSpacing: "0.5em" }, { opacity: 1, letterSpacing: "0.12em", duration: 0.8, ease: "expo.out", immediateRender: false }, tO + 0.5);
+    tl.fromTo("#c07-marca", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "expo.out", immediateRender: false }, tO + 0.5);
     tl.fromTo("#c07-obr", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out", immediateRender: false }, W("Obrigado"));
     tl.fromTo("#c07-assina", { opacity: 0 }, { opacity: 1, duration: 0.6, immediateRender: false }, W("Obrigado") + 0.4);
     tl.to("#c07-cap", { opacity: 0, duration: 0.4 }, tO);

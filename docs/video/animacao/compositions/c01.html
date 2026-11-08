@@ -168,7 +168,7 @@
     // ---- B: a câmera desliza até a casa ligada à nuvem ----------------------
     cam(W("automação") - 0.7, { x: 2000, y: 2300, s: 1.05 }, 1.2, "power3.inOut");
     tl.fromTo("#c01-casa-p", { strokeDasharray: 420, strokeDashoffset: 420 }, { strokeDashoffset: 0, duration: 0.9, ease: "power2.out" }, W("automação"));
-    tl.fromTo("#c01-rot-casa", { opacity: 0, letterSpacing: "0.4em" }, { opacity: 1, letterSpacing: "0.04em", duration: 0.6, ease: "expo.out" }, W("automação") + 0.2);
+    tl.fromTo("#c01-rot-casa", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.6, ease: "expo.out" }, W("automação") + 0.2);
     tl.fromTo("#c01-chips span", { opacity: 0, y: 30, scale: 0.6 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(2)", stagger: 0.1 }, W("conforto") - 0.15);
     tl.fromTo("#c01-nuvem i", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)", stagger: 0.06 }, W("depende") - 0.1);
     tl.fromTo("#c01-rot-nuvem", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "expo.out" }, W("depende") + 0.2);
@@ -215,7 +215,7 @@
     const marca = AEGIS.letras("#c01-marca");
     tl.fromTo(marca, { opacity: 0, y: 80, filter: "blur(10px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out", stagger: 0.08 }, W("AEGIS") - 0.15);
     cam(W("proteção") - 0.2, { x: 2000, y: 4440, s: 0.78 }, 1.2);
-    tl.fromTo("#c01-tag", { opacity: 0, letterSpacing: "0.8em" }, { opacity: 1, letterSpacing: "0.34em", duration: 0.8, ease: "expo.out" }, W("proteção"));
+    tl.fromTo("#c01-tag", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "expo.out" }, W("proteção"));
     [["#c01-s1", "sem internet"], ["#c01-s2", "linguagem"], ["#c01-s3", "compilador"]].forEach(([s, p]) => {
       tl.fromTo(s, { opacity: 0, scale: 0.4, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.45, ease: "back.out(1.6)" }, W(p) - 0.1);
     });

@@ -77,7 +77,7 @@
     AEGIS.cameraEm(tl, P, 0, { x: 662, y: 396, s: 2.6 });
     cam(0.1, { x: 960, y: 560, s: 1.0 }, 1.6, "power3.inOut");
     tl.fromTo("#c06-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
-    tl.fromTo("#c06-titulo", { opacity: 0, letterSpacing: "0.4em" }, { opacity: 1, letterSpacing: "0.08em", duration: 0.7, ease: "expo.out", immediateRender: false }, W("físico") - 0.3);
+    tl.fromTo("#c06-titulo", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.7, ease: "expo.out", immediateRender: false }, W("físico") - 0.3);
     tl.to("#c06-titulo", { opacity: 0, duration: 0.3 }, W("mesmo") - 0.2);
     // o mesmo .mpy entra no ESP32
     tl.to("#c06-cartao", { x: 1080, y: -40, duration: 1.1, ease: "power3.inOut" }, W("mesmo") - 0.4);
