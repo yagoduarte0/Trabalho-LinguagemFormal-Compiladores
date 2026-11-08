@@ -105,6 +105,8 @@ const mapaCorpo = corpoPython.map((_, i) => r.linhaOrigem(inicioCorpo + i + 1));
 const { execFileSync } = require("child_process");
 const saidaTestes = execFileSync("node", [path.join(RAIZ, "compilador/testes.js")], { encoding: "utf8" })
   .split("\n").filter((l) => l.trim() !== "");
+const saidaCenarios = execFileSync("python3", [path.join(RAIZ, "firmware/cenarios.py")], { encoding: "utf8" })
+  .split("\n").filter((l) => l.trim() !== "");
 
 // começo de cada runtime: é a única parte que muda entre os alvos
 const rEsp = compilar(perimetro, { alvo: "esp32" });
@@ -137,6 +139,7 @@ const dados = {
     runtimeEsp32: inicioRuntime(rEsp.python),
   },
   testes: saidaTestes,
+  cenarios: saidaCenarios,
   erro: {
     html: realcar(exemploErro.fonte),
     erros: comErro.erros,

@@ -1,21 +1,132 @@
-<!-- Cena 04 (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 04 — do código à placa.
+     O comando real (./firmware/wokwi.sh enviar) é digitado; um único cartão
+     de arquivo atravessa a linha de montagem do wokwi.sh: aegisc.js gera o
+     abrigo.py, o mpy-cross pré-compila o abrigo.mpy e o mpremote grava na
+     placa. Depois a câmera desce ao abrigo do Wokwi e os fios acendem com
+     os GPIOs reais. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c04-term { left: 260px; top: 200px; width: 1400px; height: 170px; }
+    #c04-cmd { position: absolute; left: 34px; top: 80px; font-family: "JetBrains Mono", monospace; font-size: 46px; color: #ede4cc; white-space: pre; }
+    #c04-cmd .p { color: #a8d04a; }
+    #c04-cursor { width: 26px; height: 50px; background: #a8d04a; }
+    .c04-portao { top: 540px; width: 330px; height: 200px; border: 2px dashed rgba(200, 184, 138, 0.5); border-radius: 12px; text-align: center; padding-top: 28px; }
+    .c04-portao .n { font-family: "JetBrains Mono", monospace; font-size: 30px; color: #c8b88a; }
+    .c04-portao .o { margin-top: 12px; font-family: "League Gothic", sans-serif; font-size: 52px; letter-spacing: 0.05em; color: #ede4cc; text-transform: uppercase; }
+    #c04-trilho { left: 200px; top: 638px; width: 2750px; height: 4px; background: rgba(200, 184, 138, 0.25); }
+    #c04-cartao { left: 0; top: 0; width: 300px; height: 190px; }
+    .c04-face { position: absolute; inset: 0; border-radius: 12px; padding: 22px 24px; border: 3px solid; background: #111610; }
+    .c04-face .ext { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 40px; }
+    .c04-face .d { margin-top: 10px; font-size: 26px; color: #ede4cc; }
+    .c04-face .r { margin-top: 8px; font-family: "JetBrains Mono", monospace; font-size: 17px; color: #6f7a66; }
+    #c04-usb { left: 2480px; top: 600px; width: 300px; height: 80px; }
+    #c04-chip { left: 2780px; top: 520px; width: 260px; height: 240px; }
+    #c04-chip-r { left: 2760px; top: 780px; width: 300px; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 22px; color: #a8d04a; }
+    #c04-mundo { left: 160px; top: 1300px; }
+    #c04-wokwi { left: 1330px; top: 1250px; width: 800px; display: flex; align-items: baseline; gap: 20px; }
+    #c04-wokwi .t { font-size: 76px; letter-spacing: 0.06em; }
+    #c04-real { left: 1330px; top: 1345px; white-space: nowrap; padding: 10px 22px; border: 2px solid #a8d04a; border-radius: 30px; font-family: "JetBrains Mono", monospace; font-size: 26px; color: #a8d04a; background: #0d110c; }
   </style>
+
   <div id="root" data-composition-id="c04" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">04</span><span id="c04-cap"></span></div>
-      <div id="c04-titulo" class="prov display"></div>
+      <div id="c04-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <div class="painel" id="c04-term">
+          <div class="barra"><i></i><i></i><i></i><span style="margin-left: 10px">terminal · Mac</span></div>
+          <div id="c04-cmd"><span class="p">$ </span><span id="c04-cmd-t">./firmware/wokwi.sh enviar</span></div>
+        </div>
+        <div id="c04-cursor"></div>
+
+        <div id="c04-trilho"></div>
+        <div class="c04-portao" id="c04-g1" style="left: 640px"><div class="n">aegisc.js --alvo esp32</div><div class="o">compila</div></div>
+        <div class="c04-portao" id="c04-g2" style="left: 1560px"><div class="n">mpy-cross</div><div class="o">pré-compila</div></div>
+        <svg id="c04-usb" viewBox="0 0 300 80"><path d="M0 40 H220" stroke="#C8B88A" stroke-width="10" stroke-linecap="round"/>
+          <path id="c04-usb-luz" d="M0 40 H220" stroke="#D6F08A" stroke-width="6" stroke-dasharray="30 40" stroke-linecap="round"/>
+          <rect x="220" y="22" width="60" height="36" rx="4" fill="#3a3f36" stroke="#C8B88A" stroke-width="3"/></svg>
+        <svg id="c04-chip" viewBox="0 0 260 240">
+          <rect x="30" y="20" width="200" height="200" rx="10" fill="#1b2416" stroke="#A8D04A" stroke-width="5"/>
+          <g stroke="#A8D04A" stroke-width="5"><path d="M60 20v-18M95 20v-18M130 20v-18M165 20v-18M200 20v-18M60 220v18M95 220v18M130 220v18M165 220v18M200 220v18M30 60h-28M30 100h-28M30 140h-28M30 180h-28M230 60h28M230 100h28M230 140h28M230 180h28"/></g>
+          <text x="130" y="132" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="40" fill="#EDE4CC">ESP32</text>
+        </svg>
+        <div id="c04-chip-r">boot.py · main.py · abrigo.mpy</div>
+
+        <div id="c04-cartao">
+          <div class="c04-face" id="c04-f1" style="border-color: #a8d04a"><div class="ext verde">abrigo.aeg</div><div class="d">fonte em AEGIS</div><div class="r">810 linhas</div></div>
+          <div class="c04-face" id="c04-f2" style="border-color: #9fd1c9"><div class="ext" style="color: #9fd1c9">abrigo.py</div><div class="d">MicroPython</div><div class="r">runtime esp32 + programa</div></div>
+          <div class="c04-face" id="c04-f3" style="border-color: #f0b545"><div class="ext atencao">abrigo.mpy</div><div class="d">bytecode</div><div class="r">cabe na RAM do ESP32</div></div>
+        </div>
+
+        <div id="c04-wokwi"><div class="t display creme">Wokwi</div><div class="rotulo">simulador de ESP32</div></div>
+        <div id="c04-real">= ligações do protótipo real</div>
+        <div id="c04-mundo"></div>
+      </div>
+      <div class="cap" id="c04-cap"><span class="ponto"></span><span class="num">04</span><span>Do código à placa</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("04", p, n);
+    const FIM = AEGIS.dur("04");
+    const P = "#c04-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["04"].titulo;
-    document.querySelector("#c04-cap").textContent = titulo;
-    document.querySelector("#c04-titulo").textContent = titulo;
-    tl.fromTo("#c04-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    document.querySelector("#c04-mundo").innerHTML = AEGIS.abrigo("c04a");
+    const MX = 160, MY = 1300;                        // onde o abrigo está no palco
+
+    tl.set(["#c04-f2", "#c04-f3", "#c04-cartao", "#c04-cursor", "#c04-wokwi", "#c04-real", ".c04a-tag"], { opacity: 0 }, 0);
+    tl.set("#c04a-led-verde", { attr: { fill: "#A8D04A" } }, 0);
+
+    // ---- terminal: o comando é digitado --------------------------------------
+    AEGIS.cameraEm(tl, P, 0, { x: 960, y: 290, s: 1.6 });
+    cam(0, { x: 960, y: 420, s: 1.05 }, 1.2, "expo.out");
+    tl.fromTo("#c04-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    const cmd = document.querySelector("#c04-cmd-t");
+    const nC = cmd.textContent.length;
+    const XC = 260 + 34 + 2 * 27.6;
+    tl.set("#c04-cursor", { opacity: 1, x: XC, y: 200 + 80 + 2 }, 0.4);
+    AEGIS.digitar(tl, cmd, W("gravar") - 0.3, 1.4);
+    tl.fromTo("#c04-cursor", { x: XC }, { x: XC + nC * 27.6, duration: 1.4, ease: `steps(${nC})`, immediateRender: false }, W("gravar") - 0.3);
+    tl.to("#c04-cursor", { opacity: 0, duration: 0.1 }, W("comando"));
+
+    // ---- o cartão atravessa a linha de montagem ------------------------------
+    const pos = (x) => ({ x, y: 545 });
+    const tC = W("comando") - 0.1;
+    tl.set("#c04-cartao", { ...pos(260) }, 0);
+    tl.fromTo("#c04-cartao", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.6)", immediateRender: false }, tC);
+    tl.fromTo([".c04-portao", "#c04-trilho", "#c04-usb", "#c04-chip"], { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.08 }, tC);
+    cam(tC, { x: 700, y: 640, s: 1.0 }, 0.8, "power3.inOut");
+    // compila: passa pelo portão 1 e vira .py
+    tl.to("#c04-cartao", { x: 1100, duration: 1.0, ease: "power2.inOut" }, W("compila") - 0.2);
+    cam(W("compila") - 0.2, { x: 1100, y: 640, s: 1.0 }, 1.0);
+    tl.to("#c04-g1", { borderColor: "#a8d04a", duration: 0.2 }, W("compila") + 0.2);
+    tl.to("#c04-f1", { opacity: 0, duration: 0.15 }, W("compila") + 0.35);
+    tl.fromTo("#c04-f2", { opacity: 0, rotationY: -90 }, { opacity: 1, rotationY: 0, duration: 0.35, immediateRender: false }, W("compila") + 0.35);
+    // pré-compila: portão 2, vira .mpy
+    tl.to("#c04-cartao", { x: 2050, duration: 1.0, ease: "power2.inOut" }, W("pré-compila") - 0.4);
+    cam(W("pré-compila") - 0.4, { x: 2000, y: 640, s: 1.0 }, 1.0);
+    tl.to("#c04-g2", { borderColor: "#f0b545", duration: 0.2 }, W("pré-compila"));
+    tl.to("#c04-f2", { opacity: 0, duration: 0.15 }, W("pré-compila") + 0.15);
+    tl.fromTo("#c04-f3", { opacity: 0, rotationY: -90 }, { opacity: 1, rotationY: 0, duration: 0.35, immediateRender: false }, W("pré-compila") + 0.15);
+    // envia: desce pelo cabo até o ESP32
+    cam(W("envia") - 0.3, { x: 2560, y: 640, s: 1.0 }, 0.8);
+    tl.to("#c04-cartao", { x: 2500, scale: 0.35, opacity: 0, duration: 0.6, ease: "power3.in" }, W("envia") - 0.1);
+    tl.fromTo("#c04-usb-luz", { strokeDashoffset: 0 }, { strokeDashoffset: -280, duration: 1.0, ease: "none" }, W("envia"));
+    tl.to("#c04-chip rect", { attr: { stroke: "#D6F08A" }, duration: 0.2 }, W("placa"));
+    tl.fromTo("#c04-chip", { scale: 1 }, { scale: 1.08, duration: 0.15, yoyo: true, repeat: 1, ease: "power2.out" }, W("placa"));
+
+    // ---- Wokwi: a câmera desce ao abrigo -------------------------------------
+    cam(W("Este") - 0.5, { x: MX + 900, y: MY + 470, s: 0.98 }, 0.9, "power3.inOut");
+    tl.fromTo("#c04-wokwi", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out", immediateRender: false }, W("Wokwi"));
+    tl.set("#c04a-oled", { attr: { href: "assets/img/oled-normal.png" } }, W("Wokwi") + 0.6);
+    const fios = gsap.utils.toArray(".c04a-fio");
+    tl.to(fios, { strokeOpacity: 1, duration: 0.3, stagger: 0.06 }, W("ligações") - 0.3);
+    tl.fromTo(fios, { strokeDashoffset: 0 }, { strokeDashoffset: -96, duration: FIM - W("ligações"), ease: "none" }, W("ligações") - 0.3);
+    tl.fromTo(".c04a-tag", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)", stagger: 0.09, immediateRender: false }, W("ligações"));
+    tl.fromTo("#c04-real", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("protótipo") - 0.2);
+
+    tl.to(".cena", { opacity: 0, duration: 0.3, ease: "power2.in" }, FIM - 0.35);
     window.__timelines["c04"] = tl;
   </script>
 </template>
