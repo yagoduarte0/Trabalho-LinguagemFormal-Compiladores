@@ -140,17 +140,23 @@
   color: #c8b88a;
 }
 
-      /* fundo fixo: grade de radar e cantos de mira, como no pitch */
-      #fundo { position: absolute; inset: 0; z-index: 0; }
-      #fundo .grade {
-        position: absolute;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(168, 208, 74, 0.045) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(168, 208, 74, 0.045) 1px, transparent 1px);
-        background-size: 80px 80px;
-        background-position: -1px -1px;
-      }
+/* palco: o mundo da cena, maior que a tela; a câmera é a transformação dele */
+.palco { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.palco > * { position: absolute; }
+.grade-mundo {
+  left: -3000px;
+  top: -3000px;
+  width: 10000px;
+  height: 9000px;
+  background-image:
+    linear-gradient(rgba(168, 208, 74, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168, 208, 74, 0.05) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+      /* HUD fixo: vinheta e cantos de mira, como no pitch (a grade fica no
+         palco de cada cena, para andar com a câmera) */
+      #fundo { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
       #fundo .vinheta {
         position: absolute;
         inset: 0;
@@ -165,9 +171,8 @@
   </head>
   <body>
     <div id="root" data-composition-id="main" data-start="0" data-duration="288.24"
-      data-width="1920" data-height="1080">
+      data-width="1920" data-height="1080" data-motion-blur="on">
       <div id="fundo" data-layout-ignore>
-        <div class="grade"></div>
         <div class="vinheta"></div>
         <div class="canto ce"></div><div class="canto cd"></div>
         <div class="canto be"></div><div class="canto bd"></div>

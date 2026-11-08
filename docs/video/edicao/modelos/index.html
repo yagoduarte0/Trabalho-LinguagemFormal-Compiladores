@@ -20,17 +20,9 @@
       #root { width: 100%; height: 100%; position: relative; }
       /* tema.css entra aqui inteiro (o HyperFrames só embute as fontes citadas no HTML) */
 /* TEMA */
-      /* fundo fixo: grade de radar e cantos de mira, como no pitch */
-      #fundo { position: absolute; inset: 0; z-index: 0; }
-      #fundo .grade {
-        position: absolute;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(168, 208, 74, 0.045) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(168, 208, 74, 0.045) 1px, transparent 1px);
-        background-size: 80px 80px;
-        background-position: -1px -1px;
-      }
+      /* HUD fixo: vinheta e cantos de mira, como no pitch (a grade fica no
+         palco de cada cena, para andar com a câmera) */
+      #fundo { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
       #fundo .vinheta {
         position: absolute;
         inset: 0;
@@ -45,9 +37,8 @@
   </head>
   <body>
     <div id="root" data-composition-id="main" data-start="0" data-duration="{{DURACAO}}"
-      data-width="1920" data-height="1080">
+      data-width="1920" data-height="1080" data-motion-blur="on">
       <div id="fundo" data-layout-ignore>
-        <div class="grade"></div>
         <div class="vinheta"></div>
         <div class="canto ce"></div><div class="canto cd"></div>
         <div class="canto be"></div><div class="canto bd"></div>
