@@ -1,21 +1,168 @@
-<!-- Cena 07 (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 07 — testes e encerramento.
+     T  a saída real dos 41 cenários do firmware (painel e bot incluídos);
+     D  o avaliar() real como um diário de operação, cada checkpoint com a
+        leitura em português ao lado;
+     M  o mesmo código no simulador e na placa;
+     F  próximos passos e o cartão final com o radar do AEGIS. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c07-term { left: 160px; top: 160px; width: 1600px; height: 720px; overflow: hidden; }
+    #c07-term .lista { position: absolute; left: 26px; top: 70px; right: 26px; }
+    #c07-term .lt { font-family: "JetBrains Mono", monospace; font-size: 26px; line-height: 40px; white-space: pre; color: #ede4cc; border-radius: 4px; }
+    #c07-term .lt b { color: #a8d04a; }
+    #c07-41 { left: 1180px; top: 590px; padding: 10px 30px; border-radius: 12px; background: rgba(10, 13, 10, 0.95); border: 2px solid #a8d04a; text-align: right; }
+    #c07-41 .v { font-size: 200px; line-height: 1; }
+
+    #c07-diario { left: 2300px; top: 120px; width: 1700px; height: 800px; border-radius: 10px; background: #ede4cc;
+      background-image: repeating-linear-gradient(transparent 0 47px, rgba(10, 13, 10, 0.12) 47px 48px); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+    #c07-diario .tit { position: absolute; left: 60px; top: 30px; font-family: "League Gothic", sans-serif; font-size: 56px; letter-spacing: 0.06em; color: #2a2418; }
+    #c07-diario .ent { position: absolute; left: 60px; right: 60px; display: flex; gap: 40px; align-items: baseline; }
+    #c07-diario .ent .c { width: 860px; font-family: "JetBrains Mono", monospace; font-size: 25px; color: #1b2416; white-space: pre; }
+    #c07-diario .ent .c b { color: #4a6a1a; }
+    #c07-diario .ent .p { flex: 1; font-family: "Inter", sans-serif; font-style: italic; font-size: 27px; color: #6a3a1a; }
+    #c07-diario .marg { position: absolute; left: 30px; top: 0; bottom: 0; width: 3px; background: rgba(239, 90, 76, 0.5); }
+
+    #c07-arq { left: 4500px; top: 440px; width: 300px; padding: 22px; border: 3px solid #a8d04a; border-radius: 12px; background: #111610; text-align: center; }
+    #c07-arq .ext { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 36px; color: #a8d04a; }
+    .c07-alvo { top: 260px; width: 420px; padding: 26px; border: 2px solid rgba(200, 184, 138, 0.5); border-radius: 12px; background: rgba(13, 17, 12, 0.95); text-align: center; }
+    .c07-alvo .n { font-family: "League Gothic", sans-serif; font-size: 64px; color: #ede4cc; letter-spacing: 0.05em; }
+    .c07-alvo img { width: 340px; margin-top: 14px; border: 3px solid #c8b88a; image-rendering: pixelated; }
+    .c07-fio { height: 4px; background: #a8d04a; transform-origin: 0% 50%; }
+
+    #c07-passos { left: 160px; top: 1500px; width: 1600px; }
+    #c07-passos .t { font-family: "League Gothic", sans-serif; font-size: 90px; letter-spacing: 0.06em; color: #c8b88a; }
+    #c07-passos .i { display: flex; align-items: center; gap: 30px; margin-top: 40px; font-size: 46px; color: #ede4cc; }
+    #c07-passos .i .cx { width: 54px; height: 54px; border: 4px solid #a8d04a; border-radius: 8px; flex: none; }
+    #c07-passos .i small { display: block; font-family: "JetBrains Mono", monospace; font-size: 24px; color: #c8b88a; margin-top: 6px; }
+
+    #c07-fim { left: 0; top: 2800px; width: 1920px; height: 1080px; }
+    #c07-radar { position: absolute; left: 790px; top: 120px; width: 340px; height: 340px; }
+    #c07-marca { position: absolute; left: 0; right: 0; top: 480px; text-align: center; font-size: 180px; letter-spacing: 0.12em; }
+    #c07-obr { position: absolute; left: 0; right: 0; top: 680px; text-align: center; font-family: "League Gothic", sans-serif; font-size: 70px; letter-spacing: 0.1em; color: #a8d04a; }
+    #c07-assina { position: absolute; left: 0; right: 0; top: 780px; text-align: center; }
   </style>
+
   <div id="root" data-composition-id="c07" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">07</span><span id="c07-cap"></span></div>
-      <div id="c07-titulo" class="prov display"></div>
+      <div id="c07-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <div class="painel" id="c07-term">
+          <div class="barra"><i></i><i></i><i></i><span style="margin-left: 10px">$ python3 firmware/cenarios.py</span></div>
+          <div class="lista" id="c07-term-l"></div>
+        </div>
+        <div id="c07-41"><div class="v display verde" id="c07-41-v">00</div><div class="rotulo">de 41 cenários passaram</div></div>
+
+        <div id="c07-diario"><div class="marg"></div><div class="tit">diário de operação · mission avaliar()</div><div id="c07-ents"></div></div>
+
+        <div class="c07-alvo" id="c07-sim" style="left: 3700px"><div class="n">simulador</div><div class="rotulo">Wokwi · PC</div><img src="assets/img/oled-normal.png"></div>
+        <div class="c07-fio" id="c07-f1" style="left: 4140px; top: 520px; width: 340px; transform: rotate(180deg)"></div>
+        <div id="c07-arq"><div class="ext">abrigo.aeg</div><div class="rotulo" style="margin-top: 8px">o mesmo código</div></div>
+        <div class="c07-fio" id="c07-f2" style="left: 4820px; top: 520px; width: 340px"></div>
+        <div class="c07-alvo" id="c07-placa" style="left: 5180px"><div class="n">placa</div><div class="rotulo">ESP32 real</div><img src="assets/img/oled-normal.png"></div>
+
+        <div id="c07-passos">
+          <div class="t">próximos passos</div>
+          <div class="i" id="c07-p1"><div class="cx"></div><div>fase de análise semântica<small>verificar os tipos: ration, vital, status</small></div></div>
+          <div class="i" id="c07-p2"><div class="cx"></div><div>montagem completa do hardware<small>chuva, solo, relé e HC-SR04 na placa real</small></div></div>
+        </div>
+
+        <div id="c07-fim">
+          <svg id="c07-radar" viewBox="-170 -170 340 340">
+            <defs><radialGradient id="c07-g" cx="0" cy="0" r="1" gradientUnits="objectBoundingBox">
+              <stop offset="0" stop-color="#A8D04A" stop-opacity="0.6"/><stop offset="1" stop-color="#A8D04A" stop-opacity="0"/></radialGradient></defs>
+            <circle r="160" fill="rgba(168,208,74,0.04)" stroke="#C8B88A" stroke-width="3"/>
+            <circle r="112" fill="none" stroke="rgba(168,208,74,0.35)" stroke-width="1.2"/>
+            <circle r="64" fill="none" stroke="rgba(168,208,74,0.35)" stroke-width="1.2"/>
+            <line x1="-160" y1="0" x2="160" y2="0" stroke="rgba(168,208,74,0.3)" stroke-width="1.2"/>
+            <line x1="0" y1="-160" x2="0" y2="160" stroke="rgba(168,208,74,0.3)" stroke-width="1.2"/>
+            <g id="c07-varre"><path d="M0 0 L0 -158 A158 158 0 0 1 112 -112 Z" fill="url(#c07-g)"/></g>
+            <text x="0" y="40" text-anchor="middle" font-family="League Gothic" font-size="128" fill="#EDE4CC">A</text>
+          </svg>
+          <div id="c07-marca" class="display creme">AEGIS</div>
+          <div id="c07-obr">obrigado</div>
+          <div id="c07-assina" class="rotulo">Yago Duarte · Engenharia de Software · Ibmec · Linguagens Formais e Compiladores</div>
+        </div>
+      </div>
+      <div class="cap" id="c07-cap"><span class="ponto"></span><span class="num">07</span><span>Testes e encerramento</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("07", p, n);
+    const FIM = AEGIS.dur("07");
+    const D = window.AEGIS_DADOS;
+    const P = "#c07-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["07"].titulo;
-    document.querySelector("#c07-cap").textContent = titulo;
-    document.querySelector("#c07-titulo").textContent = titulo;
-    tl.fromTo("#c07-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+    // terminal com a saída real dos cenários
+    const term = document.querySelector("#c07-term-l");
+    D.cenarios.forEach((l, i) => term.insertAdjacentHTML("beforeend",
+      `<div class="lt" id="c07-lt${i}">${esc(l).replace(/^OK/, "<b>OK</b>").replace(/(\d+\/\d+ cenarios passaram\.)/, "<b>$1</b>")}</div>`));
+    const rede = D.cenarios.map((l, i) => (/painel|Telegram/.test(l) ? i : -1)).filter((i) => i >= 0);
+
+    // diário: as linhas reais do avaliar() e a leitura de cada uma
+    const leitura = {
+      "risco_presenca == ALARME": "se houver intruso → ALARME",
+      "risco_agua == ALARME": "se a água subir → ENCHENTE",
+      "deslizamento": "chuva + solo → DESLIZAMENTO",
+      "risco_fumaca == ALARME": "fumaça vence tudo → FUMAÇA/GÁS",
+    };
+    const linhas = D.firmware.avaliarFim.html.map((h) => h.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
+    const ents = document.querySelector("#c07-ents");
+    let k = 0;
+    linhas.forEach((l) => {
+      const m = /checkpoint \((.*)\) \{/.exec(l);
+      if (!m) return;
+      const motivo = (linhas[linhas.indexOf(l) + 2] || "").trim();
+      ents.insertAdjacentHTML("beforeend",
+        `<div class="ent" id="c07-e${k}" style="top:${140 + k * 150}px"><div class="c"><b>checkpoint</b> (${esc(m[1])}) {\n    ${esc(motivo)}\n}</div><div class="p">${leitura[m[1]] || ""}</div></div>`);
+      k++;
+    });
+
+    tl.set(["#c07-41", ".ent", "#c07-arq", ".c07-alvo", ".c07-fio", "#c07-p1", "#c07-p2", "#c07-radar", "#c07-marca", "#c07-obr", "#c07-assina"], { opacity: 0 }, 0);
+
+    // ---- T: os 41 cenários ----------------------------------------------------
+    AEGIS.cameraEm(tl, P, 0, { x: 960, y: 520, s: 1.5 });
+    cam(0.1, { x: 960, y: 520, s: 1.0 }, 1.2, "expo.out");
+    tl.fromTo("#c07-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    const rolar = D.cenarios.length * 40 - 600;
+    tl.fromTo("#c07-term-l", { y: 0 }, { y: -rolar, duration: W("incluindo") - 0.5, ease: "power1.inOut" }, 0.5);
+    tl.to("#c07-41", { opacity: 1, duration: 0.3 }, W("41") - 0.25);
+    AEGIS.placar(tl, "#c07-41-v", W("41") - 0.2, "41", 1.0);
+    tl.to("#c07-41", { opacity: 0, duration: 0.3 }, W("incluindo") - 0.2);
+    rede.forEach((i, j) => tl.to(`#c07-lt${i}`, { backgroundColor: "rgba(168, 208, 74, 0.22)", duration: 0.2 }, W("servidor") + j * 0.12));
+
+    // ---- D: diário de operação ------------------------------------------------
+    cam(W("Com o") - 0.4, { x: 3150, y: 520, s: 1.0 }, 0.8, "power3.inOut");
+    gsap.utils.toArray(".ent").forEach((e, i) => {
+      tl.fromTo(e, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.35, ease: "expo.out", immediateRender: false }, W("regras") + i * 0.5);
+    });
+
+    // ---- M: o mesmo código no simulador e na placa ----------------------------
+    cam(W("E o mesmo") - 0.4, { x: 4650, y: 520, s: 0.95 }, 0.8, "power3.inOut");
+    tl.fromTo("#c07-arq", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)", immediateRender: false }, W("código") - 0.2);
+    tl.fromTo(".c07-fio", { opacity: 1, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.45, ease: "power2.out", immediateRender: false }, W("roda no simulador") - 0.1);
+    tl.fromTo("#c07-sim", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("simulador"));
+    tl.fromTo("#c07-placa", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("placa"));
+
+    // ---- F: próximos passos e o fim -------------------------------------------
+    cam(W("Como próximos") - 0.4, { x: 960, y: 1760, s: 1.0 }, 0.9, "power3.inOut");
+    tl.fromTo("#c07-passos .t", { opacity: 0, letterSpacing: "0.3em" }, { opacity: 1, letterSpacing: "0.06em", duration: 0.6, ease: "expo.out" }, W("próximos") - 0.2);
+    tl.fromTo("#c07-p1", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("análise") - 0.2);
+    tl.fromTo("#c07-p2", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("montagem") - 0.2);
+    // obrigado: a câmera desce até o radar
+    const tO = W("Obrigado") - 0.6;
+    cam(tO, { x: 960, y: 2800 + 540, s: 1.0 }, 0.9, "power3.inOut");
+    tl.fromTo("#c07-radar", { opacity: 0, scale: 0.6, rotation: -40 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.8, ease: "power3.out", immediateRender: false }, tO + 0.3);
+    tl.fromTo("#c07-varre", { rotation: 0, svgOrigin: "0 0" }, { rotation: 720, svgOrigin: "0 0", duration: FIM - tO, ease: "none" }, tO);
+    tl.fromTo("#c07-marca", { opacity: 0, letterSpacing: "0.5em" }, { opacity: 1, letterSpacing: "0.12em", duration: 0.8, ease: "expo.out", immediateRender: false }, tO + 0.5);
+    tl.fromTo("#c07-obr", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out", immediateRender: false }, W("Obrigado"));
+    tl.fromTo("#c07-assina", { opacity: 0 }, { opacity: 1, duration: 0.6, immediateRender: false }, W("Obrigado") + 0.4);
+    tl.to("#c07-cap", { opacity: 0, duration: 0.4 }, tO);
+    tl.to(".cena", { opacity: 0, duration: 0.6, ease: "power2.in" }, FIM - 0.65);
     window.__timelines["c07"] = tl;
   </script>
 </template>
