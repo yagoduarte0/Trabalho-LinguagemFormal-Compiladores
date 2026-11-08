@@ -264,9 +264,23 @@ survivor perimeter_watch {
 }
 \end{lstlisting}
 
-\pendente{comentar a biblioteca de módulos embutidos (gpio, adc, sonar,
-climate, display, wifi, mqtt, finger): não são palavras reservadas, e a
-API é a mesma nos dois alvos}
+Os recursos de hardware e de rede não são palavras reservadas. Eles
+formam uma biblioteca de 13 módulos embutidos, importados com
+\texttt{scavenge}: \texttt{gpio}, \texttt{adc} e \texttt{pwm} para os
+pinos; \texttt{sonar} (HC-SR04), \texttt{climate} (DHT22),
+\texttt{display} (OLED) e \texttt{finger} (leitor biométrico) para os
+periféricos; \texttt{time} para o relógio; e \texttt{wifi},
+\texttt{mqtt}, \texttt{config}, \texttt{web} e \texttt{telegram} para a
+rede. Para o analisador léxico, \texttt{gpio} é um identificador como
+outro qualquer; quem dá sentido a \texttt{gpio.read} é o \textit{runtime}
+emitido pelo gerador (Seção~\ref{sec:compilador}). Isso mantém o núcleo
+da linguagem pequeno: incluir um sensor novo não muda a gramática, só o
+\textit{runtime}. Cada módulo tem a mesma API nos dois alvos de
+compilação, e as funções que dependem do hardware devolvem um valor de
+falha, como $-1$ quando o sonar não recebe eco, em vez de interromper o
+programa. Os nomes de tipo também funcionam como funções de conversão:
+\texttt{paper(t)} transforma um número em texto, e \texttt{radio(27)}
+marca um número como pino.
 
 % =====================================================================
 \section{O Compilador}
