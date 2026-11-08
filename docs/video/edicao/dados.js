@@ -127,6 +127,8 @@ const dados = {
     avaliar: trecho(/^mission avaliar/, 13),
     chronicle: trecho(/^chronicle \{/, 6),
     watch: trecho(/^    watch \{/, 4),
+    deslizamento: trecho(/^    checkpoint \(chovendo && solo_pct >= SOLO_ALARME\)/, 5),
+    avaliarFim: trecho(/^    checkpoint \(risco_presenca == ALARME\)/, 16),
   },
   perimetro: {
     html: realcar(perimetro),

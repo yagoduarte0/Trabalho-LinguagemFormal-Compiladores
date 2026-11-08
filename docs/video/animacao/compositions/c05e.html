@@ -1,21 +1,135 @@
-<!-- Cena 05e (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 05e — deslizamento. Encosta ao lado do abrigo, chuva caindo, os
+     medidores de chuva e solo com os limites reais (chuva 30 %, solo 85 %,
+     histerese 10) e o trecho real do sentinela_solo que decide: liga com
+     chovendo && solo >= 85, só desliga com solo < 75 — mesmo sem chuva. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c05e-mundo { left: 160px; top: 1300px; }
+    #c05e-encosta { left: -1000px; top: 1300px; width: 1500px; height: 1000px; overflow: visible; }
+    #c05e-chuva { left: -1000px; top: 900px; width: 3300px; height: 1180px; overflow: hidden; }
+    #c05e-chuva i { position: absolute; top: 0; width: 3px; height: 46px; border-radius: 2px; background: linear-gradient(transparent, #9fd1c9); }
+    #c05e-hud { position: absolute; right: 60px; top: 180px; width: 700px; padding: 22px 26px; border: 2px solid rgba(200, 184, 138, 0.4); border-radius: 10px; background: rgba(13, 17, 12, 0.95); }
+    .c05e-med { margin: 10px 0 26px; }
+    .c05e-med .top { display: flex; justify-content: space-between; font-family: "JetBrains Mono", monospace; font-size: 24px; color: #ede4cc; }
+    .c05e-med .trilho { position: relative; height: 22px; margin-top: 10px; border-radius: 11px; background: rgba(237, 228, 204, 0.1); }
+    .c05e-med .enche { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; border-radius: 11px; transform-origin: 0% 50%; }
+    .c05e-med .lim { position: absolute; top: -8px; bottom: -8px; width: 3px; }
+    .c05e-med .lim b { position: absolute; top: 34px; left: -30px; width: 60px; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 15px; font-weight: 400; }
+    #c05e-cod { margin-top: 30px; padding: 14px 16px; border-radius: 8px; background: rgba(0, 0, 0, 0.35); }
+    #c05e-cod .codigo { font-size: 19px; line-height: 32px; border-radius: 4px; }
+    #c05e-alarme { position: absolute; left: 60px; top: 820px; }
+    #c05e-alarme .t { font-family: "League Gothic", sans-serif; font-size: 100px; letter-spacing: 0.06em; color: #ef5a4c; line-height: 1; }
+    #c05e-alarme .s { margin-top: 6px; }
+    #c05e-veu { position: absolute; inset: 0; background: radial-gradient(ellipse at 40% 50%, transparent 45%, rgba(239, 90, 76, 0.3) 100%); }
   </style>
+
   <div id="root" data-composition-id="c05e" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">05e</span><span id="c05e-cap"></span></div>
-      <div id="c05e-titulo" class="prov display"></div>
+      <div id="c05e-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <svg id="c05e-encosta" viewBox="0 0 1500 1000">
+          <path d="M0 780 L700 160 Q760 120 820 170 L1450 780 Z" fill="#2a2418" stroke="#C8B88A" stroke-width="4"/>
+          <path d="M120 690 L700 230 M260 690 L760 260 M420 700 L860 300" stroke="#3a3222" stroke-width="3"/>
+          <g id="c05e-massa"><path d="M760 250 Q830 230 900 300 L1180 560 Q1040 600 960 520 Z" fill="#4a3b22" stroke="#C8B88A" stroke-width="3"/>
+            <circle cx="900" cy="380" r="16" fill="#6f6250"/><circle cx="1010" cy="470" r="12" fill="#6f6250"/><circle cx="1080" cy="520" r="18" fill="#6f6250"/></g>
+          <g id="c05e-trincas" fill="none" stroke="#EF5A4C" stroke-width="4" stroke-linecap="round">
+            <path d="M760 250 l20 30 l-12 26 l24 30"/><path d="M1180 560 l-30 -12 l-20 20 l-34 -8"/><path d="M960 520 l-20 -30 l10 -20"/>
+          </g>
+        </svg>
+        <div id="c05e-mundo"></div>
+        <div id="c05e-chuva"></div>
+      </div>
+      <div id="c05e-veu"></div>
+      <div id="c05e-hud">
+        <div class="rotulo">sentinelas de chuva e solo</div>
+        <div class="c05e-med"><div class="top"><span>🌧 chuva</span><span id="c05e-vc">0 %</span></div>
+          <div class="trilho"><i class="enche" id="c05e-ec" style="background: #9fd1c9"></i>
+            <i class="lim" style="left: 30%; background: #f0b545"><b class="atencao">30</b></i></div></div>
+        <div class="c05e-med"><div class="top"><span>🌱 solo</span><span id="c05e-vs">25 %</span></div>
+          <div class="trilho"><i class="enche" id="c05e-es" style="background: #a8d04a"></i>
+            <i class="lim" style="left: 75%; background: #c8b88a"><b class="caqui">75</b></i>
+            <i class="lim" style="left: 85%; background: #ef5a4c"><b class="alarme">85</b></i></div></div>
+        <div id="c05e-cod"></div>
+      </div>
+      <div id="c05e-alarme"><div class="t">alarme · deslizamento</div><div class="s rotulo" id="c05e-alarme-s">chuva + solo encharcado</div></div>
+      <div class="cap" id="c05e-cap"><span class="ponto"></span><span class="num">05</span><span>Deslizamento</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("05e", p, n);
+    const FIM = AEGIS.dur("05e");
+    const F = window.AEGIS_DADOS.firmware;
+    const P = "#c05e-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["05e"].titulo;
-    document.querySelector("#c05e-cap").textContent = titulo;
-    document.querySelector("#c05e-titulo").textContent = titulo;
-    tl.fromTo("#c05e-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    const MX = 160, MY = 1300;
+    document.querySelector("#c05e-mundo").innerHTML = AEGIS.abrigo("c05e-a");
+    document.querySelector("#c05e-cod").innerHTML = F.deslizamento.html
+      .map((h, i) => `<div class="codigo" id="c05e-l${i}"><span class="ln">${F.deslizamento.linha + i}</span><span class="txt">${h}</span></div>`).join("");
+
+    // chuva: gotas com posições e velocidades fixas (sem Math.random)
+    const chuva = document.querySelector("#c05e-chuva");
+    for (let i = 0; i < 150; i++) chuva.insertAdjacentHTML("beforeend", `<i style="left:${(i * 211) % 3300}px"></i>`);
+    const gotas = gsap.utils.toArray("#c05e-chuva i");
+    const T_CHOVE = W("Chuva") - 0.1, T_PARA = W("mesmo") - 0.2;
+    gotas.forEach((g, i) => {
+      const dur = 0.55 + ((i * 37) % 30) / 100;
+      tl.fromTo(g, { y: -60 - ((i * 53) % 400) }, { y: 1180, duration: dur, ease: "none", repeat: Math.ceil((FIM - T_CHOVE) / dur), immediateRender: false }, T_CHOVE + ((i * 17) % 50) / 100);
+    });
+    tl.set(chuva, { opacity: 0 }, 0);
+    tl.to(chuva, { opacity: 1, duration: 0.4 }, T_CHOVE);
+    tl.to(chuva, { opacity: 0, duration: 0.8 }, T_PARA);
+
+    // medidores
+    const val = { c: 0, s: 25 };
+    const mostra = () => {
+      document.querySelector("#c05e-vc").textContent = Math.round(val.c) + " %";
+      document.querySelector("#c05e-vs").textContent = Math.round(val.s) + " %";
+      gsap.set("#c05e-ec", { scaleX: val.c / 100 });
+      gsap.set("#c05e-es", { scaleX: val.s / 100, backgroundColor: val.s >= 85 ? "#EF5A4C" : val.s >= 70 ? "#F0B545" : "#A8D04A" });
+    };
+    const T_ALARME = W("disparam") - 0.1;
+    tl.fromTo(val, { c: 0 }, { c: 78, duration: 1.8, ease: "power2.out", onUpdate: mostra }, T_CHOVE + 0.1);
+    tl.fromTo(val, { s: 25 }, { s: 86, duration: T_ALARME - W("solo"), ease: "power1.in", onUpdate: mostra, immediateRender: false }, W("solo"));
+    tl.to(val, { s: 93, duration: 1.2, ease: "power1.out", onUpdate: mostra }, T_ALARME);
+    tl.to(val, { c: 4, duration: 1.0, ease: "power2.in", onUpdate: mostra }, T_PARA + 0.2);
+
+    tl.set(["#c05e-alarme", "#c05e-veu", "#c05e-trincas", "#c05e-hud", ".c05e-a-tag"], { opacity: 0 }, 0);
+    tl.set("#c05e-a-led-verde", { attr: { fill: "#A8D04A" } }, 0);
+    tl.set("#c05e-a-oled", { attr: { href: "assets/img/oled-normal.png" } }, 0);
+
+    // ---- câmera na encosta e no quintal -------------------------------------
+    AEGIS.cameraEm(tl, P, 0, { x: MX + 700, y: MY + 400, s: 1.0 });
+    cam(0.05, { x: MX - 120, y: MY + 520, s: 0.66 }, 1.6, "power3.inOut");
+    tl.fromTo("#c05e-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    tl.fromTo("#c05e-hud", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out", immediateRender: false }, W("solo") - 0.2);
+    tl.to("#c05e-a-solo-area", { attr: { fill: "#4a3a22" }, duration: 4 }, W("solo"));
+    // atenção (chovendo / solo encharcado)
+    tl.set("#c05e-a-led-verde", { attr: { fill: "#2a3a1c" } }, W("encharcado"));
+    tl.set("#c05e-a-led-amar", { attr: { fill: "#F0B545" } }, W("encharcado"));
+    tl.set("#c05e-a-oled", { attr: { href: "assets/img/oled-atencao-chovendo.png" } }, W("encharcado"));
+    // o que antecede: trincas na encosta
+    tl.fromTo("#c05e-trincas", { opacity: 0 }, { opacity: 1, duration: 0.3, immediateRender: false }, W("deslizamento") - 0.1);
+    tl.fromTo("#c05e-trincas path", { strokeDasharray: 200, strokeDashoffset: 200 }, { strokeDashoffset: 0, duration: 0.8, stagger: 0.15 }, W("deslizamento") - 0.1);
+    cam(W("deslizamento") - 0.4, { x: MX - 300, y: MY + 420, s: 0.9 }, 1.0, "power3.inOut");
+    // os dois juntos disparam
+    cam(W("Os dois") - 0.3, { x: MX - 120, y: MY + 520, s: 0.66 }, 0.9, "power3.inOut");
+    tl.to("#c05e-l0", { backgroundColor: "rgba(239, 90, 76, 0.28)", duration: 0.2 }, T_ALARME);
+    tl.fromTo("#c05e-alarme", { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power4.out", immediateRender: false }, T_ALARME);
+    tl.set("#c05e-a-oled", { attr: { href: "assets/img/oled-alarme-deslizamento.png" } }, T_ALARME);
+    tl.set("#c05e-a-led-amar", { attr: { fill: "#3a3018" } }, T_ALARME);
+    tl.set("#c05e-a-led-verm", { attr: { fill: "#EF5A4C" } }, T_ALARME);
+    tl.to("#c05e-massa", { x: 120, y: 110, duration: 1.6, ease: "power2.in" }, T_ALARME + 0.1);
+    AEGIS.tremer(tl, ".cena", T_ALARME + 0.3, 10, 0.5);
+    for (let t = T_ALARME; t < FIM - 0.3; t += 0.6) tl.fromTo("#c05e-veu", { opacity: 0.8 }, { opacity: 0.15, duration: 0.55, immediateRender: false }, t);
+    // só desliga quando o solo seca (abaixo de 85 - 10), mesmo sem chuva
+    tl.to("#c05e-l0", { backgroundColor: "rgba(239, 90, 76, 0)", duration: 0.3 }, W("só desliga") - 0.1);
+    tl.to("#c05e-l2", { backgroundColor: "rgba(240, 181, 69, 0.25)", duration: 0.2 }, W("só desliga") - 0.1);
+    tl.set("#c05e-alarme-s", { textContent: "só desliga com o solo abaixo de 75 %" }, W("só desliga"));
+    tl.set("#c05e-alarme-s", { textContent: "a chuva parou · o solo segue a 93 % · alarme mantido" }, T_PARA + 0.6);
+    tl.to(".cena", { opacity: 0, duration: 0.3, ease: "power2.in" }, FIM - 0.35);
     window.__timelines["c05e"] = tl;
   </script>
 </template>

@@ -4159,6 +4159,37 @@ window.AEGIS_DADOS = {
     "        <span class=\"kw\">hide</span>(CICLO_MS)",
     "    }"
    ]
+  },
+  "deslizamento": {
+   "linha": 357,
+   "html": [
+    "    <span class=\"kw\">checkpoint</span> (chovendo &amp;&amp; solo_pct &gt;= SOLO_ALARME) {",
+    "        deslizamento = <span class=\"kw\">alive</span>",
+    "    } <span class=\"kw\">fallback</span> <span class=\"kw\">checkpoint</span> (solo_pct &lt; SOLO_ALARME - HISTERESE_PCT) {",
+    "        deslizamento = <span class=\"kw\">dead</span>",
+    "    }"
+   ]
+  },
+  "avaliarFim": {
+   "linha": 481,
+   "html": [
+    "    <span class=\"kw\">checkpoint</span> (risco_presenca == ALARME) {",
+    "        estado = ALARME",
+    "        motivo = <span class=\"st\">\"INTRUSO\"</span>",
+    "    }",
+    "    <span class=\"kw\">checkpoint</span> (risco_agua == ALARME) {",
+    "        estado = ALARME",
+    "        motivo = <span class=\"st\">\"ENCHENTE\"</span>",
+    "    }",
+    "    <span class=\"kw\">checkpoint</span> (deslizamento) {",
+    "        estado = ALARME",
+    "        motivo = <span class=\"st\">\"DESLIZAMENTO\"</span>",
+    "    }",
+    "    <span class=\"kw\">checkpoint</span> (risco_fumaca == ALARME) {",
+    "        estado = ALARME",
+    "        motivo = <span class=\"st\">\"FUMACA/GAS\"</span>",
+    "    }"
+   ]
   }
  },
  "perimetro": {
