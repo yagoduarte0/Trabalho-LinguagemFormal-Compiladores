@@ -109,9 +109,18 @@ falham.
 
 % Ideia do parágrafo: por que criar uma linguagem em vez de escrever o
 % firmware direto em Python/C.
-\pendente{explicar a motivação para uma DSL: as regras de reação a
-emergências ficam legíveis como um ``diário de operação'' do abrigo, e o
-mesmo programa roda no PC e na placa}
+Este trabalho propõe o AEGIS, um sistema de monitoramento de abrigos
+residenciais que funciona sem nuvem, e uma linguagem de domínio
+específico (DSL) para programá-lo. Uma DSL troca a generalidade de uma
+linguagem de propósito geral por notação próxima do problema, o que
+facilita ler e validar o programa~\cite{mernik2005,fowler2010}. No
+AEGIS, as regras de reação a emergências são escritas com um vocabulário
+de sobrevivência (\texttt{survivor}, \texttt{checkpoint},
+\texttt{broadcast}) e ficam legíveis como um ``diário de operação'' do
+abrigo. Além disso, o compilador isola o programa do hardware: o mesmo
+código-fonte é traduzido para um alvo simulado, que roda no PC, e para
+MicroPython~\cite{micropython}, que roda no ESP32. Assim a lógica pode
+ser testada antes de ir para a placa.
 
 % Ideia do parágrafo: contribuições.
 As contribuições deste trabalho são:
@@ -137,16 +146,61 @@ Seção~\ref{sec:conclusao} conclui.
 \label{sec:fundamentos}
 
 \subsection{Linguagens regulares e análise léxica}
-\pendente{expressões regulares, autômatos finitos, nível 3 da hierarquia
-de Chomsky; por que tokens são uma linguagem regular~\cite{hopcroft2006}}
+A hierarquia de Chomsky organiza as linguagens formais em quatro níveis,
+conforme as restrições impostas às regras das
+gramáticas~\cite{hopcroft2006}. No nível mais restrito (tipo 3) estão as
+linguagens regulares, que podem ser descritas por expressões regulares e
+reconhecidas por autômatos finitos, sem nenhuma memória além do estado
+atual. Os \textit{tokens} de uma linguagem de programação (identificadores,
+números, operadores, palavras reservadas) formam linguagens regulares: um
+identificador, por exemplo, é descrito por
+\verb|[a-zA-Z_][a-zA-Z0-9_]*|. Por isso a primeira fase do compilador, a
+análise léxica, pode ser construída a partir de expressões regulares. Ela
+agrupa os caracteres do fonte em \textit{lexemas} e associa a cada um uma
+categoria, gerando a sequência de \textit{tokens} consumida pela fase
+seguinte~\cite{aho2007}.
+
+Quando mais de uma expressão casa na mesma posição, os analisadores
+léxicos adotam a regra do \textit{maximal munch}: escolhe-se o lexema mais
+longo possível, de modo que \texttt{>=} seja lido como um único operador, e
+não como \texttt{>} seguido de \texttt{=}~\cite{aho2007}.
 
 \subsection{Gramáticas livres de contexto e análise sintática}
-\pendente{GLC, nível 2 da hierarquia, derivação, árvore de derivação vs.
-AST; gramáticas LL(1) e análise descendente recursiva~\cite{aho2007}}
+As linguagens regulares não conseguem descrever estruturas aninhadas, como
+parênteses balanceados ou blocos dentro de blocos, porque isso exige
+contar sem limite. Essas estruturas pertencem ao nível seguinte (tipo 2),
+o das linguagens livres de contexto, geradas por gramáticas cujas regras
+têm um único não terminal do lado esquerdo e reconhecidas por autômatos
+com pilha~\cite{hopcroft2006}. A análise sintática verifica se a sequência
+de \textit{tokens} pode ser derivada da gramática e registra essa
+derivação numa árvore. A árvore de derivação completa contém todos os
+símbolos da gramática, inclusive pontuação e regras auxiliares. Já a
+árvore sintática abstrata (AST) guarda apenas o que importa para o
+significado do programa e é a estrutura usada pelas fases
+seguintes~\cite{aho2007}.
+
+Uma gramática é LL(1) quando pode ser analisada da esquerda para a
+direita, construindo a derivação mais à esquerda, olhando apenas um
+\textit{token} à frente para escolher a regra. Para isso ela não pode
+ter recursão à esquerda nem duas alternativas que comecem pelo mesmo
+\textit{token}. Gramáticas LL(1) se prestam à análise descendente
+recursiva, em que cada não terminal vira uma função, e a pilha do
+autômato é a própria pilha de chamadas do programa~\cite{aho2007}. A
+notação EBNF~\cite{iso14977} ajuda a escrever essas gramáticas: a repetição
+\texttt{\{ \dots\ \}} substitui a recursão à esquerda e se traduz
+diretamente num laço.
 
 \subsection{Geração de código}
-\pendente{tradução dirigida pela sintaxe, visitante sobre a AST,
-compilação para outra linguagem de alto nível (\textit{transpiling})}
+Na tradução dirigida pela sintaxe, cada construção da linguagem tem uma
+regra de tradução associada, aplicada ao percorrer a
+árvore~\cite{aho2007}. Uma implementação comum é o padrão visitante: uma
+função recursiva que, para cada tipo de nó da AST, emite o código
+correspondente e chama a si mesma para os filhos. Quando a linguagem de
+destino é outra linguagem de alto nível, e não código de máquina, o
+processo costuma ser chamado de compilação fonte a fonte, ou
+\textit{transpilação}. Ele aproveita o interpretador ou o compilador
+já existente do destino, que no caso deste trabalho é o Python e sua variante
+para microcontroladores, o MicroPython.
 
 % =====================================================================
 \section{A Linguagem AEGIS}
@@ -410,6 +464,17 @@ Boston: Addison-Wesley, 2007.
 \textit{Introduction to Automata Theory, Languages, and Computation},
 3.\ ed. Boston: Addison-Wesley, 2006.
 
+\bibitem{mernik2005} M. Mernik, J. Heering e A. M. Sloane, ``When and
+how to develop domain-specific languages'', \textit{ACM Computing
+Surveys}, vol.~37, n.~4, pp.~316--344, 2005.
+
+\bibitem{fowler2010} M. Fowler, \textit{Domain-Specific Languages}.
+Boston: Addison-Wesley, 2010.
+
+\bibitem{iso14977} ISO/IEC, \textit{ISO/IEC 14977:1996 --- Information
+technology --- Syntactic metalanguage --- Extended BNF}. Genebra: ISO,
+1996.
+
 \bibitem{ibge2018} IBGE, \textit{População em Áreas de Risco no Brasil}.
 Rio de Janeiro: IBGE, 2018. \pendente{conferir dados e link}
 
@@ -420,7 +485,7 @@ título e link}
 [Online]. Disponível: \url{https://wokwi.com}
 
 \bibitem{micropython} MicroPython. [Online]. Disponível:
-\url{https://micropython.org} \pendente{citar no texto ou remover}
+\url{https://micropython.org}
 \end{thebibliography}
 
 \end{document}
