@@ -9,7 +9,9 @@ runtime, executa um ciclo() e confere LEDs, buzzer e estado.
 
 import contextlib
 import io
+import json
 import os
+import socket
 import subprocess
 import sys
 
@@ -51,6 +53,8 @@ def zerar_sensores(g):
                  "rele_ligado", "houve_fumaca", "armado", "em_entrada", "intruso"):
         g[nome] = False
     g["finger"].fila.clear()
+    g["painel"] = False
+    g["web"].fila.clear()
     g["filtro_pronto"] = False      # a primeira leitura vira a média
     g["base_registrada"] = True
 
@@ -389,6 +393,69 @@ def _(g):
     ciclo(g, vezes=10)
     assert g["estado"] == g["NORMAL"] and not g["silenciado"]
     assert leds(g)["verde"] and not buzzer_ligado(g)
+
+
+@cenario("painel: /dados devolve JSON valido com o estado e as leituras")
+def _(g):
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    dados = json.loads(g["leituras_json"]())
+    assert dados["estado"] == g["ALARME"] and dados["nome"] == "ALARME", dados
+    assert dados["motivo"] == "FUMACA/GAS" and dados["temp"] == 25.0, dados
+    assert dados["fumaca_lim"] == g["MARGEM_FUMACA"] and dados["armado"] == 0, dados
+
+
+@cenario("painel: servidor HTTP de verdade responde /, /dados e 404")
+def _(g):
+    web = g["web"]
+    assert web.start(18080), "nao abriu a porta 18080"
+    g["painel"] = True
+
+    def pedir(linha):
+        cliente = socket.create_connection(("127.0.0.1", 18080), timeout=2)
+        cliente.sendall(linha.encode() + b"\r\nHost: x\r\n\r\n")
+        for _ in range(5):                        # o firmware atende dentro do ciclo
+            ciclo(g)
+        resposta = b""
+        while True:
+            parte = cliente.recv(4096)
+            if not parte:
+                break
+            resposta += parte
+        cliente.close()
+        cabecalho, _, corpo = resposta.partition(b"\r\n\r\n")
+        return cabecalho.decode(), corpo.decode()
+
+    try:
+        cab, corpo = pedir("GET /dados HTTP/1.1")
+        assert cab.startswith("HTTP/1.1 200") and "application/json" in cab, cab
+        assert json.loads(corpo)["nome"] == "NORMAL", corpo
+        cab, corpo = pedir("GET / HTTP/1.1")
+        assert "text/html" in cab and corpo.startswith("<!doctype html>"), cab
+        cab, _ = pedir("GET /outra HTTP/1.1")
+        assert cab.startswith("HTTP/1.1 404"), cab
+    finally:
+        web._servidor.close()
+        web._servidor = None
+
+
+@cenario("painel: botao Silenciar cala a sirene, o alarme continua")
+def _(g):
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    g["painel"] = True
+    g["web"].fila.append("/silenciar")
+    log = ciclo(g)
+    assert g["silenciado"] and "silenciado pelo painel" in log, log
+    assert g["estado"] == g["ALARME"] and leds(g)["vermelho"] and not buzzer_ligado(g)
+
+
+@cenario("painel: Silenciar fora do alarme nao faz nada")
+def _(g):
+    g["painel"] = True
+    g["web"].fila.append("/silenciar")
+    ciclo(g)
+    assert not g["silenciado"]
 
 
 def principal():

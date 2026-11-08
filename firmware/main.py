@@ -661,6 +661,7 @@ def silence(pino):
 # scavenge time — módulo fornecido pelo runtime
 # scavenge finger — módulo fornecido pelo runtime
 # scavenge config — módulo fornecido pelo runtime
+# scavenge web — módulo fornecido pelo runtime
 PINO_PIR = 27  # constante
 PINO_TRIG = 25  # constante
 PINO_ECHO = 26  # constante
@@ -709,6 +710,7 @@ USAR_REDE = True  # constante
 WIFI_SSID = "Wokwi-GUEST"  # constante
 WIFI_SENHA = ""  # constante
 MQTT_BROKER = "broker.hivemq.com"  # constante
+PORTA_PAINEL = 80  # constante
 usar_rede = config.get("usar_rede", USAR_REDE)
 wifi_ssid = config.get("wifi_ssid", WIFI_SSID)
 wifi_senha = config.get("wifi_senha", WIFI_SENHA)
@@ -763,6 +765,9 @@ silenciado = False
 silencio_desde = 0
 sirene_alta = False
 rede = False
+mqtt_ok = False
+painel = False
+ip = ""
 ultima_telemetria = 0
 ultima_depuracao = 0
 pagina = 0
@@ -913,6 +918,14 @@ def vigia_botao():
     if silenciado and time.since(silencio_desde) >= SILENCIO_MS:
         silenciado = False
 
+def atender_comandos():
+    global silenciado, silencio_desde
+    cmd = web.command()
+    if cmd == "/silenciar" and estado == ALARME and not silenciado:
+        silenciado = True
+        silencio_desde = time.ms()
+        log_entry("[AEGIS] buzzer silenciado pelo painel")
+
 def avaliar():
     global estado, motivo
     estado = NORMAL
@@ -988,7 +1001,7 @@ def relatar():
         log_entry("[AEGIS] estado:", NOMES_ESTADO[estado], "-", motivo)
         if estado == NORMAL:
             silenciado = False
-        if rede:
+        if mqtt_ok:
             mqtt.publish("aegis/alerta", NOMES_ESTADO[estado] + ": " + motivo)
         estado_anterior = estado
         motivo_anterior = motivo
@@ -1077,12 +1090,19 @@ def atualizar_tela():
     rodape()
     display.show()
 
+def leituras_json():
+    return ("{\"estado\":" + paper(estado) + ",\"nome\":\"" + NOMES_ESTADO[estado] + "\"" + ",\"motivo\":\"" + motivo + "\"" + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + ",\"fumaca\":" + paper(media_fumaca - base_fumaca) + ",\"fumaca_lim\":" + paper(MARGEM_FUMACA) + ",\"ar\":" + paper(media_ar - base_ar) + ",\"ar_lim\":" + paper(MARGEM_AR) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"chuva\":" + paper(chuva_pct) + ",\"solo\":" + paper(solo_pct) + ",\"pir\":" + paper(ration(presenca)) + ",\"armado\":" + paper(ration(armado)) + ",\"entrada\":" + paper(ration(em_entrada)) + ",\"rele\":" + paper(ration(rele_ligado)) + ",\"mudo\":" + paper(ration(silenciado)) + ",\"aquecido\":" + paper(ration(aquecido)) + ",\"mqtt\":" + paper(ration(mqtt_ok)) + ",\"bot\":0" + ",\"ligado_s\":" + paper(ration(time.since(inicio) / 1000)) + "}")
+
+def servir_painel():
+    if painel and web.waiting():
+        web.serve(leituras_json())
+
 def telemetria():
-    global rede, ultima_telemetria
-    rede = mqtt.connected()
-    if rede and time.since(ultima_telemetria) >= TELEMETRIA_MS:
+    global mqtt_ok, ultima_telemetria
+    mqtt_ok = mqtt.connected()
+    if mqtt_ok and time.since(ultima_telemetria) >= TELEMETRIA_MS:
         ultima_telemetria = time.ms()
-        mqtt.publish("aegis/telemetria", "{\"estado\":" + paper(estado) + ",\"fumaca\":" + paper(media_fumaca) + ",\"ar\":" + paper(media_ar) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"armado\":" + paper(ration(armado)) + ",\"chuva\":" + paper(chuva_pct) + ",\"solo\":" + paper(solo_pct) + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + "}")
+        mqtt.publish("aegis/telemetria", leituras_json())
 
 def depurar():
     global ultima_depuracao
@@ -1108,16 +1128,18 @@ def ciclo():
     vigia_digital()
     sentinela_presenca()
     vigia_botao()
+    atender_comandos()
     avaliar()
     sinalizar()
     acionar_rele()
     relatar()
     atualizar_tela()
+    servir_painel()
     telemetria()
     depurar()
 
 def main():
-    global inicio, rede
+    global inicio, rede, ip, mqtt_ok, painel
     log_entry("[AEGIS] abrigo iniciando")
     gpio.write(radio(PINO_RELE), not RELE_ATIVO_EM_ALTO)
     if finger.begin(radio(PINO_DIGITAL_RX), radio(PINO_DIGITAL_TX)):
@@ -1129,10 +1151,20 @@ def main():
     display.center("protecao offline", 50, 1)
     display.show()
     if usar_rede:
-        if wifi.connect(wifi_ssid, wifi_senha, 10000):
-            rede = mqtt.connect(MQTT_BROKER)
+        rede = wifi.connect(wifi_ssid, wifi_senha, 10000)
     if rede:
-        log_entry("[AEGIS] online: alertas tambem vao por MQTT")
+        ip = wifi.ip()
+        mqtt_ok = mqtt.connect(MQTT_BROKER)
+        painel = web.start(PORTA_PAINEL)
+        log_entry("[AEGIS] online em", ip)
+        if painel:
+            log_entry("[AEGIS] painel web:", web.url(ip))
+        display.clear()
+        display.logo(48, 2)
+        display.center("painel web em", 38, 1)
+        display.center(ip, 50, 1)
+        display.show()
+        hide(3000)
     else:
         log_entry("[AEGIS] modo offline: alertas so no local")
     while True:
