@@ -438,9 +438,24 @@ pela opção de alvo: \texttt{simulado}, para o PC, com sensores falsos; e
 \texttt{network} e \texttt{umqtt} do MicroPython. O corpo do programa
 traduzido é idêntico nos dois.
 
-\pendente{as outras decisões do gerador: emissão automática de
-\texttt{global}, bloco vazio vira \texttt{pass}, mapa de linha gerada
-para linha de origem, preservação do tipo \texttt{vital} em \texttt{10.0}}
+Outras decisões do gerador resolvem diferenças entre as duas linguagens.
+Em Python, atribuir a uma variável dentro de uma função cria uma variável
+local; para que uma \texttt{mission} altere um \texttt{supply} do topo do
+programa, o gerador percorre o corpo da função, coleta os nomes globais
+atribuídos que não foram encobertos por um parâmetro ou por uma
+declaração local e emite a declaração \texttt{global} correspondente.
+Como a AEGIS delimita blocos por chaves e o Python por indentação, o
+emissor recebe o nível de aninhamento e aplica quatro espaços por nível;
+um bloco vazio vira \texttt{pass}, que o Python exige. Cada linha emitida
+guarda a linha do fonte de onde veio, e esse mapa permite à interface web
+mostrar a origem de qualquer linha do Python gerado. Um literal
+\texttt{vital} de valor redondo, como \texttt{10.0}, seria escrito como
+\texttt{10} pela conversão de números do JavaScript e chegaria ao Python
+como inteiro; o gerador mantém a casa decimal para preservar a distinção
+entre \texttt{ration} e \texttt{vital}. Por fim, tarefas
+(\texttt{survivor}) e eventos (\texttt{ambush}) viram funções comuns,
+chamadas pelo laço principal: a execução concorrente que a linguagem
+prevê ficou fora do escopo deste trabalho.
 
 % =====================================================================
 \section{Estudo de Caso: o Firmware do Abrigo}
