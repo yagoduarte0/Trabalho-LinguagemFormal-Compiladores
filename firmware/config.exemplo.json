@@ -1,0 +1,7 @@
+{
+  "wifi_ssid": "NOME_DA_REDE_DE_CASA",
+  "wifi_senha": "SENHA_DA_REDE",
+  "aquecimento_ms": 180000,
+  "telegram_token": "TOKEN_QUE_O_BOTFATHER_DEU",
+  "telegram_chat": ""
+}

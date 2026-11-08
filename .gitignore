@@ -17,3 +17,6 @@ firmware/.venv/
 
 # Indice local do CodeGraph (regeneravel)
 .codegraph/
+
+# Ajustes da placa (senha do WiFi, token do bot): modelo em firmware/config.exemplo.json
+firmware/config.json

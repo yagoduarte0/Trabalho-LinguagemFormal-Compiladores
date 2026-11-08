@@ -18,6 +18,7 @@ scavenge wifi
 scavenge mqtt
 scavenge time
 scavenge finger
+scavenge config
 
 // ------------------------------------------------------------------
 // Pinos — mapa completo em docs/hardware.md
@@ -91,6 +92,16 @@ law USAR_REDE = alive
 law WIFI_SSID = "Wokwi-GUEST"
 law WIFI_SENHA = ""
 law MQTT_BROKER = "broker.hivemq.com"
+
+// ------------------------------------------------------------------
+// Ajustes desta placa: lidos do config.json gravado no ESP32, que fica
+// fora do Git porque guarda a senha do WiFi e o token do bot. Sem o
+// arquivo valem os padrões acima (modelo em firmware/config.exemplo.json).
+// ------------------------------------------------------------------
+supply usar_rede = config.get("usar_rede", USAR_REDE)
+supply wifi_ssid = config.get("wifi_ssid", WIFI_SSID)
+supply wifi_senha = config.get("wifi_senha", WIFI_SENHA)
+supply aquecimento_ms = config.get("aquecimento_ms", AQUECIMENTO_MS)
 
 // ------------------------------------------------------------------
 // Estados
@@ -597,7 +608,7 @@ mission depurar() {
 // Um ciclo completo: ler, decidir, agir. Separado do laço para poder ser
 // testado no PC um ciclo por vez (firmware/cenarios.py).
 mission ciclo() {
-    aquecido = time.since(inicio) >= AQUECIMENTO_MS
+    aquecido = time.since(inicio) >= aquecimento_ms
     checkpoint (!aquecido) {
         amostras = amostras + 1
     } fallback checkpoint (!base_registrada) {
@@ -639,8 +650,8 @@ chronicle {
     display.center("protecao offline", 50, 1)
     display.show()
 
-    checkpoint (USAR_REDE) {
-        checkpoint (wifi.connect(WIFI_SSID, WIFI_SENHA, 10000)) {
+    checkpoint (usar_rede) {
+        checkpoint (wifi.connect(wifi_ssid, wifi_senha, 10000)) {
             rede = mqtt.connect(MQTT_BROKER)
         }
     }

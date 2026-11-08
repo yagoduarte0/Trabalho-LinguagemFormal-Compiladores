@@ -260,6 +260,14 @@ class _Wifi:
     def connected(self):
         return self._wlan is not None and self._wlan.isconnected()
 
+    def ip(self):
+        if not self.connected():
+            return ""
+        try:
+            return self._wlan.ipconfig("addr4")[0]
+        except Exception:
+            return self._wlan.ifconfig()[0]
+
 
 class _Mqtt:
     def __init__(self):
@@ -403,6 +411,193 @@ class _Digital:
         return self._comando(bytes((0x06, 1, numero >> 8, numero & 0xFF)))[0] == 0   # Store
 
 
+class _Config:
+    # ajustes desta placa (rede, token do bot) num config.json gravado ao
+    # lado do main.py e fora do Git; sem o arquivo, valem os padrões
+    def __init__(self, arquivo):
+        self._arquivo = arquivo
+        self._dados = None
+
+    def get(self, chave, padrao):
+        if self._dados is None:
+            self._dados = {}
+            try:
+                import json
+                with open(self._arquivo) as f:
+                    self._dados = json.load(f)
+                print("[config] ajustes lidos de", self._arquivo)
+            except OSError:
+                pass
+            except ValueError:
+                print("[config]", self._arquivo, "tem JSON invalido: usando os padroes")
+        return self._dados.get(chave, padrao)
+
+
+_PAINEL_HTML = "<!doctype html>\n<html lang=\"pt-BR\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>AEGIS - Abrigo</title>\n<style>\n:root{--fundo:#0A0D0A;--cartao:#131813;--linha:#2A322A;--caqui:#C8B88A;--radar:#A8D04A;--creme:#EDE4CC;--ambar:#E8A33C;--alerta:#E5533D;--apagado:#7D8574}\n*{box-sizing:border-box;margin:0}\nbody{background:var(--fundo);color:var(--creme);font:15px/1.4 system-ui,-apple-system,\"Segoe UI\",Roboto,sans-serif;padding:16px;max-width:760px;margin:0 auto}\nheader{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}\nh1{font:30px Impact,\"Arial Narrow\",sans-serif;letter-spacing:4px;color:var(--caqui)}\n.sub{color:var(--apagado);font-size:11px;letter-spacing:1px;text-transform:uppercase}\n#con{font-size:12px;color:var(--apagado);white-space:nowrap}\n#con:before{content:\"\";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--alerta);margin-right:6px}\n#con.on:before{background:var(--radar)}\n#estado{border-radius:12px;padding:18px;margin-bottom:12px;border:1px solid var(--linha);background:var(--cartao)}\n#nome{display:block;font:38px Impact,\"Arial Narrow\",sans-serif;letter-spacing:3px;color:var(--radar)}\n#motivo{font-size:18px}\n#estado.s1{border-color:var(--ambar)}#estado.s1 #nome{color:var(--ambar)}\n#estado.s2{border-color:var(--alerta);animation:pisca 1s steps(2) infinite}#estado.s2 #nome{color:var(--alerta)}\n@keyframes pisca{50%{background:#3A1410}}\n.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}\n.c{background:var(--cartao);border:1px solid var(--linha);border-radius:12px;padding:12px}\n.c small{color:var(--apagado);font-size:11px;text-transform:uppercase;letter-spacing:1px}\n.c div{font-size:24px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}\n.barra{height:6px;background:var(--linha);border-radius:3px;margin-top:8px;overflow:hidden}\n.barra i{display:block;height:100%;width:0;background:var(--radar);transition:width .4s}\n.barra i.alto{background:var(--alerta)}\n.tags{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}\n.tag{border:1px solid var(--linha);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--apagado)}\n.tag.on{color:var(--fundo);background:var(--caqui);border-color:var(--caqui)}\n.tag.alerta{color:#fff;background:var(--alerta);border-color:var(--alerta)}\nbutton{width:100%;padding:15px;border-radius:12px;border:0;background:var(--alerta);color:#fff;font:600 16px system-ui,sans-serif;cursor:pointer}\nbutton:disabled{background:var(--linha);color:var(--apagado);cursor:default}\nfooter{margin-top:14px;color:var(--apagado);font-size:12px;text-align:center}\n</style></head><body>\n<header><div><h1>AEGIS</h1><div class=\"sub\">painel do abrigo &middot; rede local</div></div><span id=\"con\">conectando</span></header>\n<section id=\"estado\"><span id=\"nome\">...</span><span id=\"motivo\">aguardando o abrigo</span></section>\n<div class=\"grade\">\n<div class=\"c\"><small>Temperatura</small><div id=\"temp\">--</div></div>\n<div class=\"c\"><small>Umidade do ar</small><div id=\"umid\">--</div></div>\n<div class=\"c\"><small>Fuma&ccedil;a / g&aacute;s</small><div id=\"fumaca\">--</div><div class=\"barra\"><i id=\"b_fumaca\"></i></div></div>\n<div class=\"c\"><small>Qualidade do ar</small><div id=\"ar\">--</div><div class=\"barra\"><i id=\"b_ar\"></i></div></div>\n<div class=\"c\"><small>N&iacute;vel da &aacute;gua</small><div id=\"agua\">--</div></div>\n<div class=\"c\"><small>Chuva</small><div id=\"chuva\">--</div><div class=\"barra\"><i id=\"b_chuva\"></i></div></div>\n<div class=\"c\"><small>Solo</small><div id=\"solo\">--</div><div class=\"barra\"><i id=\"b_solo\"></i></div></div>\n<div class=\"c\"><small>Presen&ccedil;a</small><div id=\"pir\">--</div></div>\n</div>\n<div class=\"tags\" id=\"tags\"></div>\n<button id=\"mudo\" disabled>Silenciar sirene</button>\n<footer id=\"rodape\">&nbsp;</footer>\n<script>\nfunction el(i){return document.getElementById(i)}\nfunction barra(id,v,lim){var p=lim>0?Math.max(0,Math.min(100,100*v/lim)):0;var e=el(id);e.style.width=p+\"%\";e.className=p>=100?\"alto\":\"\"}\nfunction tag(t,c){return '<span class=\"tag '+c+'\">'+t+'</span>'}\nfunction duracao(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+\" h \"+m+\" min\":m?m+\" min\":s+\" s\"}\nvar visto=0,ligado=0;\nfunction mostrar(d){\nvisto=Date.now();ligado=d.ligado_s;\nel(\"con\").className=\"on\";el(\"con\").textContent=\"ao vivo\";\nel(\"estado\").className=\"s\"+d.estado;el(\"nome\").textContent=d.nome;el(\"motivo\").textContent=d.motivo;\nel(\"temp\").innerHTML=d.temp<0?\"--\":d.temp.toFixed(1)+\" &deg;C\";\nel(\"umid\").textContent=d.umid<0?\"--\":Math.round(d.umid)+\" %\";\nel(\"fumaca\").textContent=d.aquecido?Math.round(100*Math.max(0,d.fumaca)/d.fumaca_lim)+\" %\":\"aquecendo\";\nel(\"ar\").textContent=d.aquecido?Math.round(100*Math.max(0,d.ar)/d.ar_lim)+\" %\":\"aquecendo\";\nbarra(\"b_fumaca\",d.fumaca,d.fumaca_lim);barra(\"b_ar\",d.ar,d.ar_lim);\nel(\"agua\").textContent=d.agua_cm<0?\"sem eco\":Math.round(d.agua_cm)+\" cm\";\nel(\"chuva\").textContent=d.chuva+\" %\";el(\"solo\").textContent=d.solo+\" %\";\nbarra(\"b_chuva\",d.chuva,100);barra(\"b_solo\",d.solo,100);\nel(\"pir\").textContent=d.pir?\"movimento\":\"livre\";\nvar t=tag(d.armado?\"armado\":\"desarmado\",d.armado?\"on\":\"\");\nif(d.entrada)t+=tag(\"entrada: use a digital\",\"alerta\");\nif(d.rele)t+=tag(\"exaustor ligado\",\"on\");\nif(d.mudo)t+=tag(\"sirene silenciada\",\"on\");\nt+=tag(\"Telegram\",d.bot?\"on\":\"\")+tag(\"MQTT\",d.mqtt?\"on\":\"\");\nel(\"tags\").innerHTML=t;\nvar b=el(\"mudo\");b.disabled=!(d.estado==2&&!d.mudo);b.textContent=d.mudo?\"Sirene silenciada\":\"Silenciar sirene\";\n}\nfunction atualizar(){fetch(\"/dados\",{cache:\"no-store\"}).then(function(r){return r.json()}).then(mostrar).catch(function(){el(\"con\").className=\"\";el(\"con\").textContent=\"sem contato\"})}\nel(\"mudo\").onclick=function(){this.disabled=true;fetch(\"/silenciar\",{method:\"POST\"}).then(atualizar)};\nsetInterval(atualizar,2000);atualizar();\nsetInterval(function(){if(visto)el(\"rodape\").textContent=\"abrigo ligado há \"+duracao(ligado)+\" · atualizado há \"+Math.round((Date.now()-visto)/1000)+\" s\"},1000);\n</script></body></html>"
+
+
+class _Painel:
+    # Servidor HTTP mínimo e não bloqueante, para o painel na rede local.
+    # waiting() aceita no máximo um pedido por ciclo, para não atrasar os
+    # sensores: GET / devolve a página, POST /silenciar vira o comando
+    # "/silenciar" (lido por command()) e GET /dados fica esperando o
+    # programa responder com serve(), que recebe as leituras em JSON.
+    def __init__(self):
+        self._servidor = None
+        self._cliente = None
+        self._porta = 80
+        self.fila = []
+
+    def _porta_real(self, porta):
+        return porta
+
+    def start(self, porta=80):
+        try:
+            import socket
+            self._porta = self._porta_real(int(porta))
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(("0.0.0.0", self._porta))
+            s.listen(2)
+            s.setblocking(False)
+            self._servidor = s
+            return True
+        except Exception as erro:
+            print("[painel] nao abriu:", erro)
+            return False
+
+    def url(self, ip):
+        return "http://" + str(ip) + ("/" if self._porta == 80 else ":" + str(self._porta) + "/")
+
+    def waiting(self):
+        if self._cliente is not None:
+            return True
+        if self._servidor is None:
+            return False
+        try:
+            cliente, _ = self._servidor.accept()
+        except OSError:
+            return False
+        try:
+            cliente.settimeout(1)
+            pedido = cliente.recv(1024).split(b"\r\n", 1)[0].decode().split(" ")
+        except Exception:
+            cliente.close()
+            return False
+        metodo = pedido[0]
+        caminho = pedido[1] if len(pedido) > 1 else "/"
+        if caminho.startswith("/dados"):
+            self._cliente = cliente
+            return True
+        if caminho.startswith("/silenciar") and metodo == "POST":
+            self.fila.append("/silenciar")
+            self._responder(cliente, "200 OK", "application/json", '{"ok":true}')
+        elif caminho == "/" or caminho.startswith("/?"):
+            self._responder(cliente, "200 OK", "text/html; charset=utf-8", _PAINEL_HTML)
+        else:
+            self._responder(cliente, "404 Not Found", "text/plain", "nao encontrado")
+        return False
+
+    def serve(self, dados):
+        cliente, self._cliente = self._cliente, None
+        if cliente is not None:
+            self._responder(cliente, "200 OK", "application/json", dados)
+
+    def command(self):
+        return self.fila.pop(0) if self.fila else ""
+
+    def _responder(self, cliente, situacao, tipo, corpo):
+        corpo = str(corpo).encode()
+        cabecalho = ("HTTP/1.1 " + situacao + "\r\nContent-Type: " + tipo +
+                     "\r\nContent-Length: " + str(len(corpo)) +
+                     "\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n")
+        try:
+            enviar = getattr(cliente, "sendall", None) or cliente.write
+            enviar(cabecalho.encode() + corpo)
+        except Exception:
+            pass
+        cliente.close()
+
+
+class _TelegramBase:
+    # Bot do Telegram pela API HTTPS. send() manda uma mensagem ao chat
+    # configurado; command() devolve o próximo comando ("/status", ...) que
+    # chegou desse chat, consultando a API no máximo a cada intervalo_ms
+    # (no ESP32 cada consulta segura o laço por 1 a 2 s). Mensagens de outros
+    # chats são ignoradas: só o dono do abrigo manda no bot.
+    def __init__(self):
+        self.fila = []
+        self._token = ""
+        self._chat = ""
+        self._offset = -1      # -1: a primeira consulta só descarta o que chegou antes de ligar
+        self._ultima = None
+
+    def begin(self, token, chat):
+        self._token = str(token or "")
+        self._chat = str(chat or "")
+        if self._token and not self._chat:
+            print("[telegram] falta o telegram_chat no config.json: rode firmware/telegram_chat.py")
+        return self._ativo()
+
+    def _ativo(self):
+        return self._token != "" and self._chat != ""
+
+    def _url(self, metodo):
+        return "https://api.telegram.org/bot" + self._token + "/" + metodo
+
+    def send(self, texto):
+        if not self._ativo():
+            return False
+        resposta = self._pedir("sendMessage", {"chat_id": self._chat, "text": str(texto)})
+        return resposta is not None and resposta.get("ok", False)
+
+    def command(self, intervalo_ms=15000):
+        if not self.fila and self._ativo():
+            agora = self._ms()
+            if self._ultima is None or self._diff(agora, self._ultima) >= intervalo_ms:
+                self._ultima = agora
+                self._consultar()
+        return self.fila.pop(0) if self.fila else ""
+
+    def _consultar(self):
+        resposta = self._pedir("getUpdates", {"offset": self._offset, "timeout": 0, "limit": 10})
+        if not resposta or not resposta.get("ok"):
+            return
+        primeira = self._offset == -1
+        self._offset = max(self._offset, 0)
+        for u in resposta.get("result", []):
+            self._offset = u["update_id"] + 1
+            m = u.get("message") or {}
+            texto = m.get("text") or ""
+            if primeira or str(m.get("chat", {}).get("id")) != self._chat or not texto.startswith("/"):
+                continue
+            self.fila.append(texto.split()[0].split("@")[0].lower())
+
+
+class _Telegram(_TelegramBase):
+    # o requests do MicroPython faz o HTTPS; o TLS precisa de uns 40 KB de
+    # memória livre, por isso o gc.collect() antes de cada pedido
+    def _ms(self):
+        return _time.ticks_ms()
+
+    def _diff(self, a, b):
+        return _time.ticks_diff(a, b)
+
+    def _pedir(self, metodo, dados):
+        import gc
+        gc.collect()
+        try:
+            import requests
+            r = requests.post(self._url(metodo), json=dados)
+            try:
+                return r.json()
+            finally:
+                r.close()
+        except Exception as erro:
+            print("[telegram] falhou:", erro)
+            return None
+
+
 gpio = _Gpio()
 adc = _Adc()
 pwm = _Pwm()
@@ -413,6 +608,9 @@ wifi = _Wifi()
 mqtt = _Mqtt()
 time = _Relogio()
 finger = _Digital()
+config = _Config("config.json")
+web = _Painel()
+telegram = _Telegram()
 
 
 def radio(pino):
@@ -462,6 +660,7 @@ def silence(pino):
 # scavenge mqtt — módulo fornecido pelo runtime
 # scavenge time — módulo fornecido pelo runtime
 # scavenge finger — módulo fornecido pelo runtime
+# scavenge config — módulo fornecido pelo runtime
 PINO_PIR = 27  # constante
 PINO_TRIG = 25  # constante
 PINO_ECHO = 26  # constante
@@ -510,6 +709,10 @@ USAR_REDE = True  # constante
 WIFI_SSID = "Wokwi-GUEST"  # constante
 WIFI_SENHA = ""  # constante
 MQTT_BROKER = "broker.hivemq.com"  # constante
+usar_rede = config.get("usar_rede", USAR_REDE)
+wifi_ssid = config.get("wifi_ssid", WIFI_SSID)
+wifi_senha = config.get("wifi_senha", WIFI_SENHA)
+aquecimento_ms = config.get("aquecimento_ms", AQUECIMENTO_MS)
 NORMAL = 0  # constante
 ATENCAO = 1  # constante
 ALARME = 2  # constante
@@ -889,7 +1092,7 @@ def depurar():
 
 def ciclo():
     global aquecido, amostras, base_registrada, filtro_pronto
-    aquecido = time.since(inicio) >= AQUECIMENTO_MS
+    aquecido = time.since(inicio) >= aquecimento_ms
     if not aquecido:
         amostras = amostras + 1
     elif not base_registrada:
@@ -925,8 +1128,8 @@ def main():
     display.center("AEGIS", 38, 1)
     display.center("protecao offline", 50, 1)
     display.show()
-    if USAR_REDE:
-        if wifi.connect(WIFI_SSID, WIFI_SENHA, 10000):
+    if usar_rede:
+        if wifi.connect(wifi_ssid, wifi_senha, 10000):
             rede = mqtt.connect(MQTT_BROKER)
     if rede:
         log_entry("[AEGIS] online: alertas tambem vao por MQTT")

@@ -19,6 +19,9 @@ AEGISC = os.path.join(RAIZ, "compilador", "aegisc.js")
 
 
 def carregar_firmware():
+    # os cenários nunca leem o config.json de verdade: com o token do bot lá,
+    # cada cenário mandaria mensagens reais para o Telegram
+    os.environ["AEGIS_CONFIG"] = ""
     python = subprocess.run(
         ["node", AEGISC, FONTE, "--alvo", "simulado"],
         check=True, capture_output=True, text=True,
