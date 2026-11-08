@@ -1,7 +1,10 @@
 // AEGIS — firmware do abrigo (ESP32 DevKit V1)
 //
 // Compilar para a placa (ou para o Wokwi):
-//   node compilador/aegisc.js firmware/abrigo.aeg --alvo esp32 -o firmware/main.py
+//   ./firmware/wokwi.sh placa    (ou enviar, para o Wokwi)
+//
+// O wokwi.sh gera o firmware/abrigo.py e o pré-compila para abrigo.mpy no Mac;
+// na placa, o main.py só carrega o abrigo (ver o comentário no main.py).
 //
 // Cada sensor tem um survivor que lê o valor e classifica o risco em
 // NORMAL, ATENCAO ou ALARME. A cada ciclo o pior risco decide os LEDs, o

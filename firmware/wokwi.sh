@@ -2,10 +2,10 @@
 # Simulação do abrigo no Wokwi (VS Code).
 #
 #   ./wokwi.sh preparar   baixa o MicroPython e instala o mpremote (uma vez)
-#   ./wokwi.sh enviar     recompila o abrigo.aeg e envia o main.py ao simulador
+#   ./wokwi.sh enviar     recompila o abrigo.aeg e envia o firmware ao simulador
 #   ./wokwi.sh dedo       lê a digital pelo Touch ID do Mac e manda ao simulador
 #                         (o Wokwi não tem o leitor AS608)
-#   ./wokwi.sh placa      recompila e grava main.py + config.json no ESP32 real
+#   ./wokwi.sh placa      recompila e grava o firmware + config.json no ESP32 real
 #                         pelo USB (porta automática; outra: AEGIS_PORTA=/dev/cu.xxx)
 #   ./wokwi.sh pc         roda o firmware no Mac com sensores simulados
 #                         (painel em http://localhost:8080)
@@ -23,12 +23,21 @@ VERSAO="1.29.0"
 FIRMWARE="ESP32_GENERIC-20260824-v${VERSAO}.bin"
 URL="https://micropython.org/resources/firmware/${FIRMWARE}"
 MPREMOTE=".venv/bin/mpremote"
+MPYCROSS=".venv/bin/mpy-cross"
 TOUCHID=".venv/touchid"
 PORTA="port:rfc2217://localhost:4000"
 
+# Gera o abrigo.py e pré-compila para bytecode no Mac. Na placa vão o
+# boot.py (liga o WiFi com a memória livre), o main.py (carrega o abrigo) e
+# o abrigo.mpy: compilar o abrigo.py no ESP32 esgota a RAM interna.
 compilar() {
-  node ../compilador/aegisc.js abrigo.aeg --alvo esp32 -o main.py
+  node ../compilador/aegisc.js abrigo.aeg --alvo esp32 -o abrigo.py
+  [ -x "$MPYCROSS" ] || .venv/bin/pip install --quiet "mpy-cross==${VERSAO}.post2"
+  "$MPYCROSS" abrigo.py -o .venv/abrigo.mpy
 }
+
+# argumentos do mpremote que gravam os arquivos do firmware na placa
+ARQUIVOS=(fs cp boot.py :boot.py + fs cp main.py :main.py + fs cp .venv/abrigo.mpy :abrigo.mpy)
 
 preparar() {
   if [ ! -f "$FIRMWARE" ]; then
@@ -38,7 +47,7 @@ preparar() {
   if [ ! -x "$MPREMOTE" ]; then
     echo "instalando mpremote ${VERSAO} em firmware/.venv..."
     python3 -m venv .venv
-    .venv/bin/pip install --quiet "mpremote==${VERSAO}"
+    .venv/bin/pip install --quiet "mpremote==${VERSAO}" "mpy-cross==${VERSAO}.post2"
   fi
   compilar
   echo "pronto. Agora abra firmware/diagram.json no VS Code, aperte play e rode ./wokwi.sh enviar"
@@ -63,11 +72,11 @@ enviar() {
   # um reset de hardware, depois do qual o MicroPython roda o main.py sozinho
   if [ -f config.json ]; then
     config_wokwi
-    "$MPREMOTE" connect "$PORTA" fs cp main.py :main.py + fs cp .venv/config-wokwi.json :config.json + reset
+    "$MPREMOTE" connect "$PORTA" "${ARQUIVOS[@]}" + fs cp .venv/config-wokwi.json :config.json + reset
   else
-    "$MPREMOTE" connect "$PORTA" fs cp main.py :main.py + reset
+    "$MPREMOTE" connect "$PORTA" "${ARQUIVOS[@]}" + reset
   fi
-  echo "main.py enviado. Veja a saída no terminal do Wokwi; painel em http://localhost:8180"
+  echo "firmware enviado. Veja a saída no terminal do Wokwi; painel em http://localhost:8180"
 }
 
 placa() {
@@ -75,10 +84,10 @@ placa() {
   compilar
   local porta="${AEGIS_PORTA:-auto}"
   if [ -f config.json ]; then
-    "$MPREMOTE" connect "$porta" fs cp main.py :main.py + fs cp config.json :config.json + reset
+    "$MPREMOTE" connect "$porta" "${ARQUIVOS[@]}" + fs cp config.json :config.json + reset
   else
-    echo "sem config.json: a placa sobe offline (modelo em config.exemplo.json)"
-    "$MPREMOTE" connect "$porta" fs cp main.py :main.py + reset
+    echo "sem config.json: a placa sobe na rede do Wokwi, ou seja, offline (modelo em config.exemplo.json)"
+    "$MPREMOTE" connect "$porta" "${ARQUIVOS[@]}" + reset
   fi
   echo "gravado. Para ver o serial: $MPREMOTE connect $porta repl  (sair: Ctrl+])"
 }

@@ -49,7 +49,8 @@ repositório. Ficou decidido unificar tudo sob o nome AEGIS.
 | `compilador/aegisc.js` | Linha de comando: `.aeg` → Python, alvo `simulado` ou `esp32` |
 | `compilador/index.html` | Interface web que mostra cada fase |
 | `firmware/abrigo.aeg` | Firmware do abrigo escrito em AEGIS |
-| `firmware/main.py` | MicroPython gerado a partir do `abrigo.aeg` (entra no Git) |
+| `firmware/abrigo.py` | MicroPython gerado a partir do `abrigo.aeg` (entra no Git); vai para a placa pré-compilado como `abrigo.mpy` |
+| `firmware/main.py`, `firmware/boot.py` | Lançador do `abrigo.mpy` e WiFi ligado antes de tudo (ver "Memória do ESP32" em `docs/hardware.md` §6) |
 | `firmware/cenarios.py` | Cenários que testam a lógica do firmware no PC |
 | `firmware/cadastro.aeg` | Cadastro das digitais no leitor AS608 |
 | `firmware/teste_digital.py` | Testa o driver do AS608 contra um leitor falso |

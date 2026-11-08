@@ -1,8 +1,8 @@
 # Hardware do abrigo AEGIS
 
 Guia para montar o circuito real com as mesmas ligações do Wokwi (`firmware/diagram.json`) e gravar
-o firmware (`firmware/abrigo.aeg` → `firmware/main.py`). Se a montagem seguir este mapa, o
-`main.py` que roda no simulador roda na placa sem nenhuma alteração.
+o firmware (`firmware/abrigo.aeg` → `firmware/abrigo.py`). Se a montagem seguir este mapa, o
+firmware que roda no simulador roda na placa sem nenhuma alteração.
 
 ## 1. Lista de compras
 
@@ -131,7 +131,7 @@ tem o comportamento esperado de cada sensor.
 1. **ESP32 na protoboard**, uma fileira de pinos de cada lado do canal central. Ligue os trilhos:
    VIN no trilho + de 5 V, 3V3 no trilho + de 3,3 V (no outro lado da protoboard) e GND nos dois
    trilhos −.
-2. **Grave o MicroPython e o `main.py`** (seção 6) antes de ligar os sensores. Só com o USB, o serial
+2. **Grave o MicroPython e o firmware** (seção 6) antes de ligar os sensores. Só com o USB, o serial
    já mostra `[AEGIS] abrigo iniciando`, e o firmware tolera sensores ausentes.
 3. **LEDs, buzzer e botão.** Com todos ligados, o LED verde acende ao iniciar. Se um LED não acender,
    ele provavelmente está invertido: a perna longa vai para o lado do resistor.
@@ -209,13 +209,13 @@ gravação começar. Em versões antigas do esptool os comandos se escrevem `era
 `write_flash`.
 
 **Ajustes da placa** (uma vez): copie o modelo e preencha o WiFi de casa e, se for usar, o bot do
-Telegram (seção 8). O `config.json` fica fora do Git e é gravado na placa junto com o `main.py`.
+Telegram (seção 8). O `config.json` fica fora do Git e é gravado na placa junto com o firmware.
 
 ```sh
 cp config.exemplo.json config.json     # depois edite wifi_ssid, wifi_senha, telegram_token
 ```
 
-**Enviar o firmware** (toda vez que mudar o `abrigo.aeg`). O comando recompila e grava o `main.py`
+**Enviar o firmware** (toda vez que mudar o `abrigo.aeg`). O comando recompila e grava o firmware
 e o `config.json`:
 
 ```sh
@@ -225,16 +225,25 @@ e o `config.json`:
 Equivale a:
 
 ```sh
-node ../compilador/aegisc.js abrigo.aeg --alvo esp32 -o main.py
-.venv/bin/mpremote connect $PORTA fs cp main.py :main.py + fs cp config.json :config.json + reset
+node ../compilador/aegisc.js abrigo.aeg --alvo esp32 -o abrigo.py
+.venv/bin/mpy-cross abrigo.py -o .venv/abrigo.mpy
+.venv/bin/mpremote connect $PORTA fs cp boot.py :boot.py + fs cp main.py :main.py \
+    + fs cp .venv/abrigo.mpy :abrigo.mpy + fs cp config.json :config.json + reset
 ```
+
+**Memória do ESP32.** O firmware vai para a placa **pré-compilado** (`abrigo.mpy`, gerado no Mac pelo
+`mpy-cross` da mesma versão do MicroPython), e o `main.py` da placa só faz `import abrigo`. Mandar o
+`abrigo.py` direto não funciona: compilar ~1200 linhas no ESP32 faz o MicroPython tomar a RAM interna
+do sistema, e aí a UART (`UART driver malloc error`), o I2C do OLED (`no memory for i2c master bus`),
+o socket do painel (`ENOBUFS`), o DNS (`-202`) e o WiFi (`Wifi Out of Memory`) falham, até o chip
+travar com `abort()`. Pelo mesmo motivo, o `boot.py` liga o WiFi antes de o firmware carregar.
 
 **Ver o serial:** `.venv/bin/mpremote connect $PORTA repl`. Para sair, `Ctrl+]`. Para parar o
 firmware e cair no prompt `>>>`, `Ctrl+C`.
 
 **Cadastrar as digitais** (uma vez, com o AS608 ligado). As digitais ficam na memória do próprio
 leitor, então o `abrigo.aeg` não precisa ser gravado de novo. O `mpremote run` executa o cadastro sem
-apagar o `main.py`:
+apagar o firmware:
 
 ```sh
 node ../compilador/aegisc.js cadastro.aeg --alvo esp32 -o cadastro.py

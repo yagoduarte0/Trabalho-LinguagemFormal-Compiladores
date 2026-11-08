@@ -89,7 +89,7 @@ python3 firmware/teste_digital.py # driver do leitor de digital contra um AS608 
 ./firmware/wokwi.sh preparar      # uma vez: baixa o MicroPython e o mpremote
 ./firmware/wokwi.sh enviar        # com a simulação aberta no VS Code (Wokwi)
 ./firmware/wokwi.sh dedo          # Touch ID do Mac no lugar do leitor de digital
-./firmware/wokwi.sh placa         # grava main.py + config.json no ESP32 real
+./firmware/wokwi.sh placa         # grava o firmware + config.json no ESP32 real
 ./firmware/wokwi.sh pc            # roda no Mac, eventos pelo teclado, painel em localhost:8080
 python3 firmware/telegram_chat.py # configura o bot do Telegram
 ```
@@ -98,7 +98,8 @@ WiFi e token do bot ficam no `firmware/config.json`, fora do Git (modelo em
 `firmware/config.exemplo.json`). Configuração em [docs/hardware.md](docs/hardware.md#8-rede-painel-web-e-telegram).
 
 O circuito do Wokwi (`firmware/diagram.json`) usa as mesmas ligações da placa
-real, então o `firmware/main.py` gerado roda nos dois. A montagem física está
+real, então o `firmware/abrigo.py` gerado roda nos dois (pré-compilado para
+`abrigo.mpy`, porque compilar o arquivo inteiro na placa esgota a RAM interna). A montagem física está
 em [docs/hardware.md](docs/hardware.md).
 
 ---
