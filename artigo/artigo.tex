@@ -86,9 +86,9 @@ produz uma árvore sintática abstrata (AST) de 26 tipos de nó, e geração de
 código com dois alvos, um simulado para PC e outro em MicroPython para o
 ESP32. Como estudo de caso, o firmware completo de um abrigo, com sete
 sensores, máquina de estados de risco, display OLED, sirene, relé e leitor
-biométrico, foi escrito em AEGIS. O compilador passa em 82 testes
-automatizados e o firmware em 29 cenários executados no PC e no simulador
-Wokwi. \pendente{fechar com uma frase de conclusão}
+biométrico, além de um painel web local e de um bot do Telegram, foi
+escrito em AEGIS. O compilador passa em 84 testes automatizados e o
+firmware em 41 cenários executados no PC e no simulador Wokwi. \pendente{fechar com uma frase de conclusão}
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -402,8 +402,10 @@ presença (PIR), nível da água (HC-SR04), fumaça (MQ-2), qualidade do ar
 (MQ-135), temperatura e umidade (DHT22), chuva e umidade do solo. Cada
 sensor tem uma tarefa (\texttt{survivor}) que classifica a leitura em
 NORMAL, ATENÇÃO ou ALARME; a cada ciclo, o pior risco decide os LEDs, a
-sirene, o display OLED, o relé do exaustor e, se houver WiFi, um aviso
-por MQTT. O sistema funciona sem internet: a rede é só um canal a mais.
+sirene, o display OLED e o relé do exaustor. Se houver WiFi, o ESP32
+também serve um painel web na rede local, avisa o dono por um bot do
+Telegram e publica as leituras por MQTT. O sistema funciona sem internet: a
+rede é só um canal a mais.
 
 \figura{Figura: diagrama do circuito no Wokwi ou foto da montagem\\
 (sugestão: print do firmware/diagram.json aberto no VS Code)}
@@ -417,6 +419,14 @@ adaptativa e histerese; risco de deslizamento combinando chuva e solo}
 \pendente{arme e desarme pela digital (AS608 na placa, Touch ID do Mac
 na simulação)}
 
+\pendente{canais remotos: painel web servido pelo próprio ESP32 (servidor
+HTTP não bloqueante, um pedido por ciclo), bot do Telegram com
+\texttt{/status} e \texttt{/silenciar} restrito ao chat do dono, e o
+\texttt{config.json} fora do Git; nenhum canal remoto desarma o abrigo}
+
+\figura{Figura: painel web no celular durante um alarme\\
+(sugestão: print de http://localhost:8180 com o Wokwi em alarme)}
+
 \figura{Figura: telas do display OLED\\
 (arquivo pronto em docs/img/telas-oled.png)}
 
@@ -424,9 +434,9 @@ na simulação)}
 \section{Testes e Resultados}
 \label{sec:resultados}
 
-O compilador tem uma suíte de 82 testes automatizados, sem dependências
+O compilador tem uma suíte de 84 testes automatizados, sem dependências
 externas, que cobre as três fases e os dois alvos; todos passam. O
-firmware é verificado por 29 cenários executados no PC sobre o alvo
+firmware é verificado por 41 cenários executados no PC sobre o alvo
 simulado, que forçam leituras de sensor e conferem o estado resultante;
 todos passam. O circuito também foi executado no simulador
 Wokwi~\cite{wokwi}, com as mesmas ligações da placa real, de modo que o
@@ -449,9 +459,8 @@ biometria e sensores extras), se o professor quiser a parte de hardware}
 
 Como trabalhos futuros, destacam-se: uma fase de análise semântica, já
 que os tipos declarados (\texttt{ration}, \texttt{vital}, \texttt{status})
-são registrados na AST mas ainda não verificados; alertas pelo Telegram;
-um painel web servido pelo próprio ESP32 na rede local; e a montagem do
-hardware real.
+são registrados na AST mas ainda não verificados; autenticação no painel
+web; e a conclusão da montagem do hardware real.
 
 % =====================================================================
 % Referências: confira cada uma antes de entregar.
