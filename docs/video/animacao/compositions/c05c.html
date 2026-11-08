@@ -1,21 +1,92 @@
-<!-- Cena 05c (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 05c — painel web. O ESP32 serve o painel pela rede de casa (ondas
+     de Wi-Fi até o celular), a nuvem fica de fora, riscada. No celular, a
+     captura real do painel (docs/img/painel-celular.png): o estado, as
+     leituras e o "ao vivo" que se atualiza sozinho. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c05c-casa { left: 80px; top: 330px; width: 1800px; height: 1000px; transform: scale(0.52); transform-origin: 0 0; }
+    #c05c-lan { left: 40px; top: 250px; width: 1780px; height: 760px; border: 3px dashed rgba(168, 208, 74, 0.55); border-radius: 40px; }
+    #c05c-lan-r { left: 80px; top: 222px; padding: 4px 16px; background: #0a0d0a; font-family: "JetBrains Mono", monospace; font-size: 24px; color: #a8d04a; }
+    .c05c-onda { left: 0; top: 0; width: 200px; height: 200px; margin: -100px 0 0 -100px; border-radius: 50%; border: 4px solid #a8d04a; }
+    #c05c-cel { left: 1290px; top: 190px; }
+    #c05c-nuvem { left: 760px; top: -330px; width: 300px; height: 200px; }
+    #c05c-x { left: 830px; top: -310px; width: 160px; height: 160px; }
+    #c05c-semnuvem { left: 600px; top: -100px; width: 620px; text-align: center; font-family: "League Gothic", sans-serif; font-size: 64px; letter-spacing: 0.06em; color: #ef5a4c; }
+    .c05c-foco { position: absolute; border: 4px solid #f0b545; border-radius: 14px; box-shadow: 0 0 30px rgba(240, 181, 69, 0.6); }
+    #c05c-vivo { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 3px solid #a8d04a; }
+    #c05c-varre { position: absolute; left: 0; right: 0; height: 120px; background: linear-gradient(transparent, rgba(168, 208, 74, 0.25), transparent); }
   </style>
+
   <div id="root" data-composition-id="c05c" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">05c</span><span id="c05c-cap"></span></div>
-      <div id="c05c-titulo" class="prov display"></div>
+      <div id="c05c-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <div id="c05c-lan"></div>
+        <div id="c05c-lan-r">rede de casa · Wi-Fi</div>
+        <div id="c05c-casa"></div>
+        <div id="c05c-ondas"></div>
+        <svg id="c05c-nuvem" viewBox="0 0 140 100"><path d="M38 88 Q8 88 8 62 Q8 38 34 36 Q40 10 70 10 Q100 10 106 38 Q132 40 132 64 Q132 88 104 88 Z" fill="none" stroke="#6F7A66" stroke-width="5"/></svg>
+        <svg id="c05c-x" viewBox="0 0 100 100"><path d="M14 14 L86 86 M86 14 L14 86" stroke="#EF5A4C" stroke-width="12" stroke-linecap="round"/></svg>
+        <div id="c05c-semnuvem">sem nuvem nenhuma</div>
+        <div id="c05c-celw"></div>
+      </div>
+      <div class="cap" id="c05c-cap"><span class="ponto"></span><span class="num">05</span><span>Painel web</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("05c", p, n);
+    const FIM = AEGIS.dur("05c");
+    const P = "#c05c-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["05c"].titulo;
-    document.querySelector("#c05c-cap").textContent = titulo;
-    document.querySelector("#c05c-titulo").textContent = titulo;
-    tl.fromTo("#c05c-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    document.querySelector("#c05c-casa").innerHTML = AEGIS.abrigo("c05c-a");
+    // celular com a captura real; a tela tem 384 px, a imagem 780 px de largura
+    const ESC = 384 / 780;
+    document.querySelector("#c05c-celw").outerHTML = AEGIS.celular("c05c-cel",
+      `<div id="c05c-tela" style="position:absolute;left:0;top:0;width:384px">
+         <img src="assets/img/painel-celular.png" style="display:block;width:384px">
+         <div class="c05c-foco" id="c05c-f-estado" style="left:${30 * ESC}px;top:${160 * ESC}px;width:${720 * ESC}px;height:${222 * ESC}px"></div>
+         <div class="c05c-foco" id="c05c-f-leit" style="left:${30 * ESC}px;top:${402 * ESC}px;width:${720 * ESC}px;height:${768 * ESC}px"></div>
+         <div id="c05c-vivo" style="left:${648 * ESC}px;top:${82 * ESC}px"></div>
+         <div id="c05c-varre"></div>
+       </div>`);
+    // ESP32 no mundo: casa em (80, 330) com escala 0,52
+    const EX = 80 + 520 * 0.52, EY = 330 + 615 * 0.52;
+    const ondas = document.querySelector("#c05c-ondas");
+    for (let i = 0; i < 4; i++) ondas.insertAdjacentHTML("beforeend", `<div class="c05c-onda" style="left:${EX}px;top:${EY}px"></div>`);
+
+    tl.set([".c05c-onda", "#c05c-cel", "#c05c-x", "#c05c-semnuvem", ".c05c-foco", "#c05c-vivo", "#c05c-varre", "#c05c-lan", "#c05c-lan-r", ".c05c-a-tag"], { opacity: 0 }, 0);
+    tl.set("#c05c-a-led-verm", { attr: { fill: "#EF5A4C" } }, 0);
+    tl.set("#c05c-a-oled", { attr: { href: "assets/img/oled-alarme-fumaca.png" } }, 0);
+
+    AEGIS.cameraEm(tl, P, 0, { x: 560, y: 500, s: 1.25 });
+    cam(0.1, { x: 900, y: 560, s: 0.95 }, 1.4, "power3.inOut");
+    tl.fromTo("#c05c-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    // Wi-Fi: ondas saindo do ESP32 até o celular, sem parar
+    const ondasEl = gsap.utils.toArray(".c05c-onda");
+    for (let t = W("Wi-Fi"), i = 0; t < FIM - 0.5; t += 0.45, i++) {
+      tl.fromTo(ondasEl[i % 4], { opacity: 0.9, scale: 0.3 }, { opacity: 0, scale: 7.5, duration: 1.6, ease: "power1.out", immediateRender: false }, t);
+    }
+    tl.fromTo("#c05c-cel", { opacity: 0, x: 200, rotation: 8 }, { opacity: 1, x: 0, rotation: 0, duration: 0.7, ease: "expo.out", immediateRender: false }, W("painel") - 0.3);
+    tl.to(["#c05c-lan", "#c05c-lan-r"], { opacity: 1, duration: 0.4 }, W("rede"));
+    // sem nuvem: a câmera olha para cima, a nuvem é riscada
+    cam(W("sem") - 0.4, { x: 900, y: 200, s: 0.85 }, 0.7, "power3.inOut");
+    tl.fromTo("#c05c-x", { opacity: 0, scale: 0.3, rotation: -40 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.35, ease: "back.out(3)", immediateRender: false }, W("nuvem"));
+    tl.fromTo("#c05c-semnuvem", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, immediateRender: false }, W("nuvem") - 0.1);
+    // close no celular: o estado e as leituras
+    cam(W("Ele") - 0.4, { x: 1500, y: 600, s: 1.15 }, 0.8, "power3.inOut");
+    tl.fromTo("#c05c-f-estado", { opacity: 0, scale: 1.1 }, { opacity: 1, scale: 1, duration: 0.3, immediateRender: false }, W("estado") - 0.1);
+    tl.to("#c05c-f-estado", { opacity: 0, duration: 0.2 }, W("leituras") - 0.3);
+    tl.fromTo("#c05c-f-leit", { opacity: 0, scale: 1.05 }, { opacity: 1, scale: 1, duration: 0.3, immediateRender: false }, W("leituras") - 0.2);
+    tl.to("#c05c-f-leit", { opacity: 0, duration: 0.2 }, W("atualiza") - 0.1);
+    // se atualiza sozinho: o "ao vivo" pulsa e uma varredura desce pela tela
+    for (let t = W("atualiza") - 0.1; t < FIM - 0.3; t += 0.7) {
+      tl.fromTo("#c05c-vivo", { opacity: 1, scale: 0.6 }, { opacity: 0, scale: 2.2, duration: 0.65, immediateRender: false }, t);
+    }
+    tl.fromTo("#c05c-varre", { opacity: 1, y: -120 }, { opacity: 1, y: 860, duration: 1.1, ease: "power1.inOut", immediateRender: false }, W("atualiza"));
+    tl.to(".cena", { opacity: 0, duration: 0.3, ease: "power2.in" }, FIM - 0.35);
     window.__timelines["c05c"] = tl;
   </script>
 </template>

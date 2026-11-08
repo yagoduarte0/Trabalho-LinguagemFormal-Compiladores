@@ -1,21 +1,135 @@
-<!-- Cena 05d (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 05d — Telegram. A conversa com o bot, com os textos do firmware:
+     o alerta (EMOJI + estado + motivo), o /status (resumo), o /silenciar
+     (SILENCIO_MS = 60 s). Ao lado, a central: a sirene cala e o alarme
+     continua. Por fim, nenhum canal remoto desarma: só a digital. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c05d-cel { left: 180px; top: 120px; }
+    .c05d-chat { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: #0e1621; font-family: "Inter", sans-serif; }
+    .c05d-chat .topo { position: absolute; left: 0; right: 0; top: 0; height: 120px; padding: 66px 22px 0; background: #17212b; color: #fff; font-size: 22px; font-weight: 700; }
+    .c05d-chat .topo small { display: block; font-size: 15px; font-weight: 400; color: #7f91a4; }
+    .c05d-msgs { position: absolute; left: 0; right: 0; top: 130px; bottom: 70px; overflow: hidden; }
+    .c05d-pilha { position: absolute; left: 14px; right: 14px; bottom: 0; display: flex; flex-direction: column; gap: 10px; }
+    .c05d-m { max-width: 300px; padding: 10px 14px; border-radius: 16px; font-size: 17px; line-height: 1.35; white-space: pre-wrap; color: #fff; }
+    .c05d-m.bot { align-self: flex-start; background: #182533; border-bottom-left-radius: 4px; }
+    .c05d-m.eu { align-self: flex-end; background: #2b5278; border-bottom-right-radius: 4px; font-family: "JetBrains Mono", monospace; }
+    .c05d-chat .base { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: #17212b; }
+    #c05d-noti { position: absolute; left: 12px; right: 12px; top: 54px; padding: 12px 16px; border-radius: 18px; background: rgba(40, 40, 46, 0.97); color: #fff; font-size: 16px; z-index: 5; }
+    #c05d-noti b { display: block; font-size: 14px; color: #aaa; font-weight: 600; margin-bottom: 4px; }
+
+    #c05d-central { left: 840px; top: 175px; width: 860px; height: 480px; }
+    #c05d-central-r { left: 840px; top: 140px; }
+    #c05d-mudo { left: 860px; top: 650px; font-family: "League Gothic", sans-serif; font-size: 70px; letter-spacing: 0.05em; color: #f0b545; white-space: nowrap; }
+    #c05d-continua { left: 1300px; top: 650px; font-family: "League Gothic", sans-serif; font-size: 70px; letter-spacing: 0.05em; color: #ef5a4c; white-space: nowrap; }
+
+    #c05d-canais { left: 860px; top: 830px; width: 1000px; height: 330px; }
+    .c05d-canal { position: absolute; width: 200px; padding: 14px; border: 2px solid rgba(200, 184, 138, 0.5); border-radius: 10px; text-align: center; font-size: 24px; color: #ede4cc; background: rgba(13, 17, 12, 0.95); }
+    #c05d-cadeado { position: absolute; left: 600px; top: 90px; width: 150px; height: 150px; }
+    #c05d-dig { position: absolute; left: 820px; top: 70px; width: 170px; text-align: center; }
+    #c05d-dig svg { width: 150px; height: 150px; }
+    #c05d-dig div { font-family: "League Gothic", sans-serif; font-size: 44px; color: #a8d04a; letter-spacing: 0.05em; }
+    .c05d-seta { position: absolute; height: 4px; background: #c8b88a; transform-origin: 0% 50%; }
+    .c05d-bloq { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; }
   </style>
+
   <div id="root" data-composition-id="c05d" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">05d</span><span id="c05d-cap"></span></div>
-      <div id="c05d-titulo" class="prov display"></div>
+      <div id="c05d-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <div id="c05d-celw"></div>
+        <div id="c05d-central-r" class="rotulo">a central, enquanto isso</div>
+        <div id="c05d-central"></div>
+        <div id="c05d-mudo">🔇 só o som cala</div>
+        <div id="c05d-continua">● o alarme continua</div>
+        <div id="c05d-canais">
+          <div class="c05d-canal" style="left: 0; top: 0">Telegram</div>
+          <div class="c05d-canal" style="left: 0; top: 120px">painel web</div>
+          <div class="c05d-canal" style="left: 0; top: 240px">MQTT</div>
+          <div class="c05d-seta" style="left: 230px; top: 26px; width: 380px; transform: rotate(14deg)"></div>
+          <div class="c05d-seta" style="left: 230px; top: 146px; width: 360px"></div>
+          <div class="c05d-seta" style="left: 230px; top: 266px; width: 380px; transform: rotate(-14deg)"></div>
+          <svg class="c05d-bloq" style="left: 420px; top: 74px" viewBox="0 0 56 56"><circle cx="28" cy="28" r="25" fill="#0a0d0a" stroke="#EF5A4C" stroke-width="5"/><path d="M11 45 L45 11" stroke="#EF5A4C" stroke-width="5"/></svg>
+          <svg class="c05d-bloq" style="left: 420px; top: 148px" viewBox="0 0 56 56"><circle cx="28" cy="28" r="25" fill="#0a0d0a" stroke="#EF5A4C" stroke-width="5"/><path d="M11 45 L45 11" stroke="#EF5A4C" stroke-width="5"/></svg>
+          <svg class="c05d-bloq" style="left: 420px; top: 222px" viewBox="0 0 56 56"><circle cx="28" cy="28" r="25" fill="#0a0d0a" stroke="#EF5A4C" stroke-width="5"/><path d="M11 45 L45 11" stroke="#EF5A4C" stroke-width="5"/></svg>
+          <svg id="c05d-cadeado" viewBox="0 0 100 100"><path id="c05d-arco" d="M28 46 V32 a22 22 0 0 1 44 0 V46" fill="none" stroke="#C8B88A" stroke-width="9"/><rect x="18" y="44" width="64" height="48" rx="8" fill="#C8B88A"/><circle cx="50" cy="66" r="7" fill="#0a0d0a"/></svg>
+          <div id="c05d-dig">
+            <svg viewBox="0 0 100 100" fill="none" stroke="#A8D04A" stroke-width="5" stroke-linecap="round">
+              <path d="M30 70 Q30 30 50 30 Q70 30 70 60"/><path d="M40 78 Q38 42 50 42 Q62 42 60 72"/><path d="M50 52 V84"/><path d="M20 58 Q22 16 50 16 Q80 16 80 50"/>
+            </svg>
+            <div>só a digital</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap" id="c05d-cap"><span class="ponto"></span><span class="num">05</span><span>Telegram</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("05d", p, n);
+    const FIM = AEGIS.dur("05d");
+    const P = "#c05d-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["05d"].titulo;
-    document.querySelector("#c05d-cap").textContent = titulo;
-    document.querySelector("#c05d-titulo").textContent = titulo;
-    tl.fromTo("#c05d-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+
+    // textos montados como no firmware (avisar/resumo/atender_comandos);
+    // leituras iguais às da captura do painel (25,0 °C, 55 %, chuva 71 %...)
+    const msgs = [
+      ["bot", "🚨 ALARME: FUMACA/GAS"],
+      ["eu", "/status"],
+      ["bot", "🚨 ALARME: FUMACA/GAS\n🌡 25.0 °C   💧 55 %\n🌧 chuva 71 %   🌱 solo 0 %\n🔥 fumaça 1440/800   ar 0/800\n🌊 água a 100 cm do sensor\n🔒 armado · exaustor ligado"],
+      ["eu", "/silenciar"],
+      ["bot", "🔇 Sirene silenciada pelo Telegram por 60 s. O alarme continua: FUMACA/GAS"],
+    ];
+    document.querySelector("#c05d-celw").outerHTML = AEGIS.celular("c05d-cel",
+      `<div class="c05d-chat"><div class="topo">AEGIS<small>bot · @Aegis_IoT_bot</small></div>
+        <div class="c05d-msgs"><div class="c05d-pilha">${msgs.map(([q, t], i) => `<div class="c05d-m ${q}" id="c05d-m${i}">${t}</div>`).join("")}</div></div>
+        <div class="base"></div>
+        <div id="c05d-noti"><b>TELEGRAM · AEGIS</b>🚨 ALARME: FUMACA/GAS</div></div>`);
+    document.querySelector("#c05d-central").innerHTML =
+      `<div style="transform:scale(0.47);transform-origin:0 0;width:1800px;height:1000px">${AEGIS.abrigo("c05d-a")}</div>`;
+
+    const m = (i) => `#c05d-m${i}`;
+    tl.set([m(0), m(1), m(2), m(3), m(4), "#c05d-noti", "#c05d-mudo", "#c05d-continua", "#c05d-canais", "#c05d-central", "#c05d-central-r", ".c05d-a-tag"], { opacity: 0 }, 0);
+    tl.set(".c05d-bloq", { opacity: 0 }, 0);
+    tl.set("#c05d-a-led-verm", { attr: { fill: "#EF5A4C" } }, 0);
+    tl.set("#c05d-a-oled", { attr: { href: "assets/img/oled-alarme-fumaca.png" } }, 0);
+    tl.set("#c05d-a-ondas", { opacity: 1 }, 0);
+
+    AEGIS.cameraEm(tl, P, 0, { x: 390, y: 550, s: 1.6 });
+    cam(0.1, { x: 520, y: 550, s: 1.25 }, 1.0, "power3.out");
+    tl.fromTo("#c05d-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    // a notificação desce e a mensagem entra na conversa
+    tl.fromTo("#c05d-noti", { opacity: 0, y: -80 }, { opacity: 1, y: 0, duration: 0.45, ease: "back.out(1.4)", immediateRender: false }, W("recebe") - 0.1);
+    tl.to("#c05d-noti", { opacity: 0, y: -60, duration: 0.3 }, W("Telegram") + 0.4);
+    const entra = (i, t) => tl.fromTo(m(i), { opacity: 0, y: 30, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "back.out(1.6)", immediateRender: false }, t);
+    entra(0, W("alerta"));
+    // central ao lado: a sirene ainda tocando
+    cam(W("Pelo bot") - 0.4, { x: 960, y: 540, s: 1.0 }, 0.9, "power3.inOut");
+    tl.to(["#c05d-central", "#c05d-central-r"], { opacity: 1, duration: 0.4 }, W("Pelo bot") - 0.2);
+    for (let t = 0, i = 0; t < W("Só") + 0.3; t += 0.3, i++) {
+      tl.set(["#c05d-a-onda1", "#c05d-a-onda3"], { attr: { stroke: i % 2 ? "#F0B545" : "#EF5A4C" } }, t);
+      tl.set("#c05d-a-onda2", { attr: { stroke: i % 2 ? "#EF5A4C" : "#F0B545" } }, t);
+    }
+    entra(1, W("status") - 0.2);
+    entra(2, W("status") + 0.45);
+    entra(3, W("silenciar") + 0.1);
+    entra(4, W("sirene") + 0.3);
+    // só o som é calado; o alarme continua
+    tl.to("#c05d-a-ondas", { opacity: 0, duration: 0.2 }, W("sirene") + 0.4);
+    tl.fromTo("#c05d-continua", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.35, ease: "expo.out", immediateRender: false }, W("alarme") - 0.1);
+    tl.fromTo("#c05d-mudo", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.35, ease: "expo.out", immediateRender: false }, W("som") - 0.15);
+    tl.fromTo("#c05d-a-led-verm", { attr: { r: 9 } }, { attr: { r: 14 }, duration: 0.3, yoyo: true, repeat: 9, immediateRender: false }, W("alarme"));
+    // nenhum canal remoto desarma: só a digital
+    tl.fromTo("#c05d-canais", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out", immediateRender: false }, W("segurança") - 0.3);
+    cam(W("segurança") - 0.3, { x: 1200, y: 860, s: 1.0 }, 0.9, "power3.inOut");
+    tl.fromTo(".c05d-seta", { scaleX: 0 }, { scaleX: 1, duration: 0.4, stagger: 0.1, ease: "power2.out", immediateRender: false }, W("canal") - 0.1);
+    tl.fromTo(".c05d-bloq", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)", stagger: 0.12, immediateRender: false }, W("desarma") - 0.05);
+    tl.to(".c05d-seta", { backgroundColor: "#ef5a4c", duration: 0.2 }, W("desarma"));
+    tl.fromTo("#c05d-dig", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(2)", immediateRender: false }, W("digital") - 0.4);
+    tl.to("#c05d-arco", { y: -12, duration: 0.3, ease: "back.out(3)" }, W("digital") + 0.1);
+    tl.to("#c05d-cadeado rect", { attr: { fill: "#A8D04A" }, duration: 0.2 }, W("digital") + 0.1);
+    tl.to(".cena", { opacity: 0, duration: 0.3, ease: "power2.in" }, FIM - 0.35);
     window.__timelines["c05d"] = tl;
   </script>
 </template>
