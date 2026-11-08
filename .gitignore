@@ -20,3 +20,6 @@ firmware/.venv/
 
 # Ajustes da placa (senha do WiFi, token do bot): modelo em firmware/config.exemplo.json
 firmware/config.json
+
+# Gravações e edição do vídeo de demonstração (pesadas; roteiro em docs/video/)
+video/

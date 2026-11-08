@@ -107,8 +107,10 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 ajustes da placa (WiFi, token, aquecimento) no `firmware/config.json`, fora do Git. Configuração em
 `docs/hardware.md` §8. Falta testar com a placa real e com o bot criado no @BotFather.
 
-- **Conferir no Wokwi** a digital pelo Touch ID (`./firmware/wokwi.sh dedo`), o painel e o bot.
-- **Artigo IEEE** (`artigo/`) e **vídeo de demonstração**.
+- **Wokwi conferido em 08/11**: WiFi, painel e bot funcionando. Falta gravar o firmware novo na placa real.
+- **Artigo IEEE** (`artigo/`) e **vídeo de demonstração**, para 09/11/2026: o que falta, os dados
+  medidos e a ordem de trabalho estão em [PROXIMOS-PASSOS.md](PROXIMOS-PASSOS.md); o roteiro do vídeo
+  está em [video/roteiro.md](video/roteiro.md).
 
 1. **Revisar o pitch com os dados da sua pesquisa** — os números de mercado
    estão em `pitch/aegis/data.py` com a fonte ao lado; trocar lá não exige
