@@ -1,21 +1,125 @@
-<!-- Cena 03b (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 03b — erros. O exemplo real "Erros propositais (sintático)" do
+     compilador: o leitor desce pelo código, acha o 1º erro, não para,
+     descarta em modo pânico até o fim da linha (sincronizar) e acha o 2º;
+     o painel lista os dois com linha e coluna (mensagens reais do parser). -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c03b-editor { left: 130px; top: 190px; width: 1080px; height: 640px; overflow: hidden; }
+    #c03b-lista { position: absolute; left: 24px; top: 70px; right: 0; }
+    #c03b-lista .codigo { font-size: 34px; line-height: 54px; height: 54px; }
+    #c03b-lista .codigo .ln { width: 70px; margin-right: 24px; }
+    #c03b-leitor { left: 130px; width: 1080px; height: 54px; background: rgba(168, 208, 74, 0.1); border-left: 5px solid #a8d04a; }
+    .c03b-onda { height: 10px; }
+    .c03b-descarte { height: 54px; background: repeating-linear-gradient(135deg, rgba(239, 90, 76, 0.22) 0 10px, rgba(239, 90, 76, 0.06) 10px 20px); border: 2px solid rgba(239, 90, 76, 0.6); border-radius: 4px; }
+    #c03b-sinc { font-family: "JetBrains Mono", monospace; font-size: 28px; color: #f0b545; padding: 8px 16px; border: 2px solid #f0b545; border-radius: 30px; background: #0f130e; white-space: nowrap; }
+    #c03b-naopara { font-family: "League Gothic", sans-serif; font-size: 64px; letter-spacing: 0.06em; color: #a8d04a; white-space: nowrap; }
+
+    #c03b-painel { left: 1260px; top: 250px; width: 560px; padding: 26px 28px; border: 2px solid rgba(239, 90, 76, 0.7); border-radius: 10px; background: rgba(24, 14, 12, 0.96); }
+    #c03b-painel .tit { font-family: "League Gothic", sans-serif; font-size: 54px; letter-spacing: 0.05em; color: #ef5a4c; }
+    #c03b-painel .sub { margin-top: 4px; }
+    .c03b-erro { margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(239, 90, 76, 0.3); }
+    .c03b-erro .pos { display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 30px; font-weight: 700; color: #0a0d0a; background: #f0b545; padding: 2px 12px; border-radius: 6px; }
+    .c03b-erro .msg { margin-top: 10px; font-size: 30px; color: #ede4cc; line-height: 1.25; }
   </style>
+
   <div id="root" data-composition-id="c03b" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">03b</span><span id="c03b-cap"></span></div>
-      <div id="c03b-titulo" class="prov display"></div>
+      <div id="c03b-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <div class="painel" id="c03b-editor">
+          <div class="barra"><i></i><i></i><i></i><span style="margin-left: 12px">exemplo com erros propositais</span></div>
+          <div id="c03b-lista"></div>
+        </div>
+        <div id="c03b-leitor"></div>
+        <div id="c03b-marcas"></div>
+        <div id="c03b-sinc">sincronizar() ⤵ pula até o fim da linha</div>
+        <div id="c03b-naopara">não para ▸ continua</div>
+        <div id="c03b-painel">
+          <div class="tit">2 erros sintáticos</div>
+          <div class="sub rotulo">nada foi gerado · os dois de uma vez</div>
+          <div id="c03b-erros"></div>
+        </div>
+      </div>
+      <div class="cap" id="c03b-cap"><span class="ponto"></span><span class="num">03</span><span>Erros</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("03b", p, n);
+    const FIM = AEGIS.dur("03b");
+    const E = window.AEGIS_DADOS.erro;
+    const P = "#c03b-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["03b"].titulo;
-    document.querySelector("#c03b-cap").textContent = titulo;
-    document.querySelector("#c03b-titulo").textContent = titulo;
-    tl.fromTo("#c03b-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    const LH = 54, CH = 20.4, TOPO = 190 + 70, XT = 130 + 24 + 70 + 24;
+    const yL = (linha) => TOPO + (linha - 1) * LH;             // linha 1-based
+    const xC = (col) => XT + (col - 1) * CH;                    // coluna 1-based
+
+    const lista = document.querySelector("#c03b-lista");
+    E.html.forEach((h, i) => lista.insertAdjacentHTML("beforeend",
+      `<div class="codigo"><span class="ln">${i + 1}</span><span class="txt">${h || " "}</span></div>`));
+    const linhas = gsap.utils.toArray("#c03b-lista .codigo");
+    const textoLinha = (l) => linhas[l - 1].querySelector(".txt").textContent;
+
+    // marcas de cada erro: onda vermelha no ponto e faixa de descarte
+    const marcas = document.querySelector("#c03b-marcas");
+    E.erros.forEach((er, i) => {
+      const fimLinha = Math.max(er.coluna + 1, textoLinha(er.linha).length + 1);
+      marcas.insertAdjacentHTML("beforeend",
+        `<svg class="c03b-onda" id="c03b-onda${i}" style="position:absolute;left:${xC(er.coluna) - 4}px;top:${yL(er.linha) + 44}px;width:${CH * 2 + 8}px" viewBox="0 0 48 10" preserveAspectRatio="none">` +
+        `<path d="M0 5 Q6 0 12 5 T24 5 T36 5 T48 5" fill="none" stroke="#EF5A4C" stroke-width="3"/></svg>` +
+        `<div class="c03b-descarte" id="c03b-desc${i}" style="position:absolute;left:${xC(er.coluna) - 4}px;top:${yL(er.linha)}px;width:${(fimLinha - er.coluna) * CH + 12}px"></div>`);
+    });
+    const caixaErros = document.querySelector("#c03b-erros");
+    E.erros.forEach((er, i) => caixaErros.insertAdjacentHTML("beforeend",
+      `<div class="c03b-erro" id="c03b-e${i}"><span class="pos">linha ${er.linha} : coluna ${er.coluna}</span><div class="msg">${er.msg}</div></div>`));
+
+    tl.set(["#c03b-painel", "#c03b-sinc", "#c03b-naopara", ".c03b-onda", ".c03b-descarte", ".c03b-erro", "#c03b-leitor"], { opacity: 0 }, 0);
+
+    // ---- entra subindo (continua o chicote da cena anterior) ----------------
+    AEGIS.cameraEm(tl, P, 0, { x: 960, y: -260, s: 1 });
+    cam(0, { x: 900, y: 520, s: 1 }, 0.9, "expo.out");
+    tl.fromTo("#c03b-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+
+    // ---- o leitor desce; 1º erro ---------------------------------------------
+    const [e1, e2] = E.erros;
+    const tE1 = W("não") - 0.1, tE2 = W("todos") - 0.1;
+    tl.set("#c03b-leitor", { opacity: 1, y: yL(1) }, W("compilador") - 0.6);
+    tl.to("#c03b-leitor", { y: yL(e1.linha), duration: tE1 - (W("compilador") - 0.6), ease: "steps(" + (e1.linha - 1) + ")" }, W("compilador") - 0.6);
+    tl.to("#c03b-leitor", { borderLeftColor: "#ef5a4c", backgroundColor: "rgba(239,90,76,0.14)", duration: 0.1 }, tE1);
+    tl.fromTo("#c03b-onda0", { opacity: 0, scaleX: 0, transformOrigin: "0% 50%" }, { opacity: 1, scaleX: 1, duration: 0.25, immediateRender: false }, tE1);
+    cam(tE1 - 0.25, { x: xC(e1.coluna) + 120, y: yL(e1.linha) + 120, s: 1.25 }, 0.5, "power3.out");
+    AEGIS.tremer(tl, "#c03b-editor", tE1 + 0.05, 8, 0.3);
+    tl.set("#c03b-naopara", { x: xC(e1.coluna) + 70, y: yL(e1.linha) - 10 }, 0);
+    tl.fromTo("#c03b-naopara", { opacity: 0, x: xC(e1.coluna) + 20 }, { opacity: 1, x: xC(e1.coluna) + 70, duration: 0.35, ease: "expo.out", immediateRender: false }, W("para") - 0.05);
+    tl.to("#c03b-naopara", { opacity: 0, duration: 0.25 }, W("ele") - 0.2);
+
+    // ---- modo pânico: descarta até o fim da linha e sincroniza --------------
+    const tP = W("recupera") - 0.15;
+    tl.fromTo("#c03b-desc0", { opacity: 0, scaleX: 0, transformOrigin: "0% 50%" }, { opacity: 1, scaleX: 1, duration: 0.45, ease: "power2.out", immediateRender: false }, tP);
+    tl.set("#c03b-sinc", { x: xC(e1.coluna) - 120, y: yL(e1.linha) + 62 }, 0);
+    tl.fromTo("#c03b-sinc", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)", immediateRender: false }, W("pânico") - 0.2);
+    cam(tP + 0.2, { x: 760, y: 560, s: 1.1 }, 0.8);
+    tl.to("#c03b-leitor", { borderLeftColor: "#a8d04a", backgroundColor: "rgba(168,208,74,0.1)", duration: 0.1 }, W("pânico") + 0.35);
+    tl.to("#c03b-leitor", { y: yL(e2.linha), duration: tE2 - (W("pânico") + 0.4), ease: "steps(" + (e2.linha - e1.linha) + ")" }, W("pânico") + 0.4);
+    tl.to("#c03b-sinc", { opacity: 0, duration: 0.25 }, W("mostra"));
+
+    // ---- 2º erro e o painel com os dois --------------------------------------
+    tl.to("#c03b-leitor", { borderLeftColor: "#ef5a4c", backgroundColor: "rgba(239,90,76,0.14)", duration: 0.1 }, tE2);
+    tl.fromTo("#c03b-onda1", { opacity: 0, scaleX: 0, transformOrigin: "0% 50%" }, { opacity: 1, scaleX: 1, duration: 0.25, immediateRender: false }, tE2);
+    tl.fromTo("#c03b-desc1", { opacity: 0, scaleX: 0, transformOrigin: "0% 50%" }, { opacity: 1, scaleX: 1, duration: 0.3, immediateRender: false }, tE2 + 0.1);
+    AEGIS.tremer(tl, "#c03b-editor", tE2 + 0.05, 6, 0.25);
+    cam(W("de uma vez") - 0.3, { x: 980, y: 560, s: 0.92 }, 0.8, "power3.inOut");
+    tl.fromTo("#c03b-painel", { opacity: 0, x: 120, filter: "blur(10px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out", immediateRender: false }, W("de uma vez") - 0.1);
+    tl.fromTo(".c03b-erro", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "expo.out", stagger: 0.15, immediateRender: false }, W("de uma vez") + 0.15);
+    // linha e coluna: os selos piscam
+    tl.to(".c03b-erro .pos", { scale: 1.12, duration: 0.15, yoyo: true, repeat: 1, stagger: 0.25 }, W("linha") - 0.05);
+    cam(W("linha") - 0.3, { x: 1300, y: 560, s: 1.08 }, 0.8);
+
+    // ---- saída: chicote para a esquerda -------------------------------------
+    cam(FIM - 0.5, { x: 2900, y: 560, s: 1.0 }, 0.5, "power3.in");
+    tl.to(".cena", { opacity: 0, duration: 0.2, ease: "power2.in" }, FIM - 0.22);
     window.__timelines["c03b"] = tl;
   </script>
 </template>
