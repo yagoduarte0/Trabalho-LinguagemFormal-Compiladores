@@ -379,16 +379,30 @@ class _Telegram(_TelegramBase):
     def _diff(self, a, b):
         return a - b
 
+    # Alguns Pythons (o do python.org sem os certificados instalados, ou atrás
+    # de antivírus/proxy que intercepta HTTPS) recusam o certificado do
+    # Telegram. O curl do sistema confia nos certificados do próprio sistema,
+    # então ele é o plano B.
     def _pedir(self, metodo, dados):
         import json
         import urllib.request
+        corpo = json.dumps(dados)
         try:
-            pedido = urllib.request.Request(self._url(metodo), data=json.dumps(dados).encode(),
+            pedido = urllib.request.Request(self._url(metodo), data=corpo.encode(),
                                             headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(pedido, timeout=10) as r:
                 return json.loads(r.read().decode())
-        except Exception as erro:
-            print("[telegram] falhou:", erro)
+        except Exception as erro_python:
+            import subprocess
+            try:
+                saida = subprocess.run(["curl", "-sS", "-m", "10", "-H", "Content-Type: application/json",
+                                        "-d", corpo, self._url(metodo)],
+                                       capture_output=True, text=True, timeout=15)
+                if saida.returncode == 0:
+                    return json.loads(saida.stdout)
+                print("[telegram] falhou:", erro_python, "/ curl:", saida.stderr.strip())
+            except Exception as erro_curl:
+                print("[telegram] falhou:", erro_python, "/", erro_curl)
             return None
 
 
