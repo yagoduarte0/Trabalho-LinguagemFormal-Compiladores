@@ -30,7 +30,7 @@ h1{font:30px Impact,"Arial Narrow",sans-serif;letter-spacing:4px;color:var(--caq
 .c small{color:var(--apagado);font-size:11px;text-transform:uppercase;letter-spacing:1px}
 .c div{font-size:24px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
 .barra{height:6px;background:var(--linha);border-radius:3px;margin-top:8px;overflow:hidden}
-.barra i{display:block;height:100%;width:0;background:var(--radar);transition:width .4s}
+.barra i{display:block;height:100%;width:0;background:var(--radar)}
 .barra i.alto{background:var(--alerta)}
 .tags{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
 .tag{border:1px solid var(--linha);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--apagado)}
@@ -64,7 +64,7 @@ var visto=0,ligado=0;
 function mostrar(d){
 visto=Date.now();ligado=d.ligado_s;
 el("con").className="on";el("con").textContent="ao vivo";
-el("estado").className="s"+d.estado;el("nome").textContent=d.nome;el("motivo").textContent=d.motivo;
+el("estado").className="s"+d.estado;el("nome").textContent=["NORMAL","ATENÇÃO","ALARME"][d.estado]||d.nome;el("motivo").textContent=d.motivo;
 el("temp").innerHTML=d.temp<0?"--":d.temp.toFixed(1)+" &deg;C";
 el("umid").textContent=d.umid<0?"--":Math.round(d.umid)+" %";
 el("fumaca").textContent=d.aquecido?Math.round(100*Math.max(0,d.fumaca)/d.fumaca_lim)+" %":"aquecendo";
