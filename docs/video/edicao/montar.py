@@ -169,7 +169,7 @@ def main():
             spans = " ".join(
                 f'<span class="pal" data-s="{inicio + ANTES + p["s"]:.2f}">{html.escape(p["t"])}</span>'
                 for p in grupo)
-            legendas.append(f'    <div id="{gid}" class="grupo" data-s="{s:.2f}" data-e="{e:.2f}">{spans}</div>')
+            legendas.append(f'    <div id="{gid}" class="grupo" data-s="{s:.2f}" data-e="{e:.2f}"><span class="faixa">{spans}</span></div>')
         roteiro_tl.append((bloco, titulo, inicio, slot))
         inicio = round(inicio + slot, 2)
 

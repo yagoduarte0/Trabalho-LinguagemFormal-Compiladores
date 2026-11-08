@@ -1,21 +1,114 @@
-<!-- Cena 06 (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 06 — o protótipo real (bancada desenhada até termos a filmagem):
+     o mesmo abrigo.mpy entra no ESP32 de verdade, as páginas reais do OLED
+     alternam, o PIR acusa movimento, o DHT22 esquenta na mão e o painel
+     abre no celular pelo endereço da placa. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c06-bancada { left: 160px; top: 160px; width: 1600px; height: 820px; }
+    #c06-oled { left: 470px; top: 300px; width: 384px; height: 192px; image-rendering: pixelated; }
+    #c06-titulo { left: 160px; top: 30px; width: 1600px; text-align: center; font-family: "League Gothic", sans-serif; font-size: 80px; letter-spacing: 0.08em; color: #ede4cc; }
+    #c06-cartao { left: -420px; top: 560px; width: 300px; padding: 20px 22px; border: 3px solid #f0b545; border-radius: 12px; background: #111610; }
+    #c06-cartao .ext { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 36px; color: #f0b545; }
+    #c06-selo { left: 520px; top: 760px; padding: 10px 22px; border: 3px solid #a8d04a; border-radius: 8px; font-family: "League Gothic", sans-serif; font-size: 50px; letter-spacing: 0.05em; color: #a8d04a; white-space: nowrap; background: #0d110c; }
+    #c06-pir-b { left: 1180px; top: 250px; padding: 8px 16px; border-left: 4px solid #f0b545; background: #0d110c; font-family: "JetBrains Mono", monospace; font-size: 30px; color: #f0b545; white-space: nowrap; }
+    #c06-mao { left: 1500px; top: 360px; width: 180px; height: 200px; }
+    #c06-temp { left: 1340px; top: 420px; padding: 6px 22px; border-radius: 10px; background: rgba(10, 13, 10, 0.9); border-left: 5px solid #f0b545; font-family: "League Gothic", sans-serif; font-size: 120px; color: #ede4cc; line-height: 1; white-space: nowrap; }
+    #c06-temp small { font-size: 60px; color: #c8b88a; }
+    #c06-cel { left: 2050px; top: 140px; }
+    #c06-url { position: absolute; left: 10px; right: 10px; top: 56px; height: 44px; border-radius: 12px; background: #1d211b; font-family: "JetBrains Mono", monospace; font-size: 17px; color: #a8d04a; line-height: 44px; text-align: center; z-index: 2; }
   </style>
+
   <div id="root" data-composition-id="c06" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">06</span><span id="c06-cap"></span></div>
-      <div id="c06-titulo" class="prov display"></div>
+      <div id="c06-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <svg id="c06-bancada" viewBox="0 0 1600 820">
+          <!-- protoboard -->
+          <rect x="60" y="430" width="1480" height="330" rx="16" fill="#e9e4d6" stroke="#C8B88A" stroke-width="4"/>
+          <path d="M80 470 H1520 M80 490 H1520 M80 700 H1520 M80 720 H1520" stroke="#d64a3a" stroke-width="3" stroke-dasharray="2 14"/>
+          <!-- ESP32 -->
+          <rect id="c06-esp" x="420" y="520" width="360" height="150" rx="8" fill="#1b2416" stroke="#A8D04A" stroke-width="4"/>
+          <rect x="460" y="545" width="150" height="100" rx="4" fill="#9aa08a" stroke="#6f7a66" stroke-width="2"/>
+          <text x="695" y="603" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="30" fill="#EDE4CC">ESP32</text>
+          <rect x="780" y="575" width="70" height="40" rx="4" fill="#9aa08a"/>
+          <path id="c06-usb" d="M850 595 C 980 595, 1000 760, 1200 800" fill="none" stroke="#3a3f36" stroke-width="16" stroke-linecap="round"/>
+          <!-- OLED na placa (a imagem real fica por cima, em HTML) -->
+          <rect x="300" y="130" width="400" height="230" rx="10" fill="#050605" stroke="#C8B88A" stroke-width="4"/>
+          <path d="M420 360 V520 M460 360 V520 M500 360 V520 M540 360 V520" stroke="#A8D04A" stroke-width="5"/>
+          <!-- PIR -->
+          <rect x="1000" y="250" width="160" height="110" rx="8" fill="#1a3a5a" stroke="#C8B88A" stroke-width="3"/>
+          <path d="M1020 250 a60 60 0 0 1 120 0 Z" fill="#f2efe6" stroke="#C8B88A" stroke-width="3"/>
+          <path d="M1060 360 V520 M1080 360 V520 M1100 360 V520" stroke="#F0B545" stroke-width="5"/>
+          <path id="c06-pir-cone" d="M1080 190 L1400 40 L1400 360 Z" fill="#F0B545" fill-opacity="0"/>
+          <!-- DHT22 -->
+          <rect id="c06-dht" x="1200" y="560" width="80" height="120" rx="6" fill="#f2efe6" stroke="#C8B88A" stroke-width="3"/>
+          <path d="M1214 580 h52 M1214 600 h52 M1214 620 h52 M1214 640 h52" stroke="#9aa08a" stroke-width="5"/>
+          <!-- LEDs e buzzer -->
+          <circle id="c06-led-v" cx="900" cy="500" r="14" fill="#A8D04A"/><circle cx="940" cy="500" r="14" fill="#3a3018"/><circle cx="980" cy="500" r="14" fill="#3a1c18"/>
+          <circle cx="240" cy="600" r="34" fill="#1a1a1a" stroke="#C8B88A" stroke-width="4"/>
+        </svg>
+        <img id="c06-oled" src="assets/img/oled-abertura.png">
+        <div id="c06-titulo">protótipo físico · ESP32 de verdade</div>
+        <div id="c06-cartao"><div class="ext">abrigo.mpy</div><div class="rotulo" style="margin-top: 8px">o mesmo do Wokwi</div></div>
+        <div id="c06-selo">mesmo programa · sem nenhuma alteração</div>
+        <div id="c06-pir-b">PIR: movimento</div>
+        <svg id="c06-mao" viewBox="0 0 180 200"><path d="M50 200 V90 Q50 70 66 70 Q80 70 80 90 V40 Q80 22 96 22 Q112 22 112 40 V30 Q112 12 128 12 Q144 12 144 30 V60 Q144 44 158 46 Q172 48 172 64 V140 Q172 200 110 200 Z" fill="#d9b99b" stroke="#a8876b" stroke-width="4"/></svg>
+        <div id="c06-temp"><span id="c06-temp-v">25.0</span><small> °C</small></div>
+        <div id="c06-celw"></div>
+      </div>
+      <div class="cap" id="c06-cap"><span class="ponto"></span><span class="num">06</span><span>Protótipo real</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("06", p, n);
+    const FIM = AEGIS.dur("06");
+    const P = "#c06-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["06"].titulo;
-    document.querySelector("#c06-cap").textContent = titulo;
-    document.querySelector("#c06-titulo").textContent = titulo;
-    tl.fromTo("#c06-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    document.querySelector("#c06-celw").outerHTML = AEGIS.celular("c06-cel",
+      `<div id="c06-url">http://&lt;ip da placa&gt;/</div><img src="assets/img/painel-celular.png" style="position:absolute;left:0;top:100px;width:384px">`);
+    // a imagem do OLED cobre a tela do desenho: (300,130) na bancada em (160,160)
+    gsap.set("#c06-oled", { x: 0, y: 0 });
+
+    tl.set(["#c06-titulo", "#c06-selo", "#c06-pir-b", "#c06-mao", "#c06-temp", "#c06-cel"], { opacity: 0 }, 0);
+    // ---- abre no OLED e recua até a bancada inteira ---------------------------
+    AEGIS.cameraEm(tl, P, 0, { x: 662, y: 396, s: 2.6 });
+    cam(0.1, { x: 960, y: 560, s: 1.0 }, 1.6, "power3.inOut");
+    tl.fromTo("#c06-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    tl.fromTo("#c06-titulo", { opacity: 0, letterSpacing: "0.4em" }, { opacity: 1, letterSpacing: "0.08em", duration: 0.7, ease: "expo.out", immediateRender: false }, W("físico") - 0.3);
+    tl.to("#c06-titulo", { opacity: 0, duration: 0.3 }, W("mesmo") - 0.2);
+    // o mesmo .mpy entra no ESP32
+    tl.to("#c06-cartao", { x: 1080, y: -40, duration: 1.1, ease: "power3.inOut" }, W("mesmo") - 0.4);
+    tl.to("#c06-cartao", { scale: 0.2, opacity: 0, duration: 0.35, ease: "power3.in" }, W("roda") - 0.3);
+    tl.fromTo("#c06-selo", { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power4.out", immediateRender: false }, W("alteração") - 0.2);
+    tl.to("#c06-esp", { attr: { stroke: "#D6F08A" }, duration: 0.2 }, W("roda"));
+    tl.fromTo("#c06-esp", { attr: { "stroke-width": 4 } }, { attr: { "stroke-width": 10 }, duration: 0.2, yoyo: true, repeat: 3, immediateRender: false }, W("roda"));
+    tl.to("#c06-selo", { opacity: 0, duration: 0.3 }, W("display") - 0.3);
+    // display: as páginas reais alternando
+    cam(W("display") - 0.4, { x: 662, y: 430, s: 1.7 }, 0.8, "power3.inOut");
+    tl.set("#c06-oled", { attr: { src: "assets/img/oled-normal.png" } }, W("display") - 0.1);
+    tl.set("#c06-oled", { attr: { src: "assets/img/oled-atencao-chovendo.png" } }, W("estado"));
+    tl.set("#c06-oled", { attr: { src: "assets/img/oled-normal.png" } }, W("leituras"));
+    // PIR: a mão passa e ele acusa movimento
+    cam(W("sensores") - 0.4, { x: 1250, y: 500, s: 1.15 }, 0.8, "power3.inOut");
+    tl.fromTo("#c06-mao", { opacity: 0, x: 120 }, { opacity: 1, x: -120, duration: 0.9, ease: "power1.inOut", yoyo: true, repeat: 1, immediateRender: false }, W("presença") - 0.4);
+    tl.to("#c06-pir-cone", { attr: { "fill-opacity": 0.25 }, duration: 0.2 }, W("presença"));
+    tl.fromTo("#c06-pir-b", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.3, immediateRender: false }, W("presença") + 0.1);
+    tl.to(["#c06-pir-b", "#c06-mao"], { opacity: 0, duration: 0.3 }, W("temperatura") - 0.1);
+    tl.to("#c06-pir-cone", { attr: { "fill-opacity": 0 }, duration: 0.3 }, W("temperatura"));
+    // DHT22 na mão: a temperatura sobe
+    cam(W("temperatura") - 0.3, { x: 1400, y: 560, s: 1.25 }, 0.7, "power3.inOut");
+    tl.fromTo("#c06-temp", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, immediateRender: false }, W("temperatura"));
+    const tmp = { v: 25.0 };
+    tl.fromTo(tmp, { v: 25.0 }, { v: 31.4, duration: 1.6, ease: "power1.out", onUpdate: () => (document.querySelector("#c06-temp-v").textContent = tmp.v.toFixed(1)) }, W("temperatura") + 0.2);
+    tl.to("#c06-dht", { attr: { fill: "#f6d2b8" }, duration: 1.2 }, W("temperatura"));
+    // o painel no celular, pelo endereço da placa
+    cam(W("painel") - 0.4, { x: 1700, y: 560, s: 0.95 }, 0.9, "power3.inOut");
+    tl.fromTo("#c06-cel", { opacity: 0, y: 120 }, { opacity: 1, y: 0, duration: 0.6, ease: "expo.out", immediateRender: false }, W("painel") - 0.3);
+    tl.fromTo("#c06-url", { backgroundColor: "#1d211b" }, { backgroundColor: "#2d3a1f", duration: 0.25, yoyo: true, repeat: 1, immediateRender: false }, W("endereço"));
+    tl.to(".cena", { opacity: 0, duration: 0.3, ease: "power2.in" }, FIM - 0.35);
     window.__timelines["c06"] = tl;
   </script>
 </template>
