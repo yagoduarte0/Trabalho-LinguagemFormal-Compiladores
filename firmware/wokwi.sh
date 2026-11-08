@@ -5,6 +5,13 @@
 #   ./wokwi.sh enviar     recompila o abrigo.aeg e envia o main.py ao simulador
 #   ./wokwi.sh dedo       lê a digital pelo Touch ID do Mac e manda ao simulador
 #                         (o Wokwi não tem o leitor AS608)
+#   ./wokwi.sh placa      recompila e grava main.py + config.json no ESP32 real
+#                         pelo USB (porta automática; outra: AEGIS_PORTA=/dev/cu.xxx)
+#   ./wokwi.sh pc         roda o firmware no Mac com sensores simulados
+#                         (painel em http://localhost:8080)
+#
+# O config.json (WiFi, token do bot) fica fora do Git: modelo em
+# config.exemplo.json. No Wokwi a rede vira sempre a Wokwi-GUEST.
 #
 # O "enviar" exige a simulação rodando: abra firmware/diagram.json no VS Code
 # e aperte play (ou F1 > "Wokwi: Start Simulator").
@@ -37,13 +44,43 @@ preparar() {
   echo "pronto. Agora abra firmware/diagram.json no VS Code, aperte play e rode ./wokwi.sh enviar"
 }
 
+# cópia do config.json para o simulador: mesma conta do bot, mas a rede é a
+# aberta do Wokwi e os MQ simulados não precisam de aquecimento longo
+config_wokwi() {
+  python3 - config.json .venv/config-wokwi.json <<'PY2'
+import json, sys
+c = json.load(open(sys.argv[1], encoding="utf-8"))
+c.update(wifi_ssid="Wokwi-GUEST", wifi_senha="", usar_rede=True)
+c.pop("aquecimento_ms", None)
+json.dump(c, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY2
+}
+
 enviar() {
   [ -x "$MPREMOTE" ] || { echo "rode ./wokwi.sh preparar primeiro"; exit 1; }
   compilar
-  # cp grava o main.py no sistema de arquivos da placa simulada; reset é um
-  # reset de hardware, depois do qual o MicroPython roda o main.py sozinho
-  "$MPREMOTE" connect "$PORTA" fs cp main.py :main.py + reset
-  echo "main.py enviado. Veja a saída no terminal do Wokwi."
+  # cp grava os arquivos no sistema de arquivos da placa simulada; reset é
+  # um reset de hardware, depois do qual o MicroPython roda o main.py sozinho
+  if [ -f config.json ]; then
+    config_wokwi
+    "$MPREMOTE" connect "$PORTA" fs cp main.py :main.py + fs cp .venv/config-wokwi.json :config.json + reset
+  else
+    "$MPREMOTE" connect "$PORTA" fs cp main.py :main.py + reset
+  fi
+  echo "main.py enviado. Veja a saída no terminal do Wokwi; painel em http://localhost:8180"
+}
+
+placa() {
+  [ -x "$MPREMOTE" ] || { echo "rode ./wokwi.sh preparar primeiro"; exit 1; }
+  compilar
+  local porta="${AEGIS_PORTA:-auto}"
+  if [ -f config.json ]; then
+    "$MPREMOTE" connect "$porta" fs cp main.py :main.py + fs cp config.json :config.json + reset
+  else
+    echo "sem config.json: a placa sobe offline (modelo em config.exemplo.json)"
+    "$MPREMOTE" connect "$porta" fs cp main.py :main.py + reset
+  fi
+  echo "gravado. Para ver o serial: $MPREMOTE connect $porta repl  (sair: Ctrl+])"
 }
 
 dedo() {
@@ -79,5 +116,7 @@ case "${1:-}" in
   preparar) preparar ;;
   enviar) enviar ;;
   dedo) dedo ;;
-  *) echo "uso: ./wokwi.sh preparar | enviar | dedo"; exit 2 ;;
+  placa) placa ;;
+  pc) python3 rodar_pc.py ;;
+  *) echo "uso: ./wokwi.sh preparar | enviar | dedo | placa | pc"; exit 2 ;;
 esac

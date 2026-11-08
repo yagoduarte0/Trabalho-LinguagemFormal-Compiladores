@@ -662,6 +662,7 @@ def silence(pino):
 # scavenge finger — módulo fornecido pelo runtime
 # scavenge config — módulo fornecido pelo runtime
 # scavenge web — módulo fornecido pelo runtime
+# scavenge telegram — módulo fornecido pelo runtime
 PINO_PIR = 27  # constante
 PINO_TRIG = 25  # constante
 PINO_ECHO = 26  # constante
@@ -710,15 +711,19 @@ USAR_REDE = True  # constante
 WIFI_SSID = "Wokwi-GUEST"  # constante
 WIFI_SENHA = ""  # constante
 MQTT_BROKER = "broker.hivemq.com"  # constante
+TELEGRAM_CONSULTA_MS = 15000  # constante
 PORTA_PAINEL = 80  # constante
 usar_rede = config.get("usar_rede", USAR_REDE)
 wifi_ssid = config.get("wifi_ssid", WIFI_SSID)
 wifi_senha = config.get("wifi_senha", WIFI_SENHA)
 aquecimento_ms = config.get("aquecimento_ms", AQUECIMENTO_MS)
+telegram_token = config.get("telegram_token", "")
+telegram_chat = config.get("telegram_chat", "")
 NORMAL = 0  # constante
 ATENCAO = 1  # constante
 ALARME = 2  # constante
 NOMES_ESTADO = ["NORMAL", "ATENCAO", "ALARME"]
+EMOJI_ESTADO = ["✅", "⚠️", "🚨"]
 inicio = 0
 aquecido = False
 amostras = 0
@@ -768,6 +773,7 @@ rede = False
 mqtt_ok = False
 painel = False
 ip = ""
+bot = False
 ultima_telemetria = 0
 ultima_depuracao = 0
 pagina = 0
@@ -848,9 +854,14 @@ def vigia_digital():
         else:
             log_entry("[AEGIS] desarmado pela digital", digital)
         bipar(1)
+        if armado:
+            avisar("🔒 Abrigo armado pela digital " + paper(digital) + ". Saia em " + paper(ration(ATRASO_SAIDA_MS / 1000)) + " s.")
+        else:
+            avisar("🔓 Abrigo desarmado pela digital " + paper(digital) + ".")
     elif digital == -2:
         log_entry("[AEGIS] digital nao reconhecida")
         bipar(3)
+        avisar("❓ Alguém tentou uma digital não cadastrada.")
 
 # survivor: roda como tarefa concorrente no alvo
 def sentinela_presenca():
@@ -918,13 +929,58 @@ def vigia_botao():
     if silenciado and time.since(silencio_desde) >= SILENCIO_MS:
         silenciado = False
 
+def avisar(texto):
+    if bot:
+        telegram.send(texto)
+
+def resumo():
+    texto = EMOJI_ESTADO[estado] + " " + NOMES_ESTADO[estado] + ": " + motivo
+    if temperatura < 0.0:
+        texto = texto + "\n🌡 temperatura: sem leitura"
+    else:
+        texto = texto + "\n🌡 " + paper(temperatura) + " °C   💧 " + paper(ration(umidade)) + " %"
+    texto = texto + "\n🌧 chuva " + paper(chuva_pct) + " %   🌱 solo " + paper(solo_pct) + " %"
+    if aquecido:
+        texto = (texto + "\n🔥 fumaça " + paper(media_fumaca - base_fumaca) + "/" + paper(MARGEM_FUMACA) + "   ar " + paper(media_ar - base_ar) + "/" + paper(MARGEM_AR))
+    else:
+        texto = texto + "\n🔥 sensores de gás aquecendo"
+    if distancia_agua < 0.0:
+        texto = texto + "\n🌊 água: sensor sem eco"
+    else:
+        texto = texto + "\n🌊 água a " + paper(ration(distancia_agua)) + " cm do sensor"
+    if armado:
+        texto = texto + "\n🔒 armado"
+    else:
+        texto = texto + "\n🔓 desarmado"
+    if rele_ligado:
+        texto = texto + " · exaustor ligado"
+    if silenciado:
+        texto = texto + " · sirene silenciada"
+    if painel:
+        texto = texto + "\nPainel: " + web.url(ip)
+    return texto
+
 def atender_comandos():
     global silenciado, silencio_desde
+    origem = "painel"
     cmd = web.command()
-    if cmd == "/silenciar" and estado == ALARME and not silenciado:
-        silenciado = True
-        silencio_desde = time.ms()
-        log_entry("[AEGIS] buzzer silenciado pelo painel")
+    if cmd == "" and bot:
+        origem = "Telegram"
+        cmd = telegram.command(TELEGRAM_CONSULTA_MS)
+    if cmd == "/silenciar":
+        if estado == ALARME and not silenciado:
+            silenciado = True
+            silencio_desde = time.ms()
+            log_entry("[AEGIS] buzzer silenciado pelo", origem)
+            avisar("🔇 Sirene silenciada pelo " + origem + " por " + paper(ration(SILENCIO_MS / 1000)) + " s. O alarme continua: " + motivo)
+        elif origem == "Telegram":
+            avisar("Nada para silenciar: o abrigo está em " + NOMES_ESTADO[estado] + ".")
+    elif cmd == "/status":
+        avisar(resumo())
+    elif cmd == "/start" or cmd == "/ajuda" or cmd == "/help":
+        avisar("🛡 AEGIS - comandos:\n/status - leituras de agora\n/silenciar - cala a sirene por " + paper(ration(SILENCIO_MS / 1000)) + " s\n/ajuda - esta lista")
+    elif cmd != "":
+        avisar("Não conheço " + cmd + ". Mande /ajuda.")
 
 def avaliar():
     global estado, motivo
@@ -1003,6 +1059,8 @@ def relatar():
             silenciado = False
         if mqtt_ok:
             mqtt.publish("aegis/alerta", NOMES_ESTADO[estado] + ": " + motivo)
+        if not (estado_anterior == -1 and estado == NORMAL):
+            avisar(EMOJI_ESTADO[estado] + " " + NOMES_ESTADO[estado] + ": " + motivo)
         estado_anterior = estado
         motivo_anterior = motivo
 
@@ -1091,7 +1149,7 @@ def atualizar_tela():
     display.show()
 
 def leituras_json():
-    return ("{\"estado\":" + paper(estado) + ",\"nome\":\"" + NOMES_ESTADO[estado] + "\"" + ",\"motivo\":\"" + motivo + "\"" + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + ",\"fumaca\":" + paper(media_fumaca - base_fumaca) + ",\"fumaca_lim\":" + paper(MARGEM_FUMACA) + ",\"ar\":" + paper(media_ar - base_ar) + ",\"ar_lim\":" + paper(MARGEM_AR) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"chuva\":" + paper(chuva_pct) + ",\"solo\":" + paper(solo_pct) + ",\"pir\":" + paper(ration(presenca)) + ",\"armado\":" + paper(ration(armado)) + ",\"entrada\":" + paper(ration(em_entrada)) + ",\"rele\":" + paper(ration(rele_ligado)) + ",\"mudo\":" + paper(ration(silenciado)) + ",\"aquecido\":" + paper(ration(aquecido)) + ",\"mqtt\":" + paper(ration(mqtt_ok)) + ",\"bot\":0" + ",\"ligado_s\":" + paper(ration(time.since(inicio) / 1000)) + "}")
+    return ("{\"estado\":" + paper(estado) + ",\"nome\":\"" + NOMES_ESTADO[estado] + "\"" + ",\"motivo\":\"" + motivo + "\"" + ",\"temp\":" + paper(temperatura) + ",\"umid\":" + paper(umidade) + ",\"fumaca\":" + paper(media_fumaca - base_fumaca) + ",\"fumaca_lim\":" + paper(MARGEM_FUMACA) + ",\"ar\":" + paper(media_ar - base_ar) + ",\"ar_lim\":" + paper(MARGEM_AR) + ",\"agua_cm\":" + paper(distancia_agua) + ",\"chuva\":" + paper(chuva_pct) + ",\"solo\":" + paper(solo_pct) + ",\"pir\":" + paper(ration(presenca)) + ",\"armado\":" + paper(ration(armado)) + ",\"entrada\":" + paper(ration(em_entrada)) + ",\"rele\":" + paper(ration(rele_ligado)) + ",\"mudo\":" + paper(ration(silenciado)) + ",\"aquecido\":" + paper(ration(aquecido)) + ",\"mqtt\":" + paper(ration(mqtt_ok)) + ",\"bot\":" + paper(ration(bot)) + ",\"ligado_s\":" + paper(ration(time.since(inicio) / 1000)) + "}")
 
 def servir_painel():
     if painel and web.waiting():
@@ -1139,7 +1197,7 @@ def ciclo():
     depurar()
 
 def main():
-    global inicio, rede, ip, mqtt_ok, painel
+    global inicio, rede, ip, mqtt_ok, painel, bot
     log_entry("[AEGIS] abrigo iniciando")
     gpio.write(radio(PINO_RELE), not RELE_ATIVO_EM_ALTO)
     if finger.begin(radio(PINO_DIGITAL_RX), radio(PINO_DIGITAL_TX)):
@@ -1156,9 +1214,13 @@ def main():
         ip = wifi.ip()
         mqtt_ok = mqtt.connect(MQTT_BROKER)
         painel = web.start(PORTA_PAINEL)
+        bot = telegram.begin(telegram_token, telegram_chat)
         log_entry("[AEGIS] online em", ip)
         if painel:
             log_entry("[AEGIS] painel web:", web.url(ip))
+        if bot:
+            log_entry("[AEGIS] bot do Telegram ativo")
+            avisar("🛡 AEGIS ligado e vigiando.\nPainel na rede de casa: " + web.url(ip) + "\nMande /ajuda para ver os comandos.")
         display.clear()
         display.logo(48, 2)
         display.center("painel web em", 38, 1)

@@ -55,6 +55,9 @@ def zerar_sensores(g):
     g["finger"].fila.clear()
     g["painel"] = False
     g["web"].fila.clear()
+    g["bot"] = False
+    g["telegram"].fila.clear()
+    g["telegram"].enviadas.clear()
     g["filtro_pronto"] = False      # a primeira leitura vira a média
     g["base_registrada"] = True
 
@@ -456,6 +459,117 @@ def _(g):
     g["web"].fila.append("/silenciar")
     ciclo(g)
     assert not g["silenciado"]
+
+
+def com_bot(g):
+    """Liga o bot e parte de um NORMAL ja relatado, como numa placa ligada ha tempo."""
+    g["bot"] = True
+    g["estado_anterior"] = g["NORMAL"]
+    g["motivo_anterior"] = "tudo em ordem"
+    g["telegram"].enviadas.clear()
+    return g["telegram"].enviadas
+
+
+@cenario("Telegram: alarme avisa uma vez; voltar ao NORMAL tambem avisa")
+def _(g):
+    enviadas = com_bot(g)
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g, vezes=3)
+    assert enviadas == ["🚨 ALARME: FUMACA/GAS"], enviadas
+    g["adc"].estado[g["PINO_MQ2"]] = 100
+    ciclo(g, vezes=10)
+    assert enviadas[-1] == "✅ NORMAL: tudo em ordem", enviadas
+
+
+@cenario("Telegram: o NORMAL da partida nao vira mensagem")
+def _(g):
+    com_bot(g)
+    g["estado_anterior"] = -1
+    ciclo(g)
+    assert g["telegram"].enviadas == [], g["telegram"].enviadas
+
+
+@cenario("Telegram: /status responde com as leituras")
+def _(g):
+    enviadas = com_bot(g)
+    g["climate"].temperatura = 31.5
+    g["telegram"].fila.append("/status")
+    ciclo(g)
+    assert len(enviadas) == 1 and enviadas[0].startswith("✅ NORMAL: tudo em ordem"), enviadas
+    assert "31.5 °C" in enviadas[0] and "desarmado" in enviadas[0], enviadas[0]
+
+
+@cenario("Telegram: /silenciar no alarme cala a sirene e confirma")
+def _(g):
+    enviadas = com_bot(g)
+    g["adc"].estado[g["PINO_MQ2"]] = 3000
+    ciclo(g)
+    g["telegram"].fila.append("/silenciar")
+    log = ciclo(g)
+    assert g["silenciado"] and "silenciado pelo Telegram" in log, log
+    assert not buzzer_ligado(g) and g["estado"] == g["ALARME"]
+    assert enviadas[-1].startswith("🔇 Sirene silenciada pelo Telegram"), enviadas
+
+
+@cenario("Telegram: /silenciar sem alarme so responde")
+def _(g):
+    enviadas = com_bot(g)
+    g["telegram"].fila.append("/silenciar")
+    ciclo(g)
+    assert not g["silenciado"] and enviadas == ["Nada para silenciar: o abrigo está em NORMAL."], enviadas
+
+
+@cenario("Telegram: /ajuda lista os comandos; comando desconhecido e avisado")
+def _(g):
+    enviadas = com_bot(g)
+    g["telegram"].fila.extend(["/ajuda", "/abrir"])
+    ciclo(g, vezes=2)
+    assert "/status" in enviadas[0] and "/silenciar" in enviadas[0], enviadas
+    assert enviadas[1] == "Não conheço /abrir. Mande /ajuda.", enviadas
+
+
+@cenario("Telegram: armar e desarmar pela digital avisam o dono")
+def _(g):
+    enviadas = com_bot(g)
+    g["finger"].fila.append(1)
+    ciclo(g)
+    assert g["armado"] and enviadas[-1].startswith("🔒 Abrigo armado pela digital 1"), enviadas
+    g["finger"].fila.append(1)
+    ciclo(g)
+    assert not g["armado"] and enviadas[-1] == "🔓 Abrigo desarmado pela digital 1.", enviadas
+    g["finger"].fila.append(-2)
+    ciclo(g)
+    assert "não cadastrada" in enviadas[-1], enviadas
+
+
+@cenario("Telegram: so aceita comandos do chat configurado, novos e sem @bot")
+def _(g):
+    bot = g["telegram"]
+    respostas = [
+        # 1a consulta (offset -1): o que chegou antes de ligar e descartado
+        {"ok": True, "result": [{"update_id": 10, "message": {"chat": {"id": 42}, "text": "/silenciar"}}]},
+        {"ok": True, "result": [
+            {"update_id": 11, "message": {"chat": {"id": 99}, "text": "/silenciar"}},   # outro chat
+            {"update_id": 12, "message": {"chat": {"id": 42}, "text": "oi"}},           # nao e comando
+            {"update_id": 13, "message": {"chat": {"id": 42}, "text": "/Status@aegis_bot agora"}},
+        ]},
+    ]
+    pedidos = []
+
+    def falso(metodo, dados):
+        pedidos.append(dict(dados))
+        return respostas.pop(0)
+
+    bot._pedir = falso
+    try:
+        assert bot.begin("123:abc", 42)
+        assert bot.command(0) == "", "comando antigo nao pode ser atendido"
+        assert bot.command(0) == "/status"
+        assert bot.command(60000) == "" and len(pedidos) == 2, "consultou antes do intervalo"
+        assert pedidos[0]["offset"] == -1 and pedidos[1]["offset"] == 11, pedidos
+    finally:
+        del bot._pedir
+        bot.begin("", "")
 
 
 def principal():

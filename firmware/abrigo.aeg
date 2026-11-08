@@ -20,6 +20,7 @@ scavenge time
 scavenge finger
 scavenge config
 scavenge web
+scavenge telegram
 
 // ------------------------------------------------------------------
 // Pinos — mapa completo em docs/hardware.md
@@ -93,6 +94,7 @@ law USAR_REDE = alive
 law WIFI_SSID = "Wokwi-GUEST"
 law WIFI_SENHA = ""
 law MQTT_BROKER = "broker.hivemq.com"
+law TELEGRAM_CONSULTA_MS = 15000 // de quanto em quanto tempo o bot busca comandos
 law PORTA_PAINEL = 80     // painel web: http://<ip da placa>/ (no PC vira 8080)
 
 // ------------------------------------------------------------------
@@ -104,6 +106,8 @@ supply usar_rede = config.get("usar_rede", USAR_REDE)
 supply wifi_ssid = config.get("wifi_ssid", WIFI_SSID)
 supply wifi_senha = config.get("wifi_senha", WIFI_SENHA)
 supply aquecimento_ms = config.get("aquecimento_ms", AQUECIMENTO_MS)
+supply telegram_token = config.get("telegram_token", "")  // do @BotFather
+supply telegram_chat = config.get("telegram_chat", "")    // firmware/telegram_chat.py descobre
 
 // ------------------------------------------------------------------
 // Estados
@@ -112,6 +116,7 @@ law NORMAL = 0
 law ATENCAO = 1
 law ALARME = 2
 stash NOMES_ESTADO = ["NORMAL", "ATENCAO", "ALARME"]
+stash EMOJI_ESTADO = ["✅", "⚠️", "🚨"]
 
 // ------------------------------------------------------------------
 // Memória do firmware
@@ -169,6 +174,7 @@ supply rede = dead          // WiFi conectado
 supply mqtt_ok = dead
 supply painel = dead        // servidor do painel web aberto
 supply ip = ""
+supply bot = dead           // bot do Telegram com token e chat configurados
 supply ultima_telemetria = 0
 supply ultima_depuracao = 0
 supply pagina = 0
@@ -268,9 +274,15 @@ survivor vigia_digital {
             log_entry("[AEGIS] desarmado pela digital", digital)
         }
         bipar(1)
+        checkpoint (armado) {
+            avisar("🔒 Abrigo armado pela digital " + paper(digital) + ". Saia em " + paper(ration(ATRASO_SAIDA_MS / 1000)) + " s.")
+        } fallback {
+            avisar("🔓 Abrigo desarmado pela digital " + paper(digital) + ".")
+        }
     } fallback checkpoint (digital == -2) {
         log_entry("[AEGIS] digital nao reconhecida")
         bipar(3)
+        avisar("❓ Alguém tentou uma digital não cadastrada.")
     }
 }
 
@@ -358,14 +370,77 @@ survivor vigia_botao {
     }
 }
 
-// Comandos remotos. Por enquanto só o botão "Silenciar sirene" do painel,
-// que tem o mesmo efeito do botão físico.
+// Mensagem para o dono pelo bot; sem bot configurado, não faz nada
+mission avisar(paper texto) {
+    checkpoint (bot) {
+        telegram.send(texto)
+    }
+}
+
+// Resumo das leituras, para o /status do Telegram
+mission resumo() -> paper {
+    supply texto = EMOJI_ESTADO[estado] + " " + NOMES_ESTADO[estado] + ": " + motivo
+    checkpoint (temperatura < 0.0) {
+        texto = texto + "\n🌡 temperatura: sem leitura"
+    } fallback {
+        texto = texto + "\n🌡 " + paper(temperatura) + " °C   💧 " + paper(ration(umidade)) + " %"
+    }
+    texto = texto + "\n🌧 chuva " + paper(chuva_pct) + " %   🌱 solo " + paper(solo_pct) + " %"
+    checkpoint (aquecido) {
+        texto = (texto + "\n🔥 fumaça " + paper(media_fumaca - base_fumaca) + "/" + paper(MARGEM_FUMACA) +
+            "   ar " + paper(media_ar - base_ar) + "/" + paper(MARGEM_AR))
+    } fallback {
+        texto = texto + "\n🔥 sensores de gás aquecendo"
+    }
+    checkpoint (distancia_agua < 0.0) {
+        texto = texto + "\n🌊 água: sensor sem eco"
+    } fallback {
+        texto = texto + "\n🌊 água a " + paper(ration(distancia_agua)) + " cm do sensor"
+    }
+    checkpoint (armado) {
+        texto = texto + "\n🔒 armado"
+    } fallback {
+        texto = texto + "\n🔓 desarmado"
+    }
+    checkpoint (rele_ligado) {
+        texto = texto + " · exaustor ligado"
+    }
+    checkpoint (silenciado) {
+        texto = texto + " · sirene silenciada"
+    }
+    checkpoint (painel) {
+        texto = texto + "\nPainel: " + web.url(ip)
+    }
+    extract texto
+}
+
+// Comandos remotos: o botão "Silenciar sirene" do painel e as mensagens do
+// bot (/status, /silenciar, /ajuda). O runtime só entrega comandos do chat
+// configurado no config.json. Desarmar continua exigindo a digital.
 mission atender_comandos() {
+    supply origem = "painel"
     supply cmd = web.command()
-    checkpoint (cmd == "/silenciar" && estado == ALARME && !silenciado) {
-        silenciado = alive
-        silencio_desde = time.ms()
-        log_entry("[AEGIS] buzzer silenciado pelo painel")
+    checkpoint (cmd == "" && bot) {
+        origem = "Telegram"
+        cmd = telegram.command(TELEGRAM_CONSULTA_MS)
+    }
+    checkpoint (cmd == "/silenciar") {
+        checkpoint (estado == ALARME && !silenciado) {
+            silenciado = alive
+            silencio_desde = time.ms()
+            log_entry("[AEGIS] buzzer silenciado pelo", origem)
+            avisar("🔇 Sirene silenciada pelo " + origem + " por " + paper(ration(SILENCIO_MS / 1000)) +
+                " s. O alarme continua: " + motivo)
+        } fallback checkpoint (origem == "Telegram") {
+            avisar("Nada para silenciar: o abrigo está em " + NOMES_ESTADO[estado] + ".")
+        }
+    } fallback checkpoint (cmd == "/status") {
+        avisar(resumo())
+    } fallback checkpoint (cmd == "/start" || cmd == "/ajuda" || cmd == "/help") {
+        avisar("🛡 AEGIS - comandos:\n/status - leituras de agora\n/silenciar - cala a sirene por " +
+            paper(ration(SILENCIO_MS / 1000)) + " s\n/ajuda - esta lista")
+    } fallback checkpoint (cmd != "") {
+        avisar("Não conheço " + cmd + ". Mande /ajuda.")
     }
 }
 
@@ -466,7 +541,7 @@ mission acionar_rele() {
     }
 }
 
-// Avisa no serial e pela rede só quando algo muda
+// Avisa no serial, no MQTT e no Telegram só quando algo muda
 mission relatar() {
     checkpoint (estado != estado_anterior || motivo != motivo_anterior) {
         log_entry("[AEGIS] estado:", NOMES_ESTADO[estado], "-", motivo)
@@ -475,6 +550,9 @@ mission relatar() {
         }
         checkpoint (mqtt_ok) {
             mqtt.publish("aegis/alerta", NOMES_ESTADO[estado] + ": " + motivo)
+        }
+        checkpoint (!(estado_anterior == -1 && estado == NORMAL)) {
+            avisar(EMOJI_ESTADO[estado] + " " + NOMES_ESTADO[estado] + ": " + motivo)
         }
         estado_anterior = estado
         motivo_anterior = motivo
@@ -614,7 +692,7 @@ mission leituras_json() -> paper {
         ",\"mudo\":" + paper(ration(silenciado)) +
         ",\"aquecido\":" + paper(ration(aquecido)) +
         ",\"mqtt\":" + paper(ration(mqtt_ok)) +
-        ",\"bot\":0" +
+        ",\"bot\":" + paper(ration(bot)) +
         ",\"ligado_s\":" + paper(ration(time.since(inicio) / 1000)) + "}")
 }
 
@@ -701,9 +779,15 @@ chronicle {
         ip = wifi.ip()
         mqtt_ok = mqtt.connect(MQTT_BROKER)
         painel = web.start(PORTA_PAINEL)
+        bot = telegram.begin(telegram_token, telegram_chat)
         log_entry("[AEGIS] online em", ip)
         checkpoint (painel) {
             log_entry("[AEGIS] painel web:", web.url(ip))
+        }
+        checkpoint (bot) {
+            log_entry("[AEGIS] bot do Telegram ativo")
+            avisar("🛡 AEGIS ligado e vigiando.\nPainel na rede de casa: " + web.url(ip) +
+                "\nMande /ajuda para ver os comandos.")
         }
         // mostra o endereço do painel na tela por 3 s
         display.clear()
