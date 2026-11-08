@@ -1,21 +1,256 @@
-<!-- Cena 03a (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 03a — análise léxica e sintática, com um exemplo de verdade:
+     a linha 7 do exemplo de referência atravessa o compilador.
+     V  visão geral: três câmaras (léxica, sintática, geração);
+     L  dentro da léxica: o scanner varre a linha e cada lexema cai como
+        token (dados reais do lexer.js, com linha:coluna); 29 e 25;
+     S  na sintática: a pilha de chamadas desce pelas funções do parser.js
+        (descendente recursivo) e a AST real da linha cresce de cima para baixo. -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .c03a-camara { width: 440px; height: 260px; border: 2px solid rgba(200, 184, 138, 0.45); border-radius: 10px;
+      background: rgba(17, 22, 16, 0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+    .c03a-camara .n { font-family: "League Gothic", sans-serif; font-size: 90px; color: #4b5545; line-height: 1; }
+    .c03a-camara .t { font-family: "League Gothic", sans-serif; font-size: 50px; letter-spacing: 0.06em; color: #ede4cc; text-transform: uppercase; }
+    .c03a-seta { height: 4px; background: rgba(200, 184, 138, 0.45); }
+    #c03a-js { left: 460px; top: 230px; width: 1000px; text-align: center; font-size: 34px; }
+    #c03a-js b { color: #a8d04a; }
+    .c03a-io { font-family: "JetBrains Mono", monospace; font-size: 36px; color: #c8b88a; }
+
+    #c03a-fonte { left: 0; top: 1520px; width: 1920px; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 48px; color: #ede4cc; white-space: pre; }
+    #c03a-scan { top: 1508px; height: 80px; border: 3px solid #a8d04a; border-radius: 6px; background: rgba(168, 208, 74, 0.12); box-shadow: 0 0 24px rgba(168, 208, 74, 0.5); }
+    #c03a-regex { left: 0; top: 1410px; width: 1920px; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 30px; color: #c8b88a; }
+    .c03a-tok { top: 1760px; height: 104px; padding: 10px 0; border: 2px solid rgba(168, 208, 74, 0.6); border-radius: 8px;
+      background: rgba(168, 208, 74, 0.08); text-align: center; }
+    .c03a-tok .lx { font-family: "JetBrains Mono", monospace; font-size: 32px; color: #ede4cc; line-height: 1.2; }
+    .c03a-tok .tp { font-family: "JetBrains Mono", monospace; font-size: 15px; color: #c8b88a; margin-top: 6px; }
+    .c03a-tok .lc { font-family: "JetBrains Mono", monospace; font-size: 15px; color: #6f7a66; margin-top: 2px; }
+    .c03a-tok.kw { border-color: #a8d04a; background: rgba(168, 208, 74, 0.18); }
+    .c03a-tok.kw .lx { color: #a8d04a; font-weight: 700; }
+    #c03a-munch { left: 1330px; top: 1250px; width: 480px; padding: 18px 22px; border: 2px dashed rgba(200, 184, 138, 0.5); border-radius: 8px; }
+    #c03a-munch .linha { display: flex; align-items: center; gap: 12px; font-family: "JetBrains Mono", monospace; font-size: 30px; margin: 6px 0; }
+    #c03a-munch .ch { padding: 4px 12px; border: 2px solid; border-radius: 6px; }
+    .c03a-conta { top: 1960px; width: 700px; text-align: center; }
+    .c03a-conta .v { font-size: 170px; line-height: 1; }
+    .c03a-conta .r { font-size: 26px; margin-top: 6px; }
+
+    #c03a-fita { left: 0; top: 2800px; width: 1920px; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 32px; color: rgba(237, 228, 204, 0.55); white-space: pre; }
+    #c03a-olho { top: 2788px; height: 58px; border: 3px solid #f0b545; border-radius: 6px; }
+    #c03a-olho-r { top: 2752px; font-family: "JetBrains Mono", monospace; font-size: 18px; color: #f0b545; white-space: nowrap; }
+    #c03a-pilha-r { left: 150px; top: 2885px; font-size: 22px; }
+    .c03a-quadro { left: 150px; width: 480px; height: 44px; padding: 0 18px; display: flex; align-items: center;
+      border-left: 4px solid #a8d04a; background: rgba(168, 208, 74, 0.1); font-family: "JetBrains Mono", monospace; font-size: 24px; color: #ede4cc; }
+    #c03a-regra { left: 760px; top: 2885px; width: 1060px; padding: 16px 22px; border: 2px solid rgba(200, 184, 138, 0.45); border-radius: 8px; background: rgba(17, 22, 16, 0.95); }
+    #c03a-regra .ebnf { font-family: "JetBrains Mono", monospace; font-size: 26px; color: #ede4cc; white-space: nowrap; }
+    #c03a-regra .fn { font-family: "JetBrains Mono", monospace; font-size: 26px; color: #9fd1c9; margin-top: 8px; }
+    #c03a-arvore { left: 0; top: 0; width: 1920px; height: 4000px; overflow: visible; }
+    .c03a-no { width: 250px; height: 76px; margin-left: -125px; margin-top: -38px; border: 2px solid #a8d04a; border-radius: 8px;
+      background: #111610; text-align: center; padding-top: 8px; }
+    .c03a-no .tp { font-family: "JetBrains Mono", monospace; font-size: 17px; color: #c8b88a; }
+    .c03a-no .rt { font-size: 28px; color: #ede4cc; font-weight: 700; }
+    #c03a-26 { left: 1380px; top: 2850px; width: 440px; text-align: right; }
+    #c03a-26 .v { font-size: 150px; line-height: 1; }
   </style>
+
   <div id="root" data-composition-id="c03a" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">03a</span><span id="c03a-cap"></span></div>
-      <div id="c03a-titulo" class="prov display"></div>
+      <div id="c03a-palco" class="palco">
+        <div class="grade-mundo"></div>
+
+        <!-- V: visão geral -->
+        <div id="c03a-js">compilador escrito em <b>JavaScript</b> · <b>0</b> dependências</div>
+        <div class="c03a-io" style="left: 40px; top: 505px">.aeg</div>
+        <div class="c03a-seta" style="left: 125px; top: 528px; width: 70px"></div>
+        <div class="c03a-camara" id="c03a-c1" style="left: 200px; top: 400px"><div class="n">1</div><div class="t">léxica</div></div>
+        <div class="c03a-seta" id="c03a-s1" style="left: 640px; top: 528px; width: 40px"></div>
+        <div class="c03a-camara" id="c03a-c2" style="left: 680px; top: 400px"><div class="n">2</div><div class="t">sintática</div></div>
+        <div class="c03a-seta" id="c03a-s2" style="left: 1120px; top: 528px; width: 40px"></div>
+        <div class="c03a-camara" id="c03a-c3" style="left: 1160px; top: 400px"><div class="n">3</div><div class="t">geração</div></div>
+        <div class="c03a-seta" style="left: 1600px; top: 528px; width: 70px"></div>
+        <div class="c03a-io" style="left: 1690px; top: 505px">.py</div>
+
+        <!-- L: dentro da léxica -->
+        <div id="c03a-regex">/[a-zA-Z_][a-zA-Z0-9_]*/y · /\d+/y · símbolos do maior para o menor</div>
+        <div id="c03a-munch">
+          <div class="rotulo" style="margin-bottom: 8px">maximal munch</div>
+          <div class="linha"><span class="ch" style="border-color: #a8d04a; color: #a8d04a">&gt;=</span><span class="verde">um token ✓</span></div>
+          <div class="linha"><span class="ch" style="border-color: #6f7a66; color: #6f7a66">&gt;</span><span class="ch" style="border-color: #6f7a66; color: #6f7a66">=</span><span class="alarme">dois ✗</span></div>
+        </div>
+        <div id="c03a-fonte"></div>
+        <div id="c03a-scan"></div>
+        <div id="c03a-toks"></div>
+        <div class="c03a-conta" style="left: 260px"><div class="v display verde" id="c03a-29">00</div><div class="r rotulo">palavras reservadas</div></div>
+        <div class="c03a-conta" style="left: 960px"><div class="v display caqui" id="c03a-25">00</div><div class="r rotulo">símbolos</div></div>
+
+        <!-- S: na sintática -->
+        <div id="c03a-fita"></div>
+        <div id="c03a-olho"></div>
+        <div id="c03a-olho-r">LL(1): 1 token à frente</div>
+        <div id="c03a-pilha-r" class="rotulo">pilha de chamadas</div>
+        <div id="c03a-pilha"></div>
+        <div id="c03a-regra">
+          <div class="ebnf"><span class="verde">decl_variavel</span> = "supply", IDENT, "=", expressao ;</div>
+          <div class="fn">→ function declVariavel() { … expressao() … }</div>
+        </div>
+        <svg id="c03a-arvore" viewBox="0 0 1920 4000"></svg>
+        <div id="c03a-nos"></div>
+        <div id="c03a-26"><div class="v display verde" id="c03a-26-v">00</div><div class="rotulo">tipos de nó na AST</div></div>
+      </div>
+
+      <div class="cap" id="c03a-cap"><span class="ponto"></span><span class="num">03</span><span>O compilador</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("03a", p, n);
+    const FIM = AEGIS.dur("03a");
+    const D = window.AEGIS_DADOS.perimetro;
+    const P = "#c03a-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["03a"].titulo;
-    document.querySelector("#c03a-cap").textContent = titulo;
-    document.querySelector("#c03a-titulo").textContent = titulo;
-    tl.fromTo("#c03a-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    const CH = 28.8;                                    // 48px * 0,6 (JetBrains Mono)
+
+    // ---- dados reais: a linha 7 e os seus tokens ---------------------------
+    const toks = D.tokensLinha;
+    const col0 = toks[0].c;
+    const texto = toks.reduce((s, t) => s.padEnd(t.c - col0, " ") + t.lx, "");
+    document.querySelector("#c03a-fonte").textContent = texto;
+    const X0 = 960 - (texto.length * CH) / 2;
+    const xFonte = (t) => X0 + (t.c - col0) * CH;
+
+    // fichas com largura calculada (sem medir o DOM): lexema 32px, tipo 15px
+    const larg = toks.map((t) => Math.max(t.lx.length * 19.2, t.tipo.length * 9) + 30);
+    const GAP = 12;
+    const total = larg.reduce((a, b) => a + b, 0) + GAP * (toks.length - 1);
+    let x = 960 - total / 2;
+    const RESERVADA = ["declaracao", "controle", "hardware", "tipo", "evento_io", "tratamento_erro"];
+    const caixa = document.querySelector("#c03a-toks");
+    const xFicha = toks.map((t, i) => {
+      const xi = x;
+      caixa.insertAdjacentHTML("beforeend",
+        `<div class="c03a-tok ${RESERVADA.includes(t.cat) ? "kw" : ""}" style="position:absolute;left:${xi}px;width:${larg[i]}px">` +
+        `<div class="lx">${t.lx}</div><div class="tp">${t.tipo}</div><div class="lc">${t.l}:${t.c}</div></div>`);
+      x += larg[i] + GAP;
+      return xi;
+    });
+    const fichas = gsap.utils.toArray(".c03a-tok");
+
+    tl.set(["#c03a-regex", "#c03a-munch", "#c03a-scan", ".c03a-conta", "#c03a-regra", "#c03a-olho", "#c03a-olho-r", "#c03a-pilha-r", "#c03a-26"], { opacity: 0 }, 0);
+    tl.set(fichas, { opacity: 0 }, 0);
+
+    // ---- V: visão geral (entra do mergulho nas linhas) ----------------------
+    AEGIS.cameraEm(tl, P, 0, { x: 920, y: 520, s: 2.8 });
+    cam(0, { x: 920, y: 500, s: 1 }, 1.3, "expo.out");
+    tl.fromTo("#c03a-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    const js = AEGIS.palavras("#c03a-js");
+    tl.fromTo(js, { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.15, stagger: 0.09 }, W("JavaScript") - 0.4);
+    ["#c03a-c1", "#c03a-c2", "#c03a-c3"].forEach((c, i) => {
+      tl.fromTo(c, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 0.4 + i * 0.12);
+      tl.to(`${c}`, { borderColor: "#a8d04a", boxShadow: "0 0 40px rgba(168,208,74,0.35)", duration: 0.2 }, W("três") + i * 0.18);
+      tl.to(`${c} .n`, { color: "#a8d04a", duration: 0.2 }, W("três") + i * 0.18);
+    });
+
+    // ---- mergulho na câmara 1: vira o mundo da análise léxica ---------------
+    const tDentro = W("A análise") - 0.2;
+    cam(tDentro - 0.55, { x: 420, y: 530, s: 6 }, 0.55, "power3.in");
+    AEGIS.cameraEm(tl, P, tDentro, { x: 960, y: 1700, s: 2.2 });
+    cam(tDentro, { x: 960, y: 1680, s: 1.0 }, 1.0, "expo.out");
+    tl.fromTo("#c03a-fonte", { opacity: 0 }, { opacity: 1, duration: 0.3 }, tDentro);
+    tl.to("#c03a-regex", { opacity: 1, duration: 0.4 }, W("expressões"));
+
+    // scanner: cresce caractere a caractere sobre cada lexema e "solta" o token
+    const t0 = W("expressões") + 0.2, t1 = W("tokens");
+    const passo = (t1 - t0) / toks.length;
+    tl.set("#c03a-scan", { opacity: 1, x: xFonte(toks[0]) - 6, width: CH + 12 }, t0);
+    toks.forEach((t, i) => {
+      const ti = t0 + i * passo;
+      tl.set("#c03a-scan", { x: xFonte(t) - 6, width: CH + 12 }, ti);
+      tl.to("#c03a-scan", { width: t.lx.length * CH + 12, duration: passo * 0.55, ease: `steps(${t.lx.length})` }, ti);
+      tl.fromTo(fichas[i], { opacity: 0, x: xFonte(t) - xFicha[i], y: -240, scale: 0.7 },
+        { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.45, ease: "expo.out" }, ti + passo * 0.6);
+    });
+    tl.to("#c03a-scan", { opacity: 0, duration: 0.2 }, t1 + 0.2);
+    tl.fromTo("#c03a-munch", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.6)" }, W("maximal") - 0.1);
+    tl.to("#c03a-munch", { opacity: 0, duration: 0.3 }, W("São") );
+    cam(W("São") - 0.2, { x: 960, y: 1830, s: 0.95 }, 0.8);
+    tl.to(".c03a-conta", { opacity: 1, duration: 0.3, stagger: 2.2 }, W("29") - 0.2);
+    AEGIS.placar(tl, "#c03a-29", W("29") - 0.1, "29", 1.0);
+    AEGIS.placar(tl, "#c03a-25", W("25") - 0.1, "25", 1.0);
+    // linha e coluna: as posições acendem
+    tl.to(".c03a-tok .lc", { color: "#f0b545", duration: 0.15, stagger: 0.04 }, W("linha") - 0.1);
+    tl.to(".c03a-conta", { opacity: 0, duration: 0.3 }, W("linha") - 0.3);
+    cam(W("linha") - 0.2, { x: 960, y: 1720, s: 1.12 }, 0.8);
+
+    // ---- S: desce para a análise sintática ----------------------------------
+    const tS = W("A análise", 2) - 0.3;
+    cam(tS, { x: 960, y: 3240, s: 1.0 }, 1.0, "power3.inOut");
+    document.querySelector("#c03a-fita").textContent = texto;
+    tl.fromTo("#c03a-fita", { opacity: 0, y: -80 }, { opacity: 1, y: 0, duration: 0.6, ease: "expo.out" }, tS + 0.2);
+    tl.to("#c03a-pilha-r", { opacity: 1, duration: 0.3 }, W("descendente"));
+
+    // pilha: as funções reais do parser.js, uma chamando a outra
+    const funcoes = ["programa()", "declaracao()", "declVariavel()", "expressao()", "ou()", "e()", "igualdade()",
+      "comparacao()", "adicao()", "multiplicacao()", "unario()", "chamada()", "primario()"];
+    const pilha = document.querySelector("#c03a-pilha");
+    funcoes.forEach((f, i) => pilha.insertAdjacentHTML("beforeend",
+      `<div class="c03a-quadro" style="position:absolute;top:${2930 + i * 46}px;margin-left:${Math.min(i, 6) * 6}px">${f}</div>`));
+    const quadros = gsap.utils.toArray(".c03a-quadro");
+    tl.set(quadros, { opacity: 0 }, 0);
+    const tPilha = W("descendente") + 0.1;
+    quadros.forEach((q, i) => {
+      const tq = i < 3 ? tPilha + i * 0.3 : W("Cada regra") + (i - 3) * 0.13;
+      tl.fromTo(q, { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.25, ease: "expo.out", immediateRender: false }, tq);
+    });
+
+    // olho LL(1): um token à frente, andando pela fita
+    const xF = (i) => 960 - (texto.length * 19.2) / 2 + (toks[i].c - col0) * 19.2;
+    tl.set(["#c03a-olho", "#c03a-olho-r"], { opacity: 1 }, W("LL(1)") - 0.3);
+    [0, 1, 2, 3, 5, 7, 9].forEach((i, k) => {
+      tl.set("#c03a-olho", { x: xF(i) - 6, width: toks[i].lx.length * 19.2 + 12 }, W("LL(1)") - 0.3 + k * 0.45);
+      tl.set("#c03a-olho-r", { x: xF(i) - 6 }, W("LL(1)") - 0.3 + k * 0.45);
+    });
+    tl.fromTo("#c03a-regra", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.45, ease: "expo.out", immediateRender: false }, W("gramática") - 0.1);
+    tl.fromTo("#c03a-regra .fn", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35 }, W("função") - 0.1);
+
+    // AST real da linha, crescendo de cima para baixo
+    const nos = [
+      ["DeclaracaoVariavel", "detected", 1290, 3150, null],
+      ["Chamada", "", 1290, 3280, 0],
+      ["Membro", "read", 1010, 3410, 1],
+      ["Chamada", "", 1570, 3410, 1],
+      ["Identificador", "gpio", 1010, 3540, 2],
+      ["Identificador", "radio", 1430, 3540, 3],
+      ["Identificador", "MOTION_PIN", 1710, 3540, 3],
+    ];
+    const svg = document.querySelector("#c03a-arvore");
+    const caixaNos = document.querySelector("#c03a-nos");
+    nos.forEach(([tipo, rot, nx, ny, pai], i) => {
+      if (pai !== null) {
+        const [, , px, py] = nos[pai];
+        svg.insertAdjacentHTML("beforeend",
+          `<line class="c03a-aresta" x1="${px}" y1="${py + 38}" x2="${nx}" y2="${ny - 38}" stroke="#a8d04a" stroke-width="3" stroke-opacity="0.7"/>`);
+      }
+      caixaNos.insertAdjacentHTML("beforeend",
+        `<div class="c03a-no" style="position:absolute;left:${nx}px;top:${ny}px"><div class="tp">${tipo}</div><div class="rt">${rot || "( )"}</div></div>`);
+    });
+    const caixas = gsap.utils.toArray(".c03a-no");
+    const arestas = gsap.utils.toArray(".c03a-aresta");
+    tl.set(caixas, { opacity: 0 }, 0);
+    tl.set(arestas, { opacity: 0 }, 0);
+    const tArv = W("árvore") - 0.4;
+    caixas.forEach((c, i) => {
+      const tn = tArv + i * 0.22;
+      if (i > 0) tl.fromTo(arestas[i - 1], { opacity: 0 }, { opacity: 1, duration: 0.2, immediateRender: false }, tn - 0.08);
+      tl.fromTo(c, { opacity: 0, scale: 0.4, y: -30 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "back.out(1.8)", immediateRender: false }, tn);
+    });
+    cam(W("árvore") - 0.6, { x: 1080, y: 3260, s: 0.98 }, 1.0);
+    tl.to("#c03a-regra", { opacity: 0, duration: 0.3 }, W("26") - 0.4);
+    tl.to("#c03a-26", { opacity: 1, duration: 0.3 }, W("26") - 0.2);
+    AEGIS.placar(tl, "#c03a-26-v", W("26") - 0.15, "26", 1.0);
+
+    // ---- saída: chicote para baixo ------------------------------------------
+    cam(FIM - 0.55, { x: 1080, y: 4300, s: 1.0 }, 0.55, "power3.in");
+    tl.to(".cena", { opacity: 0, duration: 0.2, ease: "power2.in" }, FIM - 0.25);
     window.__timelines["c03a"] = tl;
   </script>
 </template>
