@@ -370,12 +370,35 @@ O resultado é uma AST com 26 tipos de nó, divididos em estrutura do
 programa, comandos e expressões. Todo nó guarda linha e coluna, o que
 permite apontar erros com precisão.
 
-\pendente{recuperação de erros em modo pânico: o que \texttt{sincronizar()}
-descarta e por que sincronizar em qualquer separador}
+Os erros sintáticos são tratados com recuperação em modo
+pânico~\cite{aho2007}. Ao encontrar um erro, o analisador registra a
+mensagem com linha e coluna e lança uma exceção, capturada pelo laço do
+bloco (ou do programa) que estava sendo lido. A função
+\texttt{sincronizar()} então descarta \textit{tokens} até um ponto seguro:
+um separador de comando (quebra de linha ou ponto e vírgula), que ela
+consome, ou um \texttt{\}}, o início de uma declaração ou o fim do
+arquivo, que ela deixa para o laço tratar. A análise continua no comando
+seguinte, e uma mesma compilação reporta vários erros. Sincronizar em
+qualquer separador, e não só antes de uma palavra reservada, é importante
+porque um comando quebrado costuma ser seguido de um comando comum, como
+a chamada \texttt{hide(500)}, que não começa com palavra reservada; parar
+apenas nas palavras reservadas descartaria esse comando correto e
+esconderia os erros que viessem nele.
 
-\pendente{decisões de projeto: palavras chamáveis (\texttt{broadcast},
-\texttt{hide}) como identificadores contextuais; encadeamento
-\texttt{fallback checkpoint} gerando \texttt{elif}}
+Duas decisões de projeto merecem registro. A primeira:
+\texttt{broadcast}, \texttt{silence}, \texttt{hide}, \texttt{log\_entry} e
+os nomes de tipo são palavras reservadas para o analisador léxico, mas os
+programas os usam como funções, como em \texttt{broadcast(radio(PINO))}.
+A gramática os aceita como \textit{identificadores contextuais}: na regra
+\texttt{primario}, eles produzem o mesmo nó que um identificador
+produziria, e fora de uma expressão continuam reservados
+(\texttt{supply hide = 1} é rejeitado). A segunda: o nó
+\texttt{Checkpoint} guarda no campo \texttt{outros} outro nó
+\texttt{Checkpoint}, quando há \texttt{fallback checkpoint}; uma lista de
+comandos, quando há um \texttt{fallback} final; ou nada. Assim, a cadeia
+\texttt{checkpoint}/\texttt{fallback checkpoint}/\texttt{fallback} fica
+representada sem ambiguidade, e o gerador a traduz diretamente para
+\texttt{if}/\texttt{elif}/\texttt{else}.
 
 \figura{Figura: AST desenhada pela interface web\\
 (sugestão: print da aba ``AST'' para o exemplo do checkpoint)}
