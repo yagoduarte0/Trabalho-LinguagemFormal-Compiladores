@@ -1,21 +1,110 @@
-<!-- Cena 05a (provisória): só o título do bloco, até a animação ficar pronta -->
+<!-- Cena 05a — os sensores. Tour de câmera pelos sete sensores no abrigo
+     em corte; depois o ciclo de 0,5 s (CICLO_MS) e o pior risco decidindo
+     o estado: NORMAL, ATENÇÃO, ALARME (LEDs e telas reais do OLED). -->
 <template>
   <style>
-    #root { position: absolute; inset: 0; }
-    #root .prov { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 120px; }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #c05a-mundo { left: 160px; top: 1300px; }
+    .c05a-anel, .c05a-nome { position: absolute; }
+    .c05a-anel { width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 5px solid #a8d04a; box-shadow: 0 0 30px #a8d04a; }
+    .c05a-nome { font-family: "League Gothic", sans-serif; font-size: 64px; letter-spacing: 0.04em; color: #ede4cc; text-transform: uppercase; white-space: nowrap;
+      padding: 4px 18px; background: rgba(10, 13, 10, 0.85); border-left: 5px solid #a8d04a; }
+    #c05a-risco { position: absolute; right: 70px; top: 190px; width: 420px; padding: 22px 24px; border: 2px solid rgba(200, 184, 138, 0.4); border-radius: 10px; background: rgba(13, 17, 12, 0.94); }
+    #c05a-risco .linha { display: flex; align-items: center; gap: 12px; margin: 9px 0; font-size: 22px; color: #ede4cc; }
+    #c05a-risco .linha span { width: 170px; }
+    #c05a-risco .barra-r { flex: 1; height: 14px; border-radius: 7px; background: rgba(237, 228, 204, 0.12); overflow: hidden; }
+    #c05a-risco .barra-r i { display: block; height: 100%; width: 100%; background: #a8d04a; transform-origin: 0% 50%; }
+    #c05a-estado { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(200, 184, 138, 0.3); }
+    #c05a-estado .v { font-family: "League Gothic", sans-serif; font-size: 96px; letter-spacing: 0.06em; line-height: 1; }
+    #c05a-ciclo { position: absolute; right: 70px; top: 760px; width: 420px; text-align: right; }
   </style>
+
   <div id="root" data-composition-id="c05a" data-width="1920" data-height="1080">
     <div class="cena">
-      <div class="cap"><span class="ponto"></span><span class="num">05a</span><span id="c05a-cap"></span></div>
-      <div id="c05a-titulo" class="prov display"></div>
+      <div id="c05a-palco" class="palco">
+        <div class="grade-mundo"></div>
+        <div id="c05a-mundo"></div>
+        <div id="c05a-marcas"></div>
+      </div>
+      <div id="c05a-risco">
+        <div class="rotulo" style="margin-bottom: 10px">risco de cada sentinela</div>
+        <div id="c05a-linhas"></div>
+        <div id="c05a-estado"><div class="rotulo">pior risco → estado</div><div class="v verde" id="c05a-est">NORMAL</div></div>
+      </div>
+      <div id="c05a-ciclo" class="rotulo">ciclo a cada <b class="verde">500 ms</b></div>
+      <div class="cap" id="c05a-cap"><span class="ponto"></span><span class="num">05</span><span>Os sensores</span></div>
     </div>
   </div>
+
   <script>
+    const W = (p, n) => AEGIS.w("05a", p, n);
+    const FIM = AEGIS.dur("05a");
+    const P = "#c05a-palco";
     const tl = gsap.timeline({ paused: true });
-    const titulo = window.AEGIS_TEMPOS["05a"].titulo;
-    document.querySelector("#c05a-cap").textContent = titulo;
-    document.querySelector("#c05a-titulo").textContent = titulo;
-    tl.fromTo("#c05a-titulo", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.1);
+    const cam = (t, q, d, e) => AEGIS.camera(tl, P, t, q, d, e);
+    const MX = 160, MY = 1300, S = AEGIS.SENSORES;
+    document.querySelector("#c05a-mundo").innerHTML = AEGIS.abrigo("c05a-a");
+    tl.set(".c05a-a-tag", { opacity: 0 }, 0);
+    tl.set("#c05a-a-led-verde", { attr: { fill: "#A8D04A" } }, 0);
+    tl.set("#c05a-a-oled", { attr: { href: "assets/img/oled-normal.png" } }, 0);
+
+    // tour: um anel e o nome em cada sensor, na palavra dita
+    const tour = [["pir", "presença"], ["agua", "nível"], ["mq2", "fumaça"], ["mq135", "qualidade"],
+      ["dht", "temperatura"], ["chuva", "chuva"], ["solo", "umidade"]];
+    const marcas = document.querySelector("#c05a-marcas");
+    tour.forEach(([id]) => {
+      const s = S[id];
+      marcas.insertAdjacentHTML("beforeend",
+        `<div class="c05a-anel" id="c05a-anel-${id}" style="left:${MX + s.x}px;top:${MY + s.y}px"></div>` +
+        `<div class="c05a-nome" id="c05a-nome-${id}" style="left:${MX + s.x + 80}px;top:${MY + s.y - 40}px">${s.nome}</div>`);
+    });
+    tl.set([".c05a-anel", ".c05a-nome"], { opacity: 0 }, 0);
+
+    AEGIS.cameraEm(tl, P, 0, { x: MX + 900, y: MY + 470, s: 0.98 });
+    tl.fromTo("#c05a-cap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 0.3);
+    tl.set(["#c05a-risco", "#c05a-ciclo"], { opacity: 0 }, 0);
+    cam(W("sete") - 0.4, { x: MX + 900, y: MY + 520, s: 0.86 }, 0.9);
+
+    tour.forEach(([id, palavra], i) => {
+      const s = S[id], t = W(palavra);
+      const x = MX + s.x + (id === "agua" ? -120 : 140), y = MY + s.y + 40;
+      cam(t - 0.32, { x, y, s: id === "solo" ? 1.5 : 1.7 }, 0.42, "power3.inOut");
+      tl.fromTo(`#c05a-anel-${id}`, { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.6, duration: 0.9, ease: "power2.out", immediateRender: false }, t - 0.05);
+      tl.fromTo(`#c05a-nome-${id}`, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.3, ease: "expo.out", immediateRender: false }, t - 0.05);
+      tl.to(`#c05a-nome-${id}`, { opacity: 0, duration: 0.2 }, (i + 1 < tour.length ? W(tour[i + 1][1]) : W("A cada")) - 0.3);
+      tl.to(`#c05a-a-tag-${id}`, { opacity: 1, duration: 0.2 }, t);
+    });
+
+    // ciclo de 0,5 s: o ESP32 pulsa e os fios correm
+    const tCiclo = W("A cada") - 0.2;
+    cam(tCiclo - 0.1, { x: MX + 1150, y: MY + 500, s: 0.8 }, 0.9, "power3.inOut");
+    tl.to(".c05a-a-tag", { opacity: 0, duration: 0.3 }, tCiclo);
+    tl.to(".c05a-a-fio", { strokeOpacity: 0.9, duration: 0.3 }, tCiclo);
+    tl.fromTo(".c05a-a-fio", { strokeDashoffset: 0 }, { strokeDashoffset: 160, duration: FIM - tCiclo, ease: "none" }, tCiclo);
+    for (let t = W("meio"); t < FIM - 0.4; t += 0.5) {
+      tl.fromTo("#c05a-a-pulso", { opacity: 0.9, attr: { r: 40 } }, { opacity: 0, attr: { r: 130 }, duration: 0.45, ease: "power2.out", immediateRender: false }, t);
+    }
+    tl.fromTo("#c05a-ciclo", { opacity: 0 }, { opacity: 1, duration: 0.3, immediateRender: false }, W("meio"));
+
+    // o pior risco decide
+    const nomes = ["presença", "água", "fumaça", "ar", "calor", "chuva", "solo"];
+    const linhas = document.querySelector("#c05a-linhas");
+    nomes.forEach((n, i) => linhas.insertAdjacentHTML("beforeend",
+      `<div class="linha"><span>${n}</span><div class="barra-r"><i id="c05a-r${i}"></i></div></div>`));
+    tl.set(".barra-r i", { scaleX: 0.12 }, 0);
+    tl.fromTo("#c05a-risco", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out", immediateRender: false }, W("pior") - 0.3);
+    const cor = { NORMAL: "#a8d04a", ATENCAO: "#f0b545", ALARME: "#ef5a4c" };
+    const estado = (t, nome, rotulo, led, oled, barras) => {
+      tl.set("#c05a-est", { textContent: rotulo, color: cor[nome] }, t);
+      tl.fromTo("#c05a-est", { scale: 1.25 }, { scale: 1, duration: 0.3, ease: "back.out(2)", immediateRender: false }, t);
+      ["verde", "amar", "verm"].forEach((l) => tl.set(`#c05a-a-led-${l}`, { attr: { fill: l === led ? { verde: "#A8D04A", amar: "#F0B545", verm: "#EF5A4C" }[l] : { verde: "#2a3a1c", amar: "#3a3018", verm: "#3a1c18" }[l] } }, t));
+      tl.set("#c05a-a-oled", { attr: { href: `assets/img/${oled}.png` } }, t);
+      barras.forEach(([i, v, c]) => tl.to(`#c05a-r${i}`, { scaleX: v, backgroundColor: c, duration: 0.35, ease: "power2.out" }, t - 0.2));
+    };
+    estado(W("normal"), "NORMAL", "NORMAL", "verde", "oled-normal", [[0, 0.15, cor.NORMAL], [5, 0.2, cor.NORMAL]]);
+    estado(W("atenção"), "ATENCAO", "ATENÇÃO", "amar", "oled-atencao-chovendo", [[5, 0.55, cor.ATENCAO]]);
+    estado(W("alarme"), "ALARME", "ALARME", "verm", "oled-alarme-fumaca", [[2, 1, cor.ALARME]]);
+    tl.to(".cena", { opacity: 0, duration: 0.3, ease: "power2.in" }, FIM - 0.35);
     window.__timelines["c05a"] = tl;
   </script>
 </template>
