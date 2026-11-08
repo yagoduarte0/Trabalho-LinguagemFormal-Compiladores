@@ -158,7 +158,14 @@ alvos de compilação (seção 3): o mesmo programa roda no PC e no ESP32.
 | `display.rect(x, y, l, a, cheio)` / `display.bar(x, y, l, a, valor, maximo)` | retângulo; barra de nível proporcional | `framebuf.fill_rect` |
 | `display.icon(nome, x, y)` / `display.logo(x, y)` | ícone 8×8 (`termometro`, `gota`, `chuva`, `solo`, `fogo`, `onda`, `cadeado`, `aberto`, `wifi`, `mudo`, `ventoinha`); escudo AEGIS 32×32 | bitmaps embutidos no runtime |
 | `wifi.connect(ssid, senha, limite_ms)` | conecta ao WiFi, devolve `alive`/`dead` | `network.WLAN` |
+| `wifi.ip()` | IP da placa na rede (vazio sem conexão) | `WLAN.ipconfig` |
 | `mqtt.connect(broker)` / `mqtt.publish(topico, msg)` / `mqtt.connected()` | avisos pela rede; falhas nunca derrubam o programa | `umqtt.simple` |
+| `config.get(chave, padrao)` | ajuste lido do `config.json` da placa (fora do Git); sem a chave, devolve o padrão | `json` |
+| `web.start(porta)` / `web.url(ip)` | abre o servidor do painel; endereço para mostrar ao usuário | `socket` não bloqueante |
+| `web.waiting()` / `web.serve(json)` | há um navegador pedindo `/dados`? responde com as leituras | atende um pedido por ciclo |
+| `web.command()` | próximo comando do painel (`"/silenciar"`) ou `""` | botão da página |
+| `telegram.begin(token, chat)` / `telegram.send(texto)` | liga o bot; manda mensagem ao dono | API HTTPS do Telegram, `requests` |
+| `telegram.command(intervalo_ms)` | próximo comando do dono (`"/status"`...) ou `""`; consulta no máximo a cada `intervalo_ms` | `getUpdates`, só o chat configurado |
 | `time.ms()` / `time.since(marca)` | relógio em milissegundos | `time.ticks_ms` / `ticks_diff` |
 | `finger.begin(rx, tx)` / `finger.present()` | liga o leitor de digital, diz se ele respondeu | AS608 na UART2, 57600 bps |
 | `finger.scan()` | número da digital encostada, `-1` sem dedo, `-2` desconhecida | sem o leitor, lê linhas `dedo <n>` da serial |

@@ -208,11 +208,25 @@ Se o `esptool` ficar em `Connecting....` e não passar disso, segure o botão **
 gravação começar. Em versões antigas do esptool os comandos se escrevem `erase_flash` e
 `write_flash`.
 
-**Enviar o firmware** (toda vez que mudar o `abrigo.aeg`):
+**Ajustes da placa** (uma vez): copie o modelo e preencha o WiFi de casa e, se for usar, o bot do
+Telegram (seção 8). O `config.json` fica fora do Git e é gravado na placa junto com o `main.py`.
+
+```sh
+cp config.exemplo.json config.json     # depois edite wifi_ssid, wifi_senha, telegram_token
+```
+
+**Enviar o firmware** (toda vez que mudar o `abrigo.aeg`). O comando recompila e grava o `main.py`
+e o `config.json`:
+
+```sh
+./wokwi.sh placa                       # porta automática; outra: AEGIS_PORTA=$PORTA ./wokwi.sh placa
+```
+
+Equivale a:
 
 ```sh
 node ../compilador/aegisc.js abrigo.aeg --alvo esp32 -o main.py
-.venv/bin/mpremote connect $PORTA fs cp main.py :main.py + reset
+.venv/bin/mpremote connect $PORTA fs cp main.py :main.py + fs cp config.json :config.json + reset
 ```
 
 **Ver o serial:** `.venv/bin/mpremote connect $PORTA repl`. Para sair, `Ctrl+]`. Para parar o
@@ -288,11 +302,56 @@ para imitar o sensor real: girar para a direita derruba a tensão, como a água 
 molhado. Para o solo, molhado é o sensor dentro de um copo d'água, até a linha marcada na placa.
 Coloque esses valores em `CHUVA_SECO`/`CHUVA_MOLHADO` e `SOLO_SECO`/`SOLO_MOLHADO`.
 
-## 8. Rede e segurança
+## 8. Rede, painel web e Telegram
 
-- A rede é opcional (`law USAR_REDE`). Sem WiFi, o abrigo funciona igual e só não manda MQTT.
-- Na placa real, troque `WIFI_SSID` e `WIFI_SENHA` pela sua rede. **Não faça commit da senha
-  real.** Antes do commit, volte para `"Wokwi-GUEST"` ou mantenha a alteração só local.
+- A rede é opcional. Sem WiFi, o abrigo funciona igual e só perde os canais remotos (painel,
+  Telegram e MQTT). Para desligar, use `"usar_rede": false` no `config.json`.
+- O WiFi da placa real vem do `firmware/config.json` (`wifi_ssid`, `wifi_senha`), que **fica fora do
+  Git**. Sem o arquivo, valem os padrões do `abrigo.aeg` (a rede `Wokwi-GUEST`). O mesmo arquivo
+  guarda o `aquecimento_ms` dos MQ reais (180000, ou seja, 3 min).
+
+### Painel web (rede local)
+
+Ao conectar, o serial mostra `painel web: http://<ip>/`, e o OLED mostra o IP por 3 s. Abra esse
+endereço no celular ou no computador **ligado à mesma rede**. A página é servida pelo próprio ESP32,
+não usa internet e se atualiza a cada 2 s. Ela mostra o estado, o motivo, todas as leituras,
+armado/desarmado, exaustor e sirene. O botão **Silenciar sirene** faz o mesmo que o botão físico.
+
+| Onde | Endereço |
+|---|---|
+| Placa real | `http://<ip mostrado no OLED>/` |
+| Wokwi (`./firmware/wokwi.sh enviar`) | `http://localhost:8180` (redirecionado pelo `wokwi.toml`) |
+| Mac (`./firmware/wokwi.sh pc`) | `http://localhost:8080` |
+
+O painel não tem senha, então qualquer pessoa na rede de casa pode abri-lo. Por isso ele só lê e
+silencia: não arma nem desarma o abrigo.
+
+### Bot do Telegram
+
+1. No Telegram, fale com o **@BotFather**, mande `/newbot`, escolha nome e usuário e copie o token.
+2. Coloque o token em `"telegram_token"` no `firmware/config.json`.
+3. Mande `/start` para o seu bot e rode `python3 firmware/telegram_chat.py`. O script descobre o seu
+   chat, grava em `"telegram_chat"` e manda uma mensagem de teste.
+4. Grave na placa (`./firmware/wokwi.sh placa`) ou no Wokwi (`./firmware/wokwi.sh enviar`).
+
+O bot avisa quando o estado muda (🚨 ALARME, ⚠️ ATENÇÃO, ✅ NORMAL), quando a digital arma ou
+desarma e quando alguém tenta uma digital não cadastrada. Comandos:
+
+| Comando | O que faz |
+|---|---|
+| `/status` | leituras de agora e o link do painel |
+| `/silenciar` | cala a sirene por `SILENCIO_MS` (o alarme continua) |
+| `/ajuda` | lista os comandos |
+
+- Só o chat gravado no `config.json` é atendido. Mensagens de outras pessoas são ignoradas, e os
+  comandos enviados enquanto a placa estava desligada são descartados ao ligar.
+- O bot procura comandos a cada `TELEGRAM_CONSULTA_MS` (15 s). No ESP32 cada consulta HTTPS segura o
+  laço por 1 a 2 s, por isso o intervalo não é menor.
+- **Desarmar continua exigindo a digital**: quem tiver o celular não consegue desligar o alarme de
+  intruso.
+- O token do bot dá controle total sobre ele. Se ele vazar, gere outro no @BotFather (`/revoke`).
+
+### MQTT
 - Os avisos vão para os tópicos `aegis/alerta` (mudanças de estado) e `aegis/telemetria` (leituras a
   cada `TELEMETRIA_MS`). Para acompanhar de outro computador:
   `mosquitto_sub -h broker.hivemq.com -t 'aegis/#' -v`.

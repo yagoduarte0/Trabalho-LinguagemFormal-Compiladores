@@ -3,7 +3,7 @@
 Documento de continuidade: registra o que está pronto, o que falta e as decisões
 já tomadas. Serve para retomar o trabalho sem precisar reconstruir o contexto.
 
-Última atualização: 24/10/2026
+Última atualização: 08/11/2026
 
 ---
 
@@ -54,6 +54,10 @@ repositório. Ficou decidido unificar tudo sob o nome AEGIS.
 | `firmware/cadastro.aeg` | Cadastro das digitais no leitor AS608 |
 | `firmware/teste_digital.py` | Testa o driver do AS608 contra um leitor falso |
 | `firmware/touchid.swift` | Touch ID do Mac no lugar do AS608 durante a simulação |
+| `firmware/rodar_pc.py` | Roda o firmware no Mac com eventos pelo teclado (painel em `localhost:8080`) |
+| `firmware/telegram_chat.py` | Descobre o chat do dono e grava no `config.json` |
+| `firmware/config.exemplo.json` | Modelo do `config.json` (WiFi, token do bot, aquecimento) |
+| `compilador/painel.js` | Página do painel web, embutida pelo gerador no runtime |
 | `firmware/diagram.json`, `wokwi.toml`, `wokwi.sh` | Simulação no Wokwi (VS Code) |
 | `docs/` | Documentação da linguagem e do hardware |
 | `pitch/` | Apresentação animada em Manim |
@@ -79,12 +83,12 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 - **Dois alvos de compilação** — `simulado` (PC) e `esp32` (MicroPython), com a
   mesma API de hardware; `global` emitido automaticamente; expressões podem
   quebrar linha dentro de parênteses e colchetes.
-- **Testes** — 80 casos das três fases, todos passando.
+- **Testes** — 84 casos das três fases, todos passando.
 - **Firmware do abrigo** — `abrigo.aeg` com sete sensores (inclui chuva e solo,
   que juntos dão o alerta de risco de deslizamento), relé do exaustor e modo
   armado/desarmado pela digital (AS608 na placa, Touch ID do Mac no Wokwi), máquina de estados
   NORMAL/ATENÇÃO/ALARME, sirene, botão de silenciar, OLED e MQTT opcional.
-  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 29 cenários
+  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 41 cenários
   passando no PC e circuito testado no simulador Wokwi.
 - **Guia de hardware** — `docs/hardware.md` com lista de compras, mapa de
   pinos, divisores de tensão, calibração e gravação no ESP32 real.
@@ -97,14 +101,13 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 
 ### Pendente
 
-**Próximos passos do firmware (parado em 24/10/2026):**
+**Rede (concluída em 08/11/2026):** painel web local servido pelo ESP32 (porta 80; no Wokwi em
+`localhost:8180`), bot do Telegram com alertas e os comandos `/status`, `/silenciar` e `/ajuda`, e
+ajustes da placa (WiFi, token, aquecimento) no `firmware/config.json`, fora do Git. Configuração em
+`docs/hardware.md` §8. Falta testar com a placa real e com o bot criado no @BotFather.
 
-- **F — Alerta no Telegram**, com o token do bot num arquivo de configuração no ESP32 que fica
-  fora do Git.
-- **G — Painel web local**: o ESP32 serve uma página com as leituras na rede de casa, sem
-  depender de internet. No Wokwi, a porta é exposta pelo `wokwi.toml`.
-- **Conferir no Wokwi** a digital pelo Touch ID (`./firmware/wokwi.sh dedo`) e a tela nova.
-- Depois disso, o **artigo IEEE** (`artigo/`).
+- **Conferir no Wokwi** a digital pelo Touch ID (`./firmware/wokwi.sh dedo`), o painel e o bot.
+- **Artigo IEEE** (`artigo/`) e **vídeo de demonstração**.
 
 1. **Revisar o pitch com os dados da sua pesquisa** — os números de mercado
    estão em `pitch/aegis/data.py` com a fonte ao lado; trocar lá não exige
@@ -136,6 +139,8 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 | Firmware | Escrito em AEGIS e compilado para MicroPython; o mesmo `.aeg` roda no PC e no ESP32 |
 | Hardware | Lista do pitch + OLED SSD1306 I2C + botão; sensores analógicos só no ADC1 |
 | Rede | Local primeiro; MQTT (`broker.hivemq.com`, público) só para demonstração |
+| Segredos | WiFi e token do bot só no `firmware/config.json` (ignorado pelo Git); modelo em `config.exemplo.json` |
+| Comandos remotos | Painel e Telegram só leem e silenciam; **desarmar exige a digital**; o bot só atende o chat do dono |
 | Simulação | Wokwi no VS Code com MicroPython 1.29.0; o MQ-135 vira um potenciômetro |
 
 ---
