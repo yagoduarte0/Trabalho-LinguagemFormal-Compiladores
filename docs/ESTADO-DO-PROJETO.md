@@ -105,7 +105,7 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 **Rede (concluída em 08/11/2026):** painel web local servido pelo ESP32 (porta 80; no Wokwi em
 `localhost:8180`), bot do Telegram com alertas e os comandos `/status`, `/silenciar` e `/ajuda`, e
 ajustes da placa (WiFi, token, aquecimento) no `firmware/config.json`, fora do Git. Configuração em
-`docs/hardware.md` §8. Falta testar com a placa real e com o bot criado no @BotFather.
+`docs/hardware.md` §8. Bot @Aegis_IoT_bot criado e testado no Mac e no Wokwi.
 
 - **Wokwi conferido em 08/11**: WiFi, painel e bot funcionando. Falta gravar o firmware novo na placa real.
 - **Artigo IEEE** (`artigo/`) e **vídeo de demonstração**, para 09/11/2026: o que falta, os dados

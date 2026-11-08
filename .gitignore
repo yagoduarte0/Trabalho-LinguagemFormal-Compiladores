@@ -22,4 +22,4 @@ firmware/.venv/
 firmware/config.json
 
 # Gravações e edição do vídeo de demonstração (pesadas; roteiro em docs/video/)
-video/
+/video/
