@@ -24,6 +24,7 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{listings}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta}
@@ -589,14 +590,71 @@ todos passam. O circuito também foi executado no simulador
 Wokwi~\cite{wokwi}, com as mesmas ligações da placa real, de modo que o
 mesmo programa gerado roda nos dois.
 
-\pendente{tabela com o tamanho de cada módulo do compilador (linhas de
-código) e o número de testes por fase}
+A Tabela~\ref{tab:modulos} resume o tamanho de cada módulo e a
+distribuição dos testes. A maior parte do gerador não é o emissor de
+código, e sim os dois runtimes que ele embute no programa gerado (as
+bibliotecas de sensores, rede, painel e Telegram); o emissor em si é
+menor que o analisador sintático.
 
-\pendente{exemplo de mensagem de erro com linha e coluna, mostrando a
-recuperação em modo pânico reportando mais de um erro}
+\begin{table}[htbp]
+\caption{Tamanho dos módulos do compilador e testes por fase}
+\label{tab:modulos}
+\centering
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Módulo & Papel & Linhas & Testes \\
+\midrule
+\texttt{lexer.js}      & análise léxica             & 311  & 30 \\
+\texttt{parser.js}     & análise sintática          & 610  & 26 \\
+\texttt{gerador.js}    & emissor de Python          & 286  & \multirow{2}{*}{28} \\
+                       & runtimes simulado e ESP32  & 906  & \\
+\texttt{compilador.js} & orquestra as fases         & 129  & --- \\
+\texttt{aegisc.js}     & linha de comando           & 78   & --- \\
+\midrule
+\multicolumn{2}{@{}l}{Total (sem os testes)}        & 2320 & 84 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\pendente{custo do protótipo (R\$ 235,92 a base; R\$ 408,42 com OLED,
-biometria e sensores extras), se o professor quiser a parte de hardware}
+Para avaliar a recuperação de erros, o programa da
+Fig.~\ref{fig:erro} tem dois erros propositais: falta o parêntese que
+fecha a condição na linha~2, e a atribuição da linha~8 não tem valor. O
+compilador relata os dois numa só execução, cada um com linha e coluna, e
+não gera código. Após o primeiro erro, o modo pânico descarta tokens até o
+início do comando seguinte e retoma a análise; sem isso, a falta do
+parêntese desalinharia o resto do arquivo e produziria uma cascata de
+erros falsos, ou o compilador pararia no primeiro.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[language=AEGIS,numbers=left,numberstyle=\tiny]
+mission ration_status(vital estoque) -> status {
+    checkpoint (estoque <= 10.0 {
+        extract dead
+    }
+    extract alive
+
+chronicle {
+    supply agua =
+    log_entry(agua)
+}
+\end{lstlisting}
+\vspace{-2mm}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,frame=none,numbers=none]
+$ node aegisc.js estoque.aeg
+estoque.aeg:2:33: erro sintático: esperava ')' para
+  fechar a condição
+estoque.aeg:8:19: erro sintático: esperava uma
+  expressão, encontrei o fim da linha
+aegisc: 2 erro(s), nada foi gerado
+\end{lstlisting}
+\caption{Programa com dois erros sintáticos e a saída do compilador.}
+\label{fig:erro}
+\end{figure}
+
+O protótipo físico custa R\$~235,92 na configuração básica (ESP32,
+sensores de presença, nível, gases e temperatura, buzzer e LEDs) e
+R\$~408,42 com o display, o leitor biométrico, os sensores de chuva e de
+solo e o relé, orçados em lojas nacionais.
 
 % =====================================================================
 \section{Conclusão}
