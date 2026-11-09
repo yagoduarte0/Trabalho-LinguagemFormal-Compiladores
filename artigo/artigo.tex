@@ -9,6 +9,10 @@
 %   \pendente{...}  -> trecho que ainda falta escrever (sai em vermelho)
 %   \figura{...}    -> lugar reservado para uma imagem sua; troque por
 %                      \includegraphics quando subir o arquivo
+%   \imagem{arq}{opções}{texto} -> usa figuras/arq se o arquivo existir;
+%                      se não, mostra o quadro de \figura com o texto
+%
+% No Overleaf, suba também a pasta figuras/ junto com este arquivo.
 % =====================================================================
 \documentclass[conference]{IEEEtran}
 
@@ -29,6 +33,8 @@
 \newcommand{\pendente}[1]{\textcolor{red}{[\textbf{PENDENTE:} #1]}}
 \newcommand{\figura}[1]{%
   \fbox{\parbox[c][3.2cm][c]{0.92\columnwidth}{\centering\small\textit{#1}}}}
+\newcommand{\imagem}[3]{%
+  \IfFileExists{figuras/#1}{\includegraphics[#2]{figuras/#1}}{\figura{#3}}}
 
 % ---------- realce de código AEGIS -----------------------------------
 \lstdefinelanguage{AEGIS}{
@@ -461,7 +467,7 @@ prevê ficou fora do escopo deste trabalho.
 \section{Estudo de Caso: o Firmware do Abrigo}
 \label{sec:firmware}
 
-O firmware do abrigo (\texttt{abrigo.aeg}, cerca de 650 linhas) foi
+O firmware do abrigo (\texttt{abrigo.aeg}, 810 linhas) foi
 escrito inteiramente em AEGIS e compilado para MicroPython. Um ESP32 lê
 presença (PIR), nível da água (HC-SR04), fumaça (MQ-2), qualidade do ar
 (MQ-135), temperatura e umidade (DHT22), chuva e umidade do solo. Cada
@@ -472,8 +478,22 @@ também serve um painel web na rede local, avisa o dono por um bot do
 Telegram e publica as leituras por MQTT. O sistema funciona sem internet: a
 rede é só um canal a mais.
 
-\figura{Figura: diagrama do circuito no Wokwi ou foto da montagem\\
-(sugestão: print do firmware/diagram.json aberto no VS Code)}
+\begin{figure*}[htbp]
+\centering
+\imagem{sensores.jpg}{width=\textwidth}{Fotos dos sensores usados\\
+(figuras/sensores.jpg)}
+\caption{Sensores e módulos do protótipo.}
+\label{fig:sensores}
+\end{figure*}
+
+\begin{figure*}[htbp]
+\centering
+\imagem{wokwi.png}{width=\textwidth}{Circuito do abrigo rodando no Wokwi\\
+(figuras/wokwi.png)}
+\caption{O mesmo circuito simulado no Wokwi, executando o Python gerado
+pelo compilador.}
+\label{fig:wokwi}
+\end{figure*}
 
 \pendente{explicar a máquina de estados NORMAL/ATENÇÃO/ALARME e a
 prioridade dos riscos (função \texttt{avaliar})}
@@ -489,11 +509,25 @@ HTTP não bloqueante, um pedido por ciclo), bot do Telegram com
 \texttt{/status} e \texttt{/silenciar} restrito ao chat do dono, e o
 \texttt{config.json} fora do Git; nenhum canal remoto desarma o abrigo}
 
-\figura{Figura: painel web no celular durante um alarme\\
-(sugestão: print de http://localhost:8180 com o Wokwi em alarme)}
+\begin{figure*}[htbp]
+\centering
+\imagem{painel-celular.png}{height=8.5cm}{Painel web}\hfill
+\imagem{telegram.png}{height=8.5cm}{Conversa com o bot do Telegram\\
+(figuras/telegram.png)}
+\caption{Canais remotos. À esquerda, o painel web servido pelo próprio
+ESP32 durante um alarme de fumaça; à direita, as mensagens do bot do
+Telegram.}
+\label{fig:canais}
+\end{figure*}
 
-\figura{Figura: telas do display OLED\\
-(arquivo pronto em docs/img/telas-oled.png)}
+\begin{figure}[htbp]
+\centering
+\imagem{telas-oled.png}{width=\columnwidth}{Telas do display OLED}
+\caption{Telas do display OLED: abertura, atenção por chuva, alarme de
+fumaça (com o cabeçalho piscando), estado normal com o tempo de saída e
+alarme de deslizamento.}
+\label{fig:oled}
+\end{figure}
 
 % =====================================================================
 \section{Testes e Resultados}
