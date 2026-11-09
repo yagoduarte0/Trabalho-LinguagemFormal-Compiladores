@@ -476,7 +476,9 @@ NORMAL, ATENÇÃO ou ALARME; a cada ciclo, o pior risco decide os LEDs, a
 sirene, o display OLED e o relé do exaustor. Se houver WiFi, o ESP32
 também serve um painel web na rede local, avisa o dono por um bot do
 Telegram e publica as leituras por MQTT. O sistema funciona sem internet: a
-rede é só um canal a mais.
+rede é só um canal a mais. A Fig.~\ref{fig:sensores} mostra os módulos
+usados e a Fig.~\ref{fig:wokwi}, o mesmo circuito montado no simulador, com
+cada sensor no cômodo em que ficaria no abrigo.
 
 \begin{figure*}[htbp]
 \centering
@@ -491,23 +493,69 @@ rede é só um canal a mais.
 \imagem{wokwi.png}{width=\textwidth}{Circuito do abrigo rodando no Wokwi\\
 (figuras/wokwi.png)}
 \caption{O mesmo circuito simulado no Wokwi, executando o Python gerado
-pelo compilador.}
+pelo compilador. Os sensores sem modelo no simulador (MQ-135, chuva e
+umidade do solo) são representados por potenciômetros.}
 \label{fig:wokwi}
 \end{figure*}
 
-\pendente{explicar a máquina de estados NORMAL/ATENÇÃO/ALARME e a
-prioridade dos riscos (função \texttt{avaliar})}
+\subsection{Estados e prioridade dos riscos}
 
-\pendente{tratamento dos sensores MQ: média móvel, base de ar limpo
-adaptativa e histerese; risco de deslizamento combinando chuva e solo}
+O programa principal (\texttt{chronicle}) repete um ciclo de 500~ms: chama
+as tarefas dos sensores, decide o estado, aciona as saídas e atende os
+canais remotos. A decisão fica na função \texttt{avaliar}, que parte de
+NORMAL e percorre os riscos do menos ao mais grave: presença durante o
+tempo de entrada, ar ruim, chuva, solo encharcado e calor levam a
+ATENÇÃO; temperatura alta, intruso, enchente, deslizamento e fumaça levam a
+ALARME. Como cada \texttt{checkpoint} verdadeiro sobrescreve o anterior, o
+último vence, e a ordem do código é a própria tabela de prioridade: com
+chuva e fumaça ao mesmo tempo, o motivo exibido é a fumaça. O estado
+acende um dos três LEDs e define o cabeçalho do display
+(Fig.~\ref{fig:oled}); em ALARME, a sirene alterna entre 1,5 e 2,5~kHz, e
+um botão físico a cala por 60~s sem apagar o alarme. No caso de fumaça, o
+relé liga um exaustor, que continua ligado por mais 30~s depois que a
+leitura volta ao normal.
 
-\pendente{arme e desarme pela digital (AS608 na placa, Touch ID do Mac
-na simulação)}
+\subsection{Tratamento das leituras}
 
-\pendente{canais remotos: painel web servido pelo próprio ESP32 (servidor
-HTTP não bloqueante, um pedido por ciclo), bot do Telegram com
-\texttt{/status} e \texttt{/silenciar} restrito ao chat do dono, e o
-\texttt{config.json} fora do Git; nenhum canal remoto desarma o abrigo}
+Os sensores de gás MQ-2 e MQ-135 variam com a temperatura, a umidade e o
+envelhecimento, e dão leituras falsas nos primeiros minutos, enquanto o
+elemento aquece. Por isso o firmware não usa um limiar fixo. Cada leitura
+passa por uma média móvel exponencial, em que a amostra nova pesa 1/4;
+durante o aquecimento, a média vira a \emph{base de ar limpo}. Depois
+disso, o alarme dispara quando a média passa da base mais uma margem e só
+desliga 300 unidades abaixo dela, uma histerese que evita o liga-desliga
+perto do limite. Enquanto não há risco, a base acompanha lentamente a
+média (1/64 da diferença por ciclo), o que absorve a deriva do sensor sem
+absorver um vazamento, que sobe muito mais rápido. Os sensores de chuva e
+de umidade do solo usam o mesmo filtro e são convertidos em porcentagem
+de molhado a partir de leituras de calibração. O risco de deslizamento
+combina os dois: só é declarado com chuva e solo acima de 85\,\%, mas,
+depois que a chuva para, só é retirado quando o solo seca, porque é nesse
+intervalo que a encosta continua instável.
+
+\subsection{Arme e desarme pela digital}
+
+O leitor biométrico AS608 arma e desarma o abrigo. Uma digital cadastrada
+alterna o estado e abre um tempo de saída de 30~s; armado, o sensor de
+presença deixa de ser ignorado e abre um tempo de entrada de 15~s, ao fim
+do qual, sem digital, o estado vira ALARME por intruso. Uma digital
+desconhecida gera três bipes e um aviso. No alvo simulado, o mesmo método
+\texttt{finger.scan()} é atendido pelo Touch ID do Mac, de modo que o
+fluxo pode ser testado sem o leitor.
+
+\subsection{Canais remotos}
+
+Com WiFi, o ESP32 serve um painel web na rede local
+(Fig.~\ref{fig:canais}). O servidor HTTP é não bloqueante e atende no
+máximo um pedido por ciclo, para que a rede nunca atrase a leitura dos
+sensores; a página busca as leituras em JSON a cada 2~s e oferece o
+botão de silenciar. O bot do Telegram avisa o dono a cada mudança de
+estado, arme, desarme ou digital desconhecida, e aceita os comandos
+\texttt{/status}, \texttt{/silenciar} e \texttt{/ajuda}; só o chat do dono
+é atendido. A senha do WiFi e o token do bot ficam num
+\texttt{config.json} gravado na placa e mantido fora do repositório.
+Por decisão de projeto, nenhum canal remoto desarma o abrigo: silenciar a
+sirene é permitido, mas desarmar exige a digital.
 
 \begin{figure*}[htbp]
 \centering
