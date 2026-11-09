@@ -39,8 +39,8 @@ rode de novo.
 | 3 | **MQ-2** (sensor de gás) → arraste o ppm para o máximo | **ALARME: FUMAÇA/GÁS**: LED vermelho, sirene de dois tons, LED azul do exaustor (relé), alerta no Telegram |
 | 4 | botão **silenciar** (vermelho) ou "Silenciar sirene" no painel | a sirene cala por 60 s; o LED vermelho e o alarme continuam |
 | 5 | MQ-2 de volta ao mínimo | volta a NORMAL; o exaustor segue ligado mais 30 s e depois desliga |
-| 6 | **chuva** (potenciômetro do telhado) girado para a direita | **ATENÇÃO: chovendo** |
-| 7 | **solo** (potenciômetro do quintal) todo para a direita, com a chuva ainda alta | **ALARME: DESLIZAMENTO**. Baixe a chuva: o alarme continua até o solo secar (gire o solo de volta) |
+| 6 | **chuva** (potenciômetro do telhado) girado para a esquerda | **ATENÇÃO: chovendo** |
+| 7 | **solo** (potenciômetro do quintal) todo para a esquerda, com a chuva ainda alta | **ALARME: DESLIZAMENTO**. Baixe a chuva: o alarme continua até o solo secar (gire o solo de volta para a direita) |
 | 8 | **HC-SR04** → distância abaixo de **20 cm** | **ALARME: ENCHENTE**. Volte para 100 cm |
 | 9 | Telegram: mande `/status`, depois `/ajuda` | o bot responde com as leituras e a lista de comandos (até ~20 s no Wokwi) |
 | 10 | Terminal: `./firmware/wokwi.sh dedo` e o dedo no Touch ID | **armado pela digital** (bipe, mensagem 🔒). Depois de 30 s, clique no **PIR** → ATENÇÃO "use a digital"; espere 15 s → **ALARME: INTRUSO**. `./firmware/wokwi.sh dedo` de novo desarma |
