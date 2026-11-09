@@ -59,8 +59,9 @@ function principal() {
 
   if (resultado.erros.length > 0) {
     const nome = path.basename(opcoes.fonte);
+    const fase = { lexica: "léxico", sintatica: "sintático" }[resultado.fase] || resultado.fase;
     for (const e of resultado.erros) {
-      console.error(`${nome}:${e.linha}:${e.coluna}: erro ${resultado.fase}: ${e.msg}`);
+      console.error(`${nome}:${e.linha}:${e.coluna}: erro ${fase}: ${e.msg}`);
     }
     console.error(`aegisc: ${resultado.erros.length} erro(s), nada foi gerado`);
     return 1;
