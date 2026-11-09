@@ -13,9 +13,13 @@ As cenas (compositions/cNN.html) são escritas à mão e usam os tempos das
 palavras para que cada elemento apareça quando a narração o cita.
 
 Uso (na raiz do repositório):  python3 docs/video/edicao/montar.py
+
+Versão com voz de IA (voz_ia.py), montada numa cópia do projeto:
+  AEGIS_NARRACAO=video/narracao/ia AEGIS_PROJETO=video/animacao-ia python3 docs/video/edicao/montar.py
 """
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -23,8 +27,8 @@ import unicodedata
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[3]
-LIMPO = RAIZ / "video/narracao/limpo"
-PROJETO = RAIZ / "docs/video/animacao"
+LIMPO = RAIZ / os.environ.get("AEGIS_NARRACAO", "video/narracao/limpo")
+PROJETO = RAIZ / os.environ.get("AEGIS_PROJETO", "docs/video/animacao")
 MODELOS = RAIZ / "docs/video/edicao/modelos"   # fora do projeto: o HyperFrames leria como outra raiz
 
 # (bloco, título da cena) na ordem do roteiro
@@ -151,7 +155,9 @@ def main():
         shutil.copyfile(wav, PROJETO / f"assets/narracao/{bloco}.wav")
         dur_voz = duracao(wav)
         slot = round(ANTES + dur_voz + DEPOIS, 2)
-        palavras = corrigir(bloco, palavras_do_whisper(LIMPO / f"{bloco}.json"))
+        palavras = palavras_do_whisper(LIMPO / f"{bloco}.json")
+        if "voz" not in json.loads((LIMPO / f"{bloco}.json").read_text()):
+            palavras = corrigir(bloco, palavras)   # a voz de IA já lê o texto corrigido
 
         # tempos no relógio da cena (0 = começo da cena)
         tempos[bloco] = {
