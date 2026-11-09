@@ -1,0 +1,103 @@
+<!doctype html>
+<!-- Logo do AEGIS: o radar da abertura do vídeo (docs/video/animacao/compositions/c01.html)
+     parado no meio da varredura. ?v=bot -> quadrado 640 para a foto do bot (o Telegram corta
+     em círculo); ?v=completa -> radar + AEGIS + frase, para slides e documentos.
+     Renderizar: node docs/marca/render.mjs -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=League+Gothic&family=Inter:wght@500&display=block" rel="stylesheet">
+<style>
+  :root { --bg:#0a0d0a; --khaki:#c8b88a; --khaki-d:#7e7350; --verde:#a8d04a; --creme:#ede4cc; }
+  html, body { margin:0; background:var(--bg); }
+  .quadro { position:relative; overflow:hidden;
+    background: radial-gradient(circle at 50% 50%, #141c12 0%, #0d110c 45%, var(--bg) 75%); }
+  .bot { width:640px; height:640px; }
+  .bot svg { position:absolute; inset:0; width:640px; height:640px; }
+  .completa { width:1600px; height:900px; }
+  .completa svg { position:absolute; left:550px; top:70px; width:500px; height:500px; }
+  .marca { position:absolute; left:0; right:0; top:560px; text-align:center;
+    font-family:"League Gothic",sans-serif; font-size:200px; line-height:1; letter-spacing:.1em;
+    color:var(--creme); padding-left:.1em; text-shadow:0 0 40px rgba(168,208,74,.12); }
+  .tag { position:absolute; left:0; right:0; top:790px; display:flex; justify-content:center;
+    align-items:center; gap:28px; font-family:"Inter",sans-serif; font-weight:500; font-size:26px;
+    letter-spacing:.34em; text-transform:uppercase; color:var(--verde); }
+  .tag i { display:block; width:90px; height:2px; background:#3e5622; }
+  /* grade de fundo, como a do vídeo */
+  .grade { position:absolute; inset:0; opacity:.5;
+    background-image: linear-gradient(rgba(168,208,74,.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(168,208,74,.05) 1px, transparent 1px);
+    background-size: 40px 40px; background-position: center;
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0, transparent 70%); }
+</style>
+</head>
+<body>
+<div id="quadro" class="quadro">
+  <div class="grade"></div>
+  <svg id="radar" viewBox="-320 -320 640 640"></svg>
+  <div class="marca" hidden>AEGIS</div>
+  <div class="tag" hidden><i></i>proteção para abrigos residenciais<i></i></div>
+</div>
+<script>
+  const v = new URLSearchParams(location.search).get("v") || "bot";
+  const q = document.getElementById("quadro");
+  q.classList.add(v);
+  if (v === "completa") document.querySelectorAll("[hidden]").forEach(e => e.hidden = false);
+
+  const R = 262, BORDA = 35;           // raio do aro; onde a varredura parou (graus, horário a partir da direita)
+  const rad = g => g * Math.PI / 180;
+  const pt = (r, g) => [r * Math.cos(rad(g)), r * Math.sin(rad(g))];
+  const f = n => n.toFixed(1);
+  let s = `
+  <defs>
+    <filter id="brilho" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="sombra" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity=".75"/>
+    </filter>
+    <radialGradient id="miolo" cx="0" cy="0" r="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0a0d0a" stop-opacity=".92"/>
+      <stop offset=".8" stop-color="#0a0d0a" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#0a0d0a" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="dentro"><circle r="${R - 3}"/></clipPath>
+  </defs>
+  <circle r="${R + 10}" fill="none" stroke="#a8d04a" stroke-opacity=".08" stroke-width="18"/>
+  <circle r="${R}" fill="rgba(168,208,74,.05)"/>`;
+  // rastro: degradê cônico contínuo atrás da borda (a varredura gira no sentido horário);
+  // no CSS o 0deg do cônico é para cima, então a borda fica em 90 + BORDA
+  const fimC = 90 + BORDA, ABERTURA = 85;
+  s += `<foreignObject x="${-R}" y="${-R}" width="${2 * R}" height="${2 * R}">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;border-radius:50%;
+      background:conic-gradient(from ${fimC - ABERTURA}deg, rgba(168,208,74,0) 0deg, rgba(168,208,74,.05) ${ABERTURA * .45}deg,
+        rgba(168,208,74,.16) ${ABERTURA * .7}deg, rgba(168,208,74,.34) ${ABERTURA * .88}deg, rgba(168,208,74,.55) ${ABERTURA}deg,
+        rgba(168,208,74,0) ${ABERTURA + .3}deg);
+      -webkit-mask-image:radial-gradient(circle, rgba(0,0,0,.2) 0%, #000 70%, #000 100%)"></div></foreignObject>`;
+  // grade do radar
+  for (const r of [196, 130]) s += `<circle r="${r}" fill="none" stroke="#a8d04a" stroke-opacity=".3" stroke-width="2"/>`;
+  s += `<line x1="${-R}" y1="0" x2="${R}" y2="0" stroke="#a8d04a" stroke-opacity=".25" stroke-width="2"/>
+        <line x1="0" y1="${-R}" x2="0" y2="${R}" stroke="#a8d04a" stroke-opacity=".25" stroke-width="2"/>`;
+  // borda da varredura
+  const [ex, ey] = pt(R - 2, BORDA), [sx, sy] = pt(122, BORDA);
+  s += `<line x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}" stroke="#c9ee6a" stroke-width="3.5" stroke-linecap="round" filter="url(#brilho)"/>`;
+  // alvos: o que a varredura acabou de passar brilha mais
+  for (const [r, g, tam, op] of [[205, 18, 9, 1], [150, -40, 7, .55], [222, -86, 6, .3]]) {
+    const [x, y] = pt(r, g);
+    s += `<circle cx="${f(x)}" cy="${f(y)}" r="${tam}" fill="#c9ee6a" opacity="${op}" filter="url(#brilho)"/>`;
+    if (op === 1) s += `<circle cx="${f(x)}" cy="${f(y)}" r="${tam + 11}" fill="none" stroke="#a8d04a" stroke-opacity=".45" stroke-width="2"/>`;
+  }
+  // aro cáqui e marcas de grau
+  s += `<circle r="${R}" fill="none" stroke="#c8b88a" stroke-width="6"/>`;
+  for (let i = 0; i < 72; i++) {
+    const longa = i % 18 === 0, media = i % 6 === 0;
+    const [x0, y0] = pt(R + 9, i * 5), [x1, y1] = pt(R + (longa ? 30 : media ? 20 : 15), i * 5);
+    s += `<line x1="${f(x0)}" y1="${f(y0)}" x2="${f(x1)}" y2="${f(y1)}" stroke="${longa ? "#c8b88a" : "#7e7350"}" stroke-width="${longa ? 5 : media ? 3 : 2}" stroke-opacity="${longa || media ? 1 : .6}"/>`;
+  }
+  // centro: o 'A' em League Gothic, como no vídeo
+  s += `<circle r="120" fill="url(#miolo)"/>
+        <text x="0" y="94" text-anchor="middle" font-family="League Gothic" font-size="272" fill="#ede4cc" filter="url(#sombra)">A</text>`;
+  document.getElementById("radar").innerHTML = s;
+</script>
+</body>
+</html>
