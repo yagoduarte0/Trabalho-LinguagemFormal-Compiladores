@@ -108,9 +108,14 @@ ajustes da placa (WiFi, token, aquecimento) no `firmware/config.json`, fora do G
 `docs/hardware.md` §8. Bot @Aegis_IoT_bot criado e testado no Mac e no Wokwi.
 
 - **Wokwi conferido em 08/11**: WiFi, painel e bot funcionando. Falta gravar o firmware novo na placa real.
-- **Artigo IEEE** (`artigo/`) e **vídeo de demonstração**, para 09/11/2026: o que falta, os dados
-  medidos e a ordem de trabalho estão em [PROXIMOS-PASSOS.md](PROXIMOS-PASSOS.md); o roteiro do vídeo
-  está em [video/roteiro.md](video/roteiro.md).
+- **Artigo IEEE** (`artigo/artigo.tex`, figuras em `artigo/figuras/`; compilar com
+  `cd artigo && tectonic -X compile artigo.tex`): todas as seções escritas em 08–09/11. Faltam o
+  print da conversa com o bot (`figuras/telegram.png`), fotos dos MQ, PIR, AS608, chuva e solo
+  para completar `figuras/sensores.jpg` (hoje só 4 fotos ilustrativas do Wikimedia Commons) e
+  conferir as referências IBGE 2018 e Cemaden 2024.
+- **Vídeo de demonstração**: o animado (narração + 14 cenas, `docs/video/animacao/`) está
+  renderizado em `video/saida/aegis-demonstracao.mp4`. Falta gravar o protótipo real seguindo
+  [video/roteiro-fisico.md](video/roteiro-fisico.md); a animação por cima vem depois.
 
 1. **Revisar o pitch com os dados da sua pesquisa** — os números de mercado
    estão em `pitch/aegis/data.py` com a fonte ao lado; trocar lá não exige
