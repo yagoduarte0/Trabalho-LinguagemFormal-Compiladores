@@ -61,6 +61,21 @@ const EXEMPLOS = {
       "    }\n" +
       "}\n"
   },
+  "checkpoint-encadeado": {
+    titulo: "Checkpoint encadeado (if/elif/else)",
+    fonte:
+      "law MINIMO = 10.0\n\n" +
+      "mission racao(vital estoque) -> status {\n" +
+      "    checkpoint (estoque <= 0.0) {\n" +
+      "        extract dead\n" +
+      "    } fallback checkpoint (estoque < MINIMO) {\n" +
+      "        log_entry(\"racionar\")\n" +
+      "    } fallback {\n" +
+      "        log_entry(\"estoque ok\")\n" +
+      "    }\n" +
+      "    extract alive\n" +
+      "}\n"
+  },
   "erros-propositais": {
     titulo: "Erros propositais (léxico)",
     fonte:

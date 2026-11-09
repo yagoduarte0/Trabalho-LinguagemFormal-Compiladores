@@ -348,8 +348,14 @@ seguinte: se ela começa com uma palavra que só pode abrir um comando
 a quebra de linha é emitida. O erro passa a ser acusado perto do
 parêntese, e a análise sintática se recupera a partir dali.
 
-\figura{Figura: tabela de tokens na interface web\\
-(sugestão: print da aba ``Tokens'' do compilador/index.html)}
+\begin{figure}[htbp]
+\centering
+\imagem{tokens.png}{width=\columnwidth}{Tabela de tokens}
+\caption{Início da tabela de tokens na interface web, para o programa da
+Fig.~\ref{fig:ast}: cada token traz tipo, categoria, lexema, valor
+convertido, linha e coluna.}
+\label{fig:tokens}
+\end{figure}
 
 \subsection{Análise sintática}
 
@@ -407,8 +413,15 @@ comandos, quando há um \texttt{fallback} final; ou nada. Assim, a cadeia
 representada sem ambiguidade, e o gerador a traduz diretamente para
 \texttt{if}/\texttt{elif}/\texttt{else}.
 
-\figura{Figura: AST desenhada pela interface web\\
-(sugestão: print da aba ``AST'' para o exemplo do checkpoint)}
+\begin{figure*}[htbp]
+\centering
+\imagem{ast.png}{width=\textwidth}{AST na interface web}
+\caption{Interface web do compilador: à esquerda, um programa com a cadeia
+\texttt{checkpoint}/\texttt{fallback checkpoint}/\texttt{fallback}; à
+direita, a AST, em que o segundo \texttt{Checkpoint} aparece no campo
+\texttt{outros} do primeiro.}
+\label{fig:ast}
+\end{figure*}
 
 \subsection{Geração de código}
 

@@ -574,7 +574,16 @@ function formatarArvore(no, prefixo = "", raiz = true) {
     const valor = no[chave];
     if (Array.isArray(valor)) {
       if (valor.length === 0) { filhos.push({ rotulo: `${chave}: []`, valor: null }); continue; }
-      valor.forEach((item, i) => filhos.push({ rotulo: `${chave}[${i}]:`, valor: item }));
+      valor.forEach((item, i) => {
+        // objetos simples (ex.: parâmetros {nome, tipo}) não são nós: viram uma linha só
+        if (item !== null && typeof item === "object" && !ehNo(item)) {
+          const { linha, coluna, ...resto } = item;
+          const pos = linha !== undefined ? ` (${linha}:${coluna})` : "";
+          filhos.push({ rotulo: `${chave}[${i}]: ${JSON.stringify(resto)}${pos}`, valor: null });
+        }
+        else
+          filhos.push({ rotulo: `${chave}[${i}]:`, valor: item });
+      });
     } else if (ehNo(valor)) {
       filhos.push({ rotulo: `${chave}:`, valor });
     } else if (valor !== null && typeof valor === "object") {
