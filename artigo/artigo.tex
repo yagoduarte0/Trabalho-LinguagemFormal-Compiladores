@@ -95,7 +95,7 @@ ESP32. Como estudo de caso, o firmware completo de um abrigo, com sete
 sensores, máquina de estados de risco, display OLED, sirene, relé e leitor
 biométrico, além de um painel web local e de um bot do Telegram, foi
 escrito em AEGIS. O compilador passa em 84 testes automatizados e o
-firmware em 41 cenários executados no PC e no simulador Wokwi. Os
+firmware em 42 cenários executados no PC e no simulador Wokwi. Os
 resultados mostram que separar a linguagem da camada de hardware permite
 validar a lógica do abrigo no computador e levar o mesmo código-fonte,
 sem alterações, ao microcontrolador.
@@ -601,7 +601,7 @@ alarme de deslizamento.}
 
 O compilador tem uma suíte de 84 testes automatizados, sem dependências
 externas, que cobre as três fases e os dois alvos; todos passam. O
-firmware é verificado por 41 cenários executados no PC sobre o alvo
+firmware é verificado por 42 cenários executados no PC sobre o alvo
 simulado, que forçam leituras de sensor e conferem o estado resultante;
 todos passam. O circuito também foi executado no simulador
 Wokwi~\cite{wokwi}, com as mesmas ligações da placa real, de modo que o
@@ -689,7 +689,7 @@ linguagem e compilado sem alterações para o PC e para o ESP32.
 
 A separação entre a linguagem e o hardware foi a decisão que mais rendeu.
 Como o mesmo programa roda no alvo simulado, a lógica de risco pôde ser
-verificada por 41 cenários automatizados no computador antes de ir para
+verificada por 42 cenários automatizados no computador antes de ir para
 a placa, e erros de regra apareceram ali, e não na bancada. A linguagem
 também se mostrou adequada para expressar regras de reação: a prioridade
 dos riscos ficou escrita como uma sequência de \texttt{checkpoint}s, legível

@@ -57,7 +57,7 @@ video/
 ```sh
 cd ~/Faculdade/Trabalho-LinguagemFormal-Compiladores
 node compilador/testes.js          # tem que dar 84/84
-python3 firmware/cenarios.py       # tem que dar 41/41
+python3 firmware/cenarios.py       # tem que dar 42/42
 ```
 
 - **Wokwi:** VS Code com `firmware/diagram.json` aberto, a aba do diagrama visível, a simulação

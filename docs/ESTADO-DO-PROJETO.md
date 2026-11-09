@@ -89,7 +89,7 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
   que juntos dão o alerta de risco de deslizamento), relé do exaustor e modo
   armado/desarmado pela digital (AS608 na placa, Touch ID do Mac no Wokwi), máquina de estados
   NORMAL/ATENÇÃO/ALARME, sirene, botão de silenciar, OLED e MQTT opcional.
-  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 41 cenários
+  Os MQ usam média móvel, base de ar limpo adaptativa e histerese. 42 cenários
   passando no PC e circuito testado no simulador Wokwi.
 - **Guia de hardware** — `docs/hardware.md` com lista de compras, mapa de
   pinos, divisores de tensão, calibração e gravação no ESP32 real.

@@ -84,7 +84,7 @@ MQTT. Uma digital arma e desarma o alarme de intruso. Funciona offline: a rede
 é só um canal a mais.
 
 ```bash
-python3 firmware/cenarios.py      # 41 cenários testando a lógica no PC
+python3 firmware/cenarios.py      # 42 cenários testando a lógica no PC
 python3 firmware/teste_digital.py # driver do leitor de digital contra um AS608 falso
 ./firmware/wokwi.sh preparar      # uma vez: baixa o MicroPython e o mpremote
 ./firmware/wokwi.sh enviar        # com a simulação aberta no VS Code (Wokwi)
