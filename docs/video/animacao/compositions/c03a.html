@@ -183,7 +183,9 @@
 
     // ---- S: desce para a análise sintática ----------------------------------
     const tS = W("A análise", 2) - 0.3;
-    cam(tS, { x: 960, y: 3240, s: 1.0 }, 1.0, "power3.inOut");
+    // 0,9 e centro em 3137: da fita (2752) à base da árvore (3578) cabe entre a
+    // faixa do rótulo e a legenda
+    cam(tS, { x: 960, y: 3137, s: 0.9 }, 1.0, "power3.inOut");
     document.querySelector("#c03a-fita").textContent = texto;
     tl.fromTo("#c03a-fita", { opacity: 0, y: -80 }, { opacity: 1, y: 0, duration: 0.6, ease: "expo.out" }, tS + 0.2);
     tl.to("#c03a-pilha-r", { opacity: 1, duration: 0.3 }, W("descendente"));
@@ -243,7 +245,7 @@
       if (i > 0) tl.fromTo(arestas[i - 1], { opacity: 0 }, { opacity: 1, duration: 0.2, immediateRender: false }, tn - 0.08);
       tl.fromTo(c, { opacity: 0, scale: 0.4, y: -30 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "back.out(1.8)", immediateRender: false }, tn);
     });
-    cam(W("árvore") - 0.6, { x: 1080, y: 3260, s: 0.98 }, 1.0);
+    cam(W("árvore") - 0.6, { x: 1080, y: 3137, s: 0.9 }, 1.0);
     tl.to("#c03a-regra", { opacity: 0, duration: 0.3 }, W("26") - 0.4);
     tl.to("#c03a-26", { opacity: 1, duration: 0.3 }, W("26") - 0.2);
     AEGIS.placar(tl, "#c03a-26-v", W("26") - 0.15, "26", 1.0);

@@ -97,6 +97,7 @@
     tl.fromTo("#c04-cartao", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.6)", immediateRender: false }, tC);
     tl.fromTo([".c04-portao", "#c04-trilho", "#c04-usb", "#c04-chip"], { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.08 }, tC);
     cam(tC, { x: 700, y: 640, s: 1.0 }, 0.8, "power3.inOut");
+    tl.to("#c04-term", { opacity: 0, duration: 0.4 }, tC + 0.2);   // subiria até o rótulo
     // compila: passa pelo portão 1 e vira .py
     tl.to("#c04-cartao", { x: 1100, duration: 1.0, ease: "power2.inOut" }, W("compila") - 0.2);
     cam(W("compila") - 0.2, { x: 1100, y: 640, s: 1.0 }, 1.0);

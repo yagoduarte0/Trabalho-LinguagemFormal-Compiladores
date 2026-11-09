@@ -8,7 +8,9 @@
   <style>
     #root { position: absolute; inset: 0; overflow: hidden; }
     #c02-titulo { left: 0; top: 440px; width: 1920px; text-align: center; font-size: 190px; }
-    #c02-sub { left: 0; top: 650px; width: 1920px; text-align: center; font-size: 46px; color: #c8b88a; }
+    #c02-sub { left: 0; top: 650px; width: 1920px; text-align: center; font-size: 46px; color: #c8b88a; z-index: 20;
+      text-shadow: 0 0 12px #0a0d0a, 0 0 24px #0a0d0a, 0 0 4px #0a0d0a; }
+    #c02-titulo { z-index: 20; }
     .c02-orb { left: 0; top: 0; font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 40px; color: #a8d04a; white-space: nowrap; }
 
     #c02-editor { left: 150px; top: 1300px; width: 1250px; height: 2620px; overflow: hidden; }
@@ -212,11 +214,12 @@
     acende("patrol", W("patrol"));
     cartao("c02-k6", trecho.watch[0], "watch · patrol", "laços", "while / for", W("watch"));
     tl.to("#c02-cursor", { opacity: 0, duration: 0.2 }, W("patrol") + 0.6);
-    // punch-in na mission e depois no chronicle
-    cam(W("funções") - 0.1, { x: 1125, y: yLinha(trecho.patrol[0]) + 23, s: 1.1 }, 0.7, "power3.inOut");
+    // mission e depois chronicle (no mesmo zoom: acima de 1,0 o editor e os
+    // cartões não cabem juntos e o código era cortado na borda esquerda)
+    cam(W("funções") - 0.1, { x: 1075, y: yLinha(trecho.patrol[0]) + 23, s: 1.0 }, 0.7, "power3.inOut");
     acende("mission", W("mission"));
     cartao("c02-k7", trecho.patrol[0], "mission", "função", "def", W("mission"));
-    cam(W("principal") - 0.2, { x: 1125, y: yLinha(trecho.chronicle[0]) + 23, s: 1.1 }, 0.8, "power3.inOut");
+    cam(W("principal") - 0.2, { x: 1075, y: yLinha(trecho.chronicle[0]) + 23, s: 1.0 }, 0.8, "power3.inOut");
     acende("chronicle", W("chronicle"));
     cartao("c02-k8", trecho.chronicle[0], "chronicle", "programa principal", "", W("chronicle"));
 

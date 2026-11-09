@@ -13,7 +13,7 @@
 // o ponto (x, y) do palco com zoom s.
 //
 // Movimento: AEGIS.letras / AEGIS.palavras quebram um texto em pedaços
-// animáveis; AEGIS.placar faz um número rolar como placar; AEGIS.digitar
+// animáveis; AEGIS.placar faz um número contar até o valor final; AEGIS.digitar
 // revela uma linha de código como se fosse digitada.
 (function () {
   const normalizar = (s) =>
@@ -73,31 +73,22 @@
 
     // número que rola dígito a dígito até o valor final (texto, ex.: "8,27")
     placar(tl, el, t, final, dur = 1.3) {
+      // contagem de 0 até o valor final, já no formato pt-BR ("8,27", "1.600").
+      // Antes era uma coluna de dígitos rolando, mas a League Gothic desenha
+      // os algarismos mais altos que a linha e os vizinhos apareciam pela metade.
       const alvo = typeof el === "string" ? document.querySelector(el) : el;
-      alvo.innerHTML = "";
-      const colunas = [];
-      [...final].forEach((ch, i) => {
-        if (!/\d/.test(ch)) {
-          alvo.insertAdjacentHTML("beforeend", `<span style="display:inline-block">${ch}</span>`);
-          return;
-        }
-        const d = Number(ch);
-        const voltas = 2 + (i % 2);                      // dígitos vizinhos giram diferente
-        const seq = [];
-        for (let v = 0; v < voltas; v++) for (let k = 0; k < 10; k++) seq.push(k);
-        for (let k = 0; k <= d; k++) seq.push(k);
-        // a janela tem a largura do dígito final (um "molde" invisível); a
-        // coluna que rola fica por cima, centralizada
-        const janela = document.createElement("span");
-        janela.style.cssText = "display:inline-block;position:relative;height:1em;line-height:1;overflow:hidden;vertical-align:top";
-        janela.innerHTML = `<span style="visibility:hidden">${d}</span>` +
-          `<span style="position:absolute;left:-50%;right:-50%;top:0;text-align:center">${seq.map((k) => `<span style="display:block;height:1em">${k}</span>`).join("")}</span>`;
-        alvo.appendChild(janela);
-        colunas.push([janela.lastChild, seq.length]);
+      const casas = final.includes(",") ? final.split(",")[1].length : 0;
+      const valor = Number(final.replace(/\./g, "").replace(",", "."));
+      const formatar = (v) => v.toLocaleString("pt-BR", {
+        minimumFractionDigits: casas, maximumFractionDigits: casas, useGrouping: valor >= 1000,
       });
-      colunas.forEach(([col, n], i) => {
-        tl.fromTo(col, { yPercent: 0 }, { yPercent: -((n - 1) / n) * 100, duration: dur + i * 0.12, ease: "power3.out" }, t);
-      });
+      alvo.style.fontVariantNumeric = "tabular-nums";
+      alvo.textContent = formatar(0);
+      const n = { v: 0 };
+      tl.fromTo(n, { v: 0 }, {
+        v: valor, duration: dur, ease: "power3.out", immediateRender: false,
+        onUpdate: () => { alvo.textContent = formatar(Number(n.v.toFixed(casas))); },
+      }, t);
     },
 
     // revela uma linha como digitação: clip da direita, em degraus por caractere

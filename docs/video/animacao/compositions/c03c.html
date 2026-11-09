@@ -26,7 +26,7 @@
     .c03c-alvo .codigo { font-size: 22px; line-height: 34px; }
     #c03c-igual { left: 876px; top: 1930px; width: 110px; text-align: center; font-family: "League Gothic", sans-serif; font-size: 130px; color: #a8d04a; }
 
-    #c03c-term { left: 2500px; top: 1480px; width: 1500px; height: 760px; overflow: hidden; }
+    #c03c-term { left: 2500px; top: 1480px; width: 1500px; height: 700px; overflow: hidden; }
     #c03c-term .lista { position: absolute; left: 26px; top: 66px; right: 26px; }
     #c03c-term .lt { font-family: "JetBrains Mono", monospace; font-size: 24px; line-height: 36px; white-space: pre; color: #ede4cc; }
     #c03c-term .lt b { color: #a8d04a; }
@@ -168,10 +168,12 @@
     tl.fromTo(".c03c-camada", { rotationX: 0 }, { rotationX: 360, duration: 0.8, ease: "power3.inOut", stagger: 0.15 }, W("camada") + 0.1);
 
     // ---- T: chicote até o terminal dos testes --------------------------------
-    cam(W("Tudo") - 0.35, { x: 3250, y: 1900, s: 1 }, 0.7, "power3.inOut");
-    const rolar = T.length * 36 - 640;
+    // terminal entre a faixa do rótulo (215 px) e a legenda (915 px)
+    cam(W("Tudo") - 0.35, { x: 3250, y: 1805, s: 1 }, 0.7, "power3.inOut");
+    const rolar = T.length * 36 - 580;
     tl.fromTo("#c03c-term-l", { y: 0 }, { y: -rolar, duration: W("testes") - W("Tudo"), ease: "power2.in" }, W("Tudo"));
     cam(W("84") - 0.4, { x: 3250, y: 2130, s: 0.95 }, 0.7);
+    tl.to("#c03c-term", { opacity: 0.12, duration: 0.5 }, W("84") - 0.4);   // o foco vai para o 84; o terminal subiria até o rótulo
     tl.to("#c03c-final", { opacity: 1, duration: 0.3 }, W("84") - 0.25);
     AEGIS.placar(tl, "#c03c-84", W("84") - 0.25, "84", 1.0);
 

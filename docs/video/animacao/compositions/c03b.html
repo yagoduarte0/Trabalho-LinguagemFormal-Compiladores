@@ -89,7 +89,9 @@
     tl.to("#c03b-leitor", { y: yL(e1.linha), duration: tE1 - (W("compilador") - 0.6), ease: "steps(" + (e1.linha - 1) + ")" }, W("compilador") - 0.6);
     tl.to("#c03b-leitor", { borderLeftColor: "#ef5a4c", backgroundColor: "rgba(239,90,76,0.14)", duration: 0.1 }, tE1);
     tl.fromTo("#c03b-onda0", { opacity: 0, scaleX: 0, transformOrigin: "0% 50%" }, { opacity: 1, scaleX: 1, duration: 0.25, immediateRender: false }, tE1);
-    cam(tE1 - 0.25, { x: xC(e1.coluna) + 120, y: yL(e1.linha) + 120, s: 1.25 }, 0.5, "power3.out");
+    // aproxima do primeiro erro sem tirar o editor da tela (com 1,25 a margem
+    // esquerda do código saía do quadro)
+    cam(tE1 - 0.25, { x: 760, y: yL(e1.linha) + 120, s: 1.1 }, 0.5, "power3.out");
     AEGIS.tremer(tl, "#c03b-editor", tE1 + 0.05, 8, 0.3);
     tl.set("#c03b-naopara", { x: xC(e1.coluna) + 70, y: yL(e1.linha) - 10 }, 0);
     tl.fromTo("#c03b-naopara", { opacity: 0, x: xC(e1.coluna) + 20 }, { opacity: 1, x: xC(e1.coluna) + 70, duration: 0.35, ease: "expo.out", immediateRender: false }, W("para") - 0.05);
@@ -115,7 +117,7 @@
     tl.fromTo(".c03b-erro", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "expo.out", stagger: 0.15, immediateRender: false }, W("de uma vez") + 0.15);
     // linha e coluna: os selos piscam
     tl.to(".c03b-erro .pos", { scale: 1.12, duration: 0.15, yoyo: true, repeat: 1, stagger: 0.25 }, W("linha") - 0.05);
-    cam(W("linha") - 0.3, { x: 1300, y: 560, s: 1.08 }, 0.8);
+    cam(W("linha") - 0.3, { x: 1000, y: 560, s: 0.96 }, 0.8);
 
     // ---- saída: chicote para a esquerda -------------------------------------
     cam(FIM - 0.5, { x: 2900, y: 560, s: 1.0 }, 0.5, "power3.in");

@@ -81,7 +81,8 @@
     tl.to("#c06-titulo", { opacity: 0, duration: 0.3 }, W("mesmo") - 0.2);
     // o mesmo .mpy entra no ESP32
     tl.to("#c06-cartao", { x: 1080, y: -40, duration: 1.1, ease: "power3.inOut" }, W("mesmo") - 0.4);
-    tl.to("#c06-cartao", { scale: 0.2, opacity: 0, duration: 0.35, ease: "power3.in" }, W("roda") - 0.3);
+    // o cartão some dentro do ESP32 antes de o selo entrar (antes os dois se encavalavam)
+    tl.to("#c06-cartao", { scale: 0.2, opacity: 0, duration: 0.3, ease: "power3.in" }, W("alteração") - 0.55);
     tl.fromTo("#c06-selo", { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power4.out", immediateRender: false }, W("alteração") - 0.2);
     tl.to("#c06-esp", { attr: { stroke: "#D6F08A" }, duration: 0.2 }, W("roda"));
     tl.fromTo("#c06-esp", { attr: { "stroke-width": 4 } }, { attr: { "stroke-width": 10 }, duration: 0.2, yoyo: true, repeat: 3, immediateRender: false }, W("roda"));
@@ -99,13 +100,15 @@
     tl.to(["#c06-pir-b", "#c06-mao"], { opacity: 0, duration: 0.3 }, W("temperatura") - 0.1);
     tl.to("#c06-pir-cone", { attr: { "fill-opacity": 0 }, duration: 0.3 }, W("temperatura"));
     // DHT22 na mão: a temperatura sobe
-    cam(W("temperatura") - 0.3, { x: 1400, y: 560, s: 1.25 }, 0.7, "power3.inOut");
+    // DHT22 no centro com o OLED inteiro à esquerda (antes o OLED saía cortado)
+    cam(W("temperatura") - 0.3, { x: 1200, y: 560, s: 1.2 }, 0.7, "power3.inOut");
     tl.fromTo("#c06-temp", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, immediateRender: false }, W("temperatura"));
     const tmp = { v: 25.0 };
     tl.fromTo(tmp, { v: 25.0 }, { v: 31.4, duration: 1.6, ease: "power1.out", onUpdate: () => (document.querySelector("#c06-temp-v").textContent = tmp.v.toFixed(1)) }, W("temperatura") + 0.2);
     tl.to("#c06-dht", { attr: { fill: "#f6d2b8" }, duration: 1.2 }, W("temperatura"));
     // o painel no celular, pelo endereço da placa
-    cam(W("painel") - 0.4, { x: 1700, y: 560, s: 0.95 }, 0.9, "power3.inOut");
+    // do OLED (x 470) ao celular (x 2457) no mesmo quadro
+    cam(W("painel") - 0.4, { x: 1463, y: 560, s: 0.92 }, 0.9, "power3.inOut");
     tl.fromTo("#c06-cel", { opacity: 0, y: 120 }, { opacity: 1, y: 0, duration: 0.6, ease: "expo.out", immediateRender: false }, W("painel") - 0.3);
     tl.fromTo("#c06-url", { backgroundColor: "#1d211b" }, { backgroundColor: "#2d3a1f", duration: 0.25, yoyo: true, repeat: 1, immediateRender: false }, W("endereço"));
     tl.to(".cena", { opacity: 0, duration: 0.3, ease: "power2.in" }, FIM - 0.35);

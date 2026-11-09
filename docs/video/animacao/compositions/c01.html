@@ -214,8 +214,9 @@
     tl.fromTo("#c01-curso", { opacity: 0 }, { opacity: 1, duration: 0.4 }, W("Yago") + 0.5);
     const marca = AEGIS.letras("#c01-marca");
     tl.fromTo(marca, { opacity: 0, y: 80, filter: "blur(10px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out", stagger: 0.08 }, W("AEGIS") - 0.15);
-    cam(W("proteção") - 0.2, { x: 2000, y: 4440, s: 0.78 }, 1.2);
-    tl.fromTo("#c01-tag", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "expo.out" }, W("proteção"));
+    // abre junto com o nome AEGIS (antes só abria em "proteção" e o nome nascia atrás da legenda)
+    cam(W("AEGIS") - 0.3, { x: 2000, y: 4440, s: 0.78 }, 1.2);
+    tl.fromTo("#c01-tag", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "expo.out" }, W("proteção") + 0.6);   // espera a câmera abrir: antes nascia atrás da legenda
     [["#c01-s1", "sem internet"], ["#c01-s2", "linguagem"], ["#c01-s3", "compilador"]].forEach(([s, p]) => {
       tl.fromTo(s, { opacity: 0, scale: 0.4, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.45, ease: "back.out(1.6)" }, W(p) - 0.1);
     });

@@ -109,12 +109,26 @@ def corrigir(bloco, palavras):
     return palavras
 
 
+# nomes próprios que começam com maiúscula no meio da frase
+PROPRIOS = {"aegis", "telegram", "python", "javascript", "micropython", "wokwi", "mac",
+            "touch", "yago", "brasil", "ibmec", "cemaden", "ibge", "esp32", "ll1", "wifi"}
+
+
+def frase_nova(p):
+    """A palavra abre frase: maiúscula e não é nome próprio (o Whisper às
+    vezes esquece o ponto da frase anterior)."""
+    t = p["t"].strip()
+    return t[:1].isupper() and not (len(t) > 1 and t.isupper()) and normalizar(t) not in PROPRIOS
+
+
 def grupos_de_legenda(palavras):
     """3 a 6 palavras por grupo; quebra em fim de frase, vírgula ou pausa."""
     grupos, atual = [], []
     for i, p in enumerate(palavras):
         atual.append(p)
         prox = palavras[i + 1] if i + 1 < len(palavras) else None
+        if prox is not None and frase_nova(prox) and p["t"][-1] not in ".!?,;:":
+            p["t"] += "."   # ponto que faltou na transcrição
         fim_frase = p["t"][-1] in ".!?"
         virgula = p["t"][-1] in ",;:"
         pausa = prox is not None and prox["s"] - p["e"] >= 0.25

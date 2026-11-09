@@ -29,6 +29,22 @@
   border-radius: 6px;
   background: rgba(10, 13, 10, 0.88);
 }
+/* faixa escura no alto da tela, atrás do rótulo: o que a câmera empurra
+   para cima some num degradê em vez de colidir com o rótulo */
+.cap::before {
+  content: "";
+  position: absolute;
+  left: -104px;
+  top: -92px;
+  width: 1920px;
+  height: 210px;
+  background: linear-gradient(to bottom, rgba(10, 13, 10, 0.97) 0%, rgba(10, 13, 10, 0.9) 45%, rgba(10, 13, 10, 0) 100%);
+  /* só do lado do rótulo: o alto e o centro da tela continuam limpos */
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 640px, transparent 980px);
+  mask-image: linear-gradient(to right, #000 0, #000 640px, transparent 980px);
+  z-index: -1;
+  pointer-events: none;
+}
 .cap .num { color: #a8d04a; }
 .cap .ponto {
   width: 14px;

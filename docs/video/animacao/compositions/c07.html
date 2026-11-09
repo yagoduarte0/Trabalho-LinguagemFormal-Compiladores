@@ -150,7 +150,7 @@
 
     // ---- F: próximos passos e o fim -------------------------------------------
     cam(W("Como próximos") - 0.4, { x: 960, y: 1760, s: 1.0 }, 0.9, "power3.inOut");
-    tl.fromTo("#c07-passos .t", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.6, ease: "expo.out" }, W("próximos") - 0.2);
+    tl.fromTo("#c07-passos .t", { opacity: 0, scale: 1.12, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.6, ease: "expo.out" }, W("Como próximos") + 0.05);   // entra com a câmera (antes ficava ~0,5 s de tela vazia)
     tl.fromTo("#c07-p1", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("análise") - 0.2);
     tl.fromTo("#c07-p2", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, W("montagem") - 0.2);
     // obrigado: a câmera desce até o radar
