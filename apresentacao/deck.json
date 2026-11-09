@@ -1,0 +1,21 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-11-09T18:00:00Z"},
+  "lists": "css",
+  "title": "AEGIS — do compilador ao abrigo",
+  "order": ["cover", "problema", "visao", "linguagem", "lexico", "sintatico", "panico", "gerador", "testes", "firmware", "estados", "sensores", "wokwi", "interfaces", "pinos", "fisico", "demo", "conclusao", "fim"],
+  "sections": {
+    "s1": {"description": "Abertura: o problema e o caminho do arquivo .aeg até a placa", "start": "cover"},
+    "s2": {"description": "O compilador: linguagem, análise léxica, sintática e geração de código", "start": "linguagem"},
+    "s3": {"description": "O firmware do abrigo escrito em AEGIS", "start": "firmware"},
+    "s4": {"description": "O simulador Wokwi e as interfaces do abrigo", "start": "wokwi"},
+    "s5": {"description": "O protótipo físico e a demonstração", "start": "pinos"},
+    "s6": {"description": "Conclusão e perguntas", "start": "conclusao"}
+  },
+  "faces": {
+    "oswald": {"family": "Oswald", "href": "https://fonts.googleapis.com/css2?family=Oswald:wght@400..700&display=swap"},
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap"},
+    "jetbrains-mono": {"family": "JetBrains Mono", "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"}
+  },
+  "designSystems": []
+}

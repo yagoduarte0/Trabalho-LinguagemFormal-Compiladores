@@ -10,6 +10,8 @@ __pycache__/
 # Artefatos de render do Manim (regeneráveis com pitch/render_all.ps1)
 media/
 slides/
+# ...mas os slides da apresentação técnica são fonte, não render
+!apresentacao/slides/
 
 # Firmware: binario do MicroPython (baixado por firmware/wokwi.sh) e venv do mpremote
 firmware/*.bin

@@ -1,0 +1,31 @@
+<section id="fisico" data-transition="fade" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">O PROTÓTIPO FÍSICO</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Na placa real: tensão, corrente e memória</h2>
+<div data-build-in="rise 1" style="position:absolute;left:128px;top:330px;width:533px;display:flex;flex-direction:column;gap:16px;background:#121611;border:1px solid #2A3026;border-radius:16px;padding:40px">
+<x-icon name="Lightning" style="width:48px;height:48px;color:#A8D04A"></x-icon>
+<p style="font-family:Oswald, Arial, sans-serif;font-size:44px;font-weight:600;line-height:1.2;color:#EDE4CC">3,3 V no máximo</p>
+<p style="font-size:24px;line-height:1.4;color:#9C9883">O ECHO do HC-SR04 e as saídas dos MQ chegam em 5 V. Um divisor de resistores baixa para 5 × 2/3 ≈ 3,33 V.</p>
+</div>
+<div data-build-in="rise 2" style="position:absolute;left:693px;top:330px;width:533px;display:flex;flex-direction:column;gap:16px;background:#121611;border:1px solid #2A3026;border-radius:16px;padding:40px">
+<x-icon name="Activity" style="width:48px;height:48px;color:#A8D04A"></x-icon>
+<p style="font-family:Oswald, Arial, sans-serif;font-size:44px;font-weight:600;line-height:1.2;color:#EDE4CC">5 V regulados</p>
+<p style="font-size:24px;line-height:1.4;color:#9C9883">Cada MQ aquece com cerca de 150 mA. Com o WiFi junto, o USB não dá conta: fonte de 12 V e step-down em 5 V no VIN.</p>
+</div>
+<div data-build-in="rise 3" style="position:absolute;left:1258px;top:330px;width:533px;display:flex;flex-direction:column;gap:16px;background:#121611;border:1px solid #2A3026;border-radius:16px;padding:40px">
+<x-icon name="Database" style="width:48px;height:48px;color:#A8D04A"></x-icon>
+<p style="font-family:Oswald, Arial, sans-serif;font-size:44px;font-weight:600;line-height:1.2;color:#EDE4CC">Pré-compilado</p>
+<p style="font-size:24px;line-height:1.4;color:#9C9883">Compilar o abrigo.py na placa esgota a RAM. Ele vai como abrigo.mpy, compilado no Mac, e o main.py só carrega.</p>
+</div>
+<div data-build-in="rise 4" style="position:absolute;left:128px;top:740px;width:1664px;display:flex;align-items:center;gap:64px;border-top:1px solid #2A3026;padding:32px 0 0 0">
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:Oswald, Arial, sans-serif;font-size:44px;font-weight:600;color:#A8D04A">R$ 408,42</p>
+<p style="font-size:24px;color:#9C9883">kit completo (base do pitch: R$ 235,92)</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#C8B88A">./firmware/wokwi.sh placa</p>
+<p style="font-size:24px;color:#9C9883">grava o firmware e o config.json no ESP32 real</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">16 · docs/hardware.md, seções 1, 3 e 6</p>
+<aside>Passar do simulador para a placa trouxe três problemas que o Wokwi não mostra. Tensão: o ESP32 aceita 3,3 volts e três sinais chegam em 5, então eles passam por divisor. Corrente: os sensores de gás têm um aquecedor interno, e com o WiFi o USB não aguenta; a placa reiniciava sozinha, por isso uma fonte de 12 volts com um step-down regulado em 5. Memória: o ESP32 não tem RAM para compilar 1.262 linhas, então eu pré-compilo no Mac. O kit completo custa R$ 408,42; o leitor de digital sozinho é quase metade da base.</aside>
+</section>

@@ -1,0 +1,40 @@
+<section id="visao" data-transition="fade" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">VISÃO GERAL</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Um arquivo .aeg vira o firmware de um abrigo</h2>
+<div data-build-in="rise 1" style="position:absolute;left:128px;top:400px;width:237px;height:190px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#121611;border:2px solid #2A3026;border-radius:16px;padding:24px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;font-weight:700;color:#EDE4CC">abrigo.aeg</p>
+<p style="font-size:24px;line-height:1.3;color:#9C9883">programa em AEGIS</p>
+</div>
+<x-shape kind="arrow-right" data-build-in="left 2" style="position:absolute;left:369px;top:485px;width:40px;height:20px;background:#C8B88A"></x-shape>
+<div data-build-in="rise 2 auto" style="position:absolute;left:413px;top:400px;width:237px;height:190px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#121611;border:2px solid #C8B88A;border-radius:16px;padding:24px">
+<p style="font-family:Oswald, Arial, sans-serif;font-size:32px;font-weight:600;color:#EDE4CC">Léxico</p>
+<p style="font-size:24px;line-height:1.3;color:#9C9883">texto → tokens</p>
+</div>
+<x-shape kind="arrow-right" data-build-in="left 3" style="position:absolute;left:654px;top:485px;width:40px;height:20px;background:#C8B88A"></x-shape>
+<div data-build-in="rise 3 auto" style="position:absolute;left:698px;top:400px;width:237px;height:190px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#121611;border:2px solid #C8B88A;border-radius:16px;padding:24px">
+<p style="font-family:Oswald, Arial, sans-serif;font-size:32px;font-weight:600;color:#EDE4CC">Sintático</p>
+<p style="font-size:24px;line-height:1.3;color:#9C9883">tokens → AST</p>
+</div>
+<x-shape kind="arrow-right" data-build-in="left 4" style="position:absolute;left:939px;top:485px;width:40px;height:20px;background:#C8B88A"></x-shape>
+<div data-build-in="rise 4 auto" style="position:absolute;left:983px;top:400px;width:237px;height:190px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#121611;border:2px solid #C8B88A;border-radius:16px;padding:24px">
+<p style="font-family:Oswald, Arial, sans-serif;font-size:32px;font-weight:600;color:#EDE4CC">Gerador</p>
+<p style="font-size:24px;line-height:1.3;color:#9C9883">AST → Python</p>
+</div>
+<hr data-build-in="left 5" style="position:absolute;left:413px;top:632px;width:807px;border-top:3px solid #C8B88A">
+<p data-build-in="fade 5 auto" style="position:absolute;left:413px;top:652px;width:807px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;color:#C8B88A">COMPILADOR · JavaScript</p>
+<x-shape kind="arrow-right" data-build-in="left 6" style="position:absolute;left:1224px;top:485px;width:40px;height:20px;background:#A8D04A"></x-shape>
+<div data-build-in="rise 6 auto" style="position:absolute;left:1268px;top:400px;width:237px;height:190px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#121611;border:2px solid #A8D04A;border-radius:16px;padding:24px">
+<p style="font-family:Oswald, Arial, sans-serif;font-size:32px;font-weight:600;color:#EDE4CC">Wokwi</p>
+<p style="font-size:24px;line-height:1.3;color:#9C9883">simulador no VS Code</p>
+</div>
+<p data-build-in="fade 6 auto" style="position:absolute;left:1505px;top:472px;width:48px;font-size:32px;color:#9C9883;text-align:center">ou</p>
+<div data-build-in="rise 6 auto" style="position:absolute;left:1553px;top:400px;width:237px;height:190px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#121611;border:2px solid #A8D04A;border-radius:16px;padding:24px">
+<p style="font-family:Oswald, Arial, sans-serif;font-size:32px;font-weight:600;color:#EDE4CC">ESP32</p>
+<p style="font-size:24px;line-height:1.3;color:#9C9883">placa real</p>
+</div>
+<hr data-build-in="left 7" style="position:absolute;left:1268px;top:632px;width:522px;border-top:3px solid #A8D04A">
+<p data-build-in="fade 7 auto" style="position:absolute;left:1268px;top:652px;width:522px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;color:#A8D04A">EXECUÇÃO · MicroPython</p>
+<p data-build-in="rise 8" style="position:absolute;left:128px;top:770px;width:1664px;font-size:32px;line-height:1.4;color:#EDE4CC">O mesmo <span style="color:#A8D04A">abrigo.py</span> gerado pelo compilador roda no simulador e na placa, sem nenhuma alteração.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">03 · AEGIS — do compilador ao abrigo</p>
+<aside>Este é o mapa da apresentação; cada clique mostra uma etapa. Eu escrevo o abrigo em AEGIS. O compilador, feito em JavaScript, passa por três fases: léxico, sintático e gerador. A saída é Python, que roda no simulador Wokwi ou na placa ESP32 real. O ponto principal: é o mesmo arquivo nos dois lugares.</aside>
+</section>

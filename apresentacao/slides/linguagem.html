@@ -1,0 +1,22 @@
+<section id="linguagem" data-transition="fade" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">A LINGUAGEM AEGIS</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Uma linguagem com vocabulário de sobrevivência</h2>
+<div data-build-in="fade 1" style="position:absolute;left:128px;top:300px;width:840px;display:flex;flex-direction:column;background:#121611;border:1px solid #2A3026;border-radius:16px;padding:32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.35;white-space:nowrap;color:#EDE4CC"><span style="color:#A8D04A">scavenge</span> gpio<br><span style="color:#A8D04A">law</span> ALARM_RADIO = 5<br><span style="color:#A8D04A">mission</span> check_perimeter() -&gt; <span style="color:#A8D04A">status</span> {<br>&#160;&#160;&#160;&#160;<span style="color:#A8D04A">supply</span> detected = gpio.read(radio(27))<br>&#160;&#160;&#160;&#160;<span style="color:#A8D04A">extract</span> detected<br>}<br><span style="color:#A8D04A">survivor</span> perimeter_watch {<br>&#160;&#160;&#160;&#160;<span style="color:#A8D04A">watch</span> {<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;<span style="color:#A8D04A">checkpoint</span> (check_perimeter()) {<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;broadcast(radio(ALARM_RADIO))<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;} <span style="color:#A8D04A">fallback</span> {<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;log_entry(<span style="color:#C8B88A">"area limpa, nenhum sinal"</span>)<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;}<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;hide(500)<br>&#160;&#160;&#160;&#160;}<br>}</p>
+</div>
+<table data-build-in="rise 2" style="position:absolute;left:1016px;top:300px;width:776px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#EDE4CC">
+<tr><th style="width:52%;color:#C8B88A">AEGIS</th><th style="width:48%;color:#C8B88A">equivale a</th></tr>
+<tr><td style="color:#A8D04A">scavenge</td><td>import</td></tr>
+<tr><td style="color:#A8D04A">law</td><td>constante</td></tr>
+<tr><td style="color:#A8D04A">supply</td><td>variável</td></tr>
+<tr><td style="color:#A8D04A">mission</td><td>função</td></tr>
+<tr><td style="color:#A8D04A">survivor</td><td>tarefa</td></tr>
+<tr><td style="color:#A8D04A">checkpoint / fallback</td><td>if / else</td></tr>
+<tr><td style="color:#A8D04A">watch</td><td>laço contínuo</td></tr>
+<tr><td style="color:#A8D04A">patrol (n)</td><td>repetição n vezes</td></tr>
+<tr><td style="color:#A8D04A">broadcast / silence</td><td>liga / desliga</td></tr>
+<tr><td style="color:#A8D04A">log_entry</td><td>print</td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">04 · AEGIS — do compilador ao abrigo</p>
+<aside>AEGIS é uma linguagem de domínio específico. A estrutura é a de qualquer linguagem imperativa (constantes, funções, condicionais, laços), mas o vocabulário é de sobrevivência para o código se ler como o diário de operação do abrigo. São 29 palavras reservadas em 7 categorias. O exemplo da esquerda vigia o sensor de presença: se detectar alguém, liga o alarme; senão, registra que a área está limpa.</aside>
+</section>

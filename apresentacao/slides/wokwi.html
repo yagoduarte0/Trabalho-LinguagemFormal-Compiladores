@@ -1,0 +1,23 @@
+<section id="wokwi" data-transition="fade" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">O SIMULADOR</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Wokwi: a placa inteira dentro do VS Code</h2>
+<img src="/_blob/7c81c7d28f446152dac0d5afca67eaa9" alt="Circuito do AEGIS no Wokwi: ESP32 no centro ligado ao DHT22, MQ-2, potenciômetros de MQ-135, chuva e solo, PIR, HC-SR04, OLED, botão, relé, LEDs e buzzer" data-build-in="fade 1 auto" style="position:absolute;left:128px;top:320px;width:840px;height:587px;object-fit:contain;border-radius:12px;background:#2E2E2E">
+<div data-build-in="rise 1" style="position:absolute;left:1016px;top:320px;width:776px;display:flex;flex-direction:column;gap:6px;border-left:3px solid #A8D04A;padding:4px 0 4px 28px">
+<p style="font-size:32px;font-weight:600;color:#EDE4CC">Mesmo circuito</p>
+<p style="font-size:24px;line-height:1.35;color:#9C9883">O diagram.json segue o mesmo mapa de pinos da placa real</p>
+</div>
+<div data-build-in="rise 2" style="position:absolute;left:1016px;top:470px;width:776px;display:flex;flex-direction:column;gap:6px;border-left:3px solid #A8D04A;padding:4px 0 4px 28px">
+<p style="font-size:32px;font-weight:600;color:#EDE4CC">Peças trocadas</p>
+<p style="font-size:24px;line-height:1.35;color:#9C9883">MQ-135, chuva e solo viram potenciômetros que eu giro na hora</p>
+</div>
+<div data-build-in="rise 3" style="position:absolute;left:1016px;top:620px;width:776px;display:flex;flex-direction:column;gap:6px;border-left:3px solid #A8D04A;padding:4px 0 4px 28px">
+<p style="font-size:32px;font-weight:600;color:#EDE4CC">Digital pelo Touch ID</p>
+<p style="font-size:24px;line-height:1.35;color:#9C9883">O leitor do Mac faz o papel do AS608 para armar e desarmar</p>
+</div>
+<div data-build-in="rise 4" style="position:absolute;left:1016px;top:770px;width:776px;display:flex;flex-direction:column;gap:6px;border-left:3px solid #A8D04A;padding:4px 0 4px 28px">
+<p style="font-size:32px;font-weight:600;color:#EDE4CC">Um comando</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.35;color:#C8B88A">./firmware/wokwi.sh demo</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">13 · firmware/diagram.json · MicroPython 1.29.0</p>
+<aside>O Wokwi simula o ESP32 com MicroPython 1.29 dentro do VS Code. O circuito tem exatamente as mesmas ligações da placa real, então o Python gerado pelo compilador roda nos dois sem mudar uma linha. Os sensores que o Wokwi não tem viram potenciômetros, e o Touch ID do Mac substitui o leitor de digital. O wokwi.sh demo compila o .aeg, envia para o simulador e abre o painel web.</aside>
+</section>

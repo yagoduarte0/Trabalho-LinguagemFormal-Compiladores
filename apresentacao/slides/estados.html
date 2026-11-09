@@ -1,0 +1,45 @@
+<section id="estados" data-transition="fade" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">A LÓGICA DO ABRIGO</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Três níveis de risco: o pior sensor decide</h2>
+<div data-build-in="rise 1" style="position:absolute;left:128px;top:330px;width:512px;display:flex;flex-direction:column;gap:20px;background:#121611;border:2px solid #A8D04A;border-radius:16px;padding:40px">
+<div style="display:flex;align-items:center;gap:20px">
+<x-shape kind="ellipse" style="width:36px;height:36px;background:#A8D04A"></x-shape>
+<p style="font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:700;line-height:1;color:#A8D04A">NORMAL</p>
+</div>
+<ul style="font-size:24px;line-height:1.45;color:#EDE4CC">
+<li>LED verde aceso</li>
+<li>OLED alterna três páginas</li>
+<li>painel: tudo em ordem</li>
+</ul>
+</div>
+<x-shape kind="arrow-right" data-build-in="left 2" style="position:absolute;left:652px;top:470px;width:40px;height:20px;background:#9C9883"></x-shape>
+<div data-build-in="rise 2 auto" style="position:absolute;left:704px;top:330px;width:512px;display:flex;flex-direction:column;gap:20px;background:#121611;border:2px solid #E8C547;border-radius:16px;padding:40px">
+<div style="display:flex;align-items:center;gap:20px">
+<x-shape kind="ellipse" style="width:36px;height:36px;background:#E8C547"></x-shape>
+<p style="font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:700;line-height:1;color:#E8C547">ATENÇÃO</p>
+</div>
+<ul style="font-size:24px;line-height:1.45;color:#EDE4CC">
+<li>LED amarelo aceso</li>
+<li>aviso no Telegram</li>
+<li>ex.: calor ou chuva</li>
+</ul>
+</div>
+<x-shape kind="arrow-right" data-build-in="left 3" style="position:absolute;left:1228px;top:470px;width:40px;height:20px;background:#9C9883"></x-shape>
+<div data-build-in="rise 3 auto" style="position:absolute;left:1280px;top:330px;width:512px;display:flex;flex-direction:column;gap:20px;background:#121611;border:2px solid #E5533D;border-radius:16px;padding:40px">
+<div style="display:flex;align-items:center;gap:20px">
+<x-shape kind="ellipse" style="width:36px;height:36px;background:#E5533D"></x-shape>
+<p style="font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:700;line-height:1;color:#E5533D">ALARME</p>
+</div>
+<ul style="font-size:24px;line-height:1.45;color:#EDE4CC">
+<li>LED vermelho e sirene de dois tons</li>
+<li>relé liga o exaustor</li>
+<li>alerta no Telegram</li>
+</ul>
+</div>
+<div data-build-in="rise 4" style="position:absolute;left:128px;top:730px;width:1664px;display:flex;flex-direction:column;gap:8px;border-left:3px solid #C8B88A;padding:4px 0 4px 32px">
+<p style="font-size:32px;font-weight:600;color:#EDE4CC">Sem alarme falso perto do limite</p>
+<p style="font-size:24px;line-height:1.4;color:#9C9883">Os sensores de gás passam por média móvel, aprendem a base de ar limpo no aquecimento e usam histerese: ligam acima da margem e só desligam bem abaixo dela.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">11 · máquina de estados do abrigo.aeg</p>
+<aside>Cada survivor classifica o seu sensor em NORMAL, ATENÇÃO ou ALARME, e o pior deles vira o estado do abrigo. A reação é sempre a mesma por nível: LEDs, sirene, relé e aviso. Um detalhe importante: sensor de gás é ruidoso. Por isso tem filtro de média móvel, base aprendida no aquecimento e histerese, que impede o alarme de ficar ligando e desligando quando a leitura oscila perto do limite.</aside>
+</section>

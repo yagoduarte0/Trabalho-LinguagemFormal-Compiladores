@@ -1,0 +1,14 @@
+<section id="cover" data-transition="fade" style="background:radial-gradient(circle at 76% 50%, #1A2214 0%, #0A0D0A 62%);color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px">
+<x-embed style="position:absolute;left:1032px;top:160px;width:760px;height:760px"><!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:transparent;overflow:hidden"><canvas id="c" width="760" height="760"></canvas><script>
+const c=document.getElementById('c'),x=c.getContext('2d');let t=0;
+function f(){x.clearRect(0,0,760,760);for(let i=0;i!==3;i++){const p=((t/200)+i/3)%1;const r=282+p*95;x.beginPath();x.arc(380,380,r,0,Math.PI*2);x.strokeStyle='rgba(168,208,74,'+(0.55*(1-p)).toFixed(3)+')';x.lineWidth=2;x.stroke();}t++;requestAnimationFrame(f);}f();
+</script></body></html></x-embed>
+<img src="/_blob/53923db93474aae11b781afef20c0910" alt="Logo do AEGIS: um radar com a letra A no centro" data-build-in="scale 1 auto" style="position:absolute;left:1132px;top:260px;width:560px;height:560px;object-fit:contain;border-radius:50%">
+<p style="position:absolute;left:128px;top:236px;width:860px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">LINGUAGENS FORMAIS E COMPILADORES</p>
+<h1 data-build-in="rise 2 auto" style="position:absolute;left:128px;top:284px;width:860px;font-family:Oswald, Arial, sans-serif;font-size:220px;font-weight:700;line-height:1;letter-spacing:8px;color:#EDE4CC">AEGIS</h1>
+<p data-build-in="fade 3 auto" style="position:absolute;left:128px;top:530px;width:860px;font-size:44px;line-height:1.2;color:#C8B88A">Do compilador ao abrigo: uma linguagem própria rodando no simulador e na placa</p>
+<hr data-build-in="left 4 auto" style="position:absolute;left:128px;top:740px;width:120px;border-top:4px solid #A8D04A">
+<p data-build-in="fade 5 auto" style="position:absolute;left:128px;top:772px;width:860px;font-size:32px;font-weight:600;color:#EDE4CC">Yago Duarte de Andrade</p>
+<p data-build-in="fade 5 auto" style="position:absolute;left:128px;top:824px;width:900px;font-size:24px;color:#9C9883">Engenharia de Software · Ibmec Barra · Prof. William Barbosa</p>
+<aside>Apresentar o AEGIS em uma frase: é uma linguagem de programação que eu criei, com compilador próprio, para escrever as regras de um abrigo inteligente. O mesmo programa roda no simulador Wokwi e numa placa ESP32 de verdade. Hoje vou mostrar o caminho completo: da gramática até o alarme tocando.</aside>
+</section>

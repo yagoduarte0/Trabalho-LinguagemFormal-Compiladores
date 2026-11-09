@@ -1,0 +1,27 @@
+<section id="panico" data-transition="magic" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">FASE 2 · RECUPERAÇÃO DE ERROS</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Modo pânico: todos os erros de uma vez</h2>
+<p id="fase-lex" style="position:absolute;left:1072px;top:112px;width:216px;height:52px;padding:8px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;text-align:center;color:#7F7C68;background:#121611;border-radius:8px">LÉXICO</p>
+<p id="fase-sin" style="position:absolute;left:1324px;top:112px;width:216px;height:52px;padding:8px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;text-align:center;color:#EDE4CC;background:#121611;border-radius:8px">SINTÁTICO</p>
+<p id="fase-ger" style="position:absolute;left:1576px;top:112px;width:216px;height:52px;padding:8px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;text-align:center;color:#7F7C68;background:#121611;border-radius:8px">GERADOR</p>
+<div id="fase-marca" style="position:absolute;left:1324px;top:112px;width:216px;height:52px;border:3px solid #A8D04A;border-radius:8px"></div>
+<div style="position:absolute;left:128px;top:330px;width:980px;height:220px;background:#121611;border:1px solid #2A3026;border-radius:16px"></div>
+<p style="position:absolute;left:160px;top:354px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#7F7C68">// erros.aeg</p>
+<p style="position:absolute;left:160px;top:400px;width:640px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;white-space:nowrap;color:#EDE4CC"><span style="color:#7F7C68">1</span>&#160;&#160;<span style="color:#A8D04A">supply</span> nivel = sonar.read(25, 26</p>
+<p style="position:absolute;left:160px;top:444px;width:640px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;white-space:nowrap;color:#EDE4CC"><span style="color:#7F7C68">2</span>&#160;&#160;<span style="color:#A8D04A">supply</span> temp = 30 +</p>
+<p style="position:absolute;left:160px;top:488px;width:640px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;white-space:nowrap;color:#EDE4CC"><span style="color:#7F7C68">3</span>&#160;&#160;log_entry(<span style="color:#C8B88A">"ok"</span>)</p>
+<p data-build-in="left 2" style="position:absolute;left:820px;top:400px;width:270px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#E5533D">falta ")"</p>
+<p data-build-in="left 3" style="position:absolute;left:820px;top:444px;width:270px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#E5533D">falta operando</p>
+<div style="position:absolute;left:1156px;top:330px;width:636px;display:flex;flex-direction:column;gap:12px;border-left:3px solid #C8B88A;padding:8px 0 8px 32px">
+<p style="font-size:32px;font-weight:600;color:#EDE4CC">Como funciona</p>
+<p style="font-size:24px;line-height:1.4;color:#9C9883">Ao achar um erro, o parser descarta tokens até um ponto seguro (fim da linha, uma chave ou o início de uma declaração) e continua analisando.</p>
+</div>
+<div data-build-in="fade 1" style="position:absolute;left:128px;top:590px;width:1664px;height:220px;background:#060806;border:1px solid #2A3026;border-radius:16px"></div>
+<p data-build-in="fade 1 auto" style="position:absolute;left:160px;top:618px;width:1600px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#9C9883">$ node compilador/aegisc.js erros.aeg</p>
+<p data-build-in="left 2 auto" style="position:absolute;left:160px;top:662px;width:1600px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#EDE4CC">erros.aeg:1:33: erro sintático: esperava ')' para fechar a chamada</p>
+<p data-build-in="left 3 auto" style="position:absolute;left:160px;top:706px;width:1600px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#EDE4CC">erros.aeg:2:19: erro sintático: esperava uma expressão, encontrei o fim da linha</p>
+<p data-build-in="left 4" style="position:absolute;left:160px;top:750px;width:1600px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#E5533D">aegisc: 2 erro(s), nada foi gerado</p>
+<p data-build-in="rise 5" style="position:absolute;left:128px;top:846px;width:1664px;font-size:24px;line-height:1.4;color:#9C9883">O parêntese esquecido na linha 1 não engole o resto do programa: o lexer volta a separar comandos quando a linha seguinte começa com supply.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">07 · compilador/parser.js · sincronizar()</p>
+<aside>Este arquivo tem dois erros: um parêntese que não fecha na linha 1 e uma soma sem o segundo operando na linha 2. Um compilador ingênuo pararia no primeiro. O modo pânico registra o erro, descarta tokens até um ponto seguro e continua. Resultado: as duas mensagens saem numa compilação só, com linha e coluna exatas, e nenhum Python é gerado. Essa saída é real, do nosso aegisc.</aside>
+</section>

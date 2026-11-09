@@ -1,0 +1,18 @@
+<section id="interfaces" data-transition="fade" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">AS INTERFACES</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Três telas mostram o mesmo estado</h2>
+<img src="/_blob/a757418e04d450705acbe78f7703d042" alt="Seis telas do OLED: abertura AEGIS proteção offline, ATENÇÃO chovendo, ALARME fumaça e gás, NORMAL tudo em ordem e ALARME deslizamento" data-build-in="rise 1" style="position:absolute;left:128px;top:320px;width:620px;height:477px;object-fit:contain;border-radius:12px;background:#121611">
+<p data-build-in="fade 1 auto" style="position:absolute;left:128px;top:820px;width:620px;font-size:24px;color:#9C9883">OLED na placa: estado, motivo e leituras</p>
+<img src="/_blob/37cfbe78ae90f4d7a3a8cbef30bd5296" alt="Painel web no celular mostrando ALARME de fumaça e gás, com temperatura, umidade, fumaça, qualidade do ar, nível da água, chuva, solo, presença e o botão Silenciar sirene" data-build-in="rise 2" style="position:absolute;left:796px;top:320px;width:270px;height:584px;object-fit:contain;border-radius:24px;border:2px solid #2A3026;background:#0A0D0A">
+<div data-build-in="rise 3" style="position:absolute;left:1114px;top:320px;width:678px;display:flex;flex-direction:column;gap:16px;background:#121611;border:1px solid #2A3026;border-radius:16px;padding:36px">
+<p style="font-size:32px;font-weight:600;color:#EDE4CC">Bot do Telegram</p>
+<p style="font-size:24px;line-height:1.4;color:#9C9883">Avisa o dono quando o estado muda e responde a três comandos:</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.6;color:#EDE4CC"><span style="color:#A8D04A">/status</span>&#160;&#160;&#160;&#160;leituras agora<br><span style="color:#A8D04A">/silenciar</span> cala a sirene<br><span style="color:#A8D04A">/ajuda</span>&#160;&#160;&#160;&#160;&#160;lista os comandos</p>
+</div>
+<div data-build-in="rise 4" style="position:absolute;left:1114px;top:690px;width:678px;display:flex;flex-direction:row;align-items:center;gap:20px;border:2px solid #C8B88A;border-radius:16px;padding:24px 28px">
+<x-icon name="Lock" style="width:40px;height:40px;color:#C8B88A"></x-icon>
+<p style="font-size:24px;line-height:1.4;color:#EDE4CC">Painel e bot só leem e silenciam. Desarmar exige a digital, e o bot só atende o chat do dono.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">14 · painel na rede local · @Aegis_IoT_bot</p>
+<aside>A placa mostra o estado em três lugares. O OLED, na própria placa, funciona sem rede. O painel web é servido pelo próprio ESP32 na rede de casa, sem nuvem, e tem o botão de silenciar. O bot do Telegram avisa no celular e responde a três comandos. Decisão de segurança: nada remoto consegue desarmar o alarme; só a digital.</aside>
+</section>

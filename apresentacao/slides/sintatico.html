@@ -1,0 +1,51 @@
+<section id="sintatico" data-transition="magic" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">FASE 2 · ANÁLISE SINTÁTICA</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Os tokens viram uma árvore sintática</h2>
+<p id="fase-lex" style="position:absolute;left:1072px;top:112px;width:216px;height:52px;padding:8px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;text-align:center;color:#7F7C68;background:#121611;border-radius:8px">LÉXICO</p>
+<p id="fase-sin" style="position:absolute;left:1324px;top:112px;width:216px;height:52px;padding:8px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;text-align:center;color:#EDE4CC;background:#121611;border-radius:8px">SINTÁTICO</p>
+<p id="fase-ger" style="position:absolute;left:1576px;top:112px;width:216px;height:52px;padding:8px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;text-align:center;color:#7F7C68;background:#121611;border-radius:8px">GERADOR</p>
+<div id="fase-marca" style="position:absolute;left:1324px;top:112px;width:216px;height:52px;border:3px solid #A8D04A;border-radius:8px"></div>
+<div style="position:absolute;left:128px;top:330px;width:780px;display:flex;flex-direction:column;gap:8px;background:#121611;border:1px solid #2A3026;border-radius:16px;padding:32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#7F7C68">// regra da gramática EBNF (parser.js)</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.35;white-space:nowrap;color:#EDE4CC"><span style="color:#A8D04A">cmd_checkpoint</span> =<br>&#160;&#160;<span style="color:#C8B88A">"checkpoint"</span> , <span style="color:#C8B88A">"("</span> , expressao , <span style="color:#C8B88A">")"</span> ,<br>&#160;&#160;bloco_chaves ,<br>&#160;&#160;[ <span style="color:#C8B88A">"fallback"</span> , ( cmd_checkpoint_interno<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;| bloco_chaves ) ] ,<br>&#160;&#160;separador ;</p>
+</div>
+<ul data-build-in="fade 4" style="position:absolute;left:128px;top:700px;width:780px;font-size:24px;line-height:1.4;color:#EDE4CC">
+<li>Descendente recursivo LL(1): uma função para cada regra</li>
+<li>26 tipos de nó, cada um com linha e coluna de origem</li>
+<li>A precedência dos operadores está na ordem das chamadas</li>
+</ul>
+<div data-build-in="pop 1" style="position:absolute;left:1257px;top:340px;width:260px;height:96px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;background:#121611;border:2px solid #A8D04A;border-radius:12px;padding:8px">
+<p style="font-size:24px;font-weight:600;color:#EDE4CC">Checkpoint</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#9C9883">linha 1, col 1</p>
+</div>
+<x-connector data-build-in="fade 2" x1="1387" y1="436" x2="1175" y2="500" head="none" style="color:#5A6450;border-width:2px"></x-connector>
+<x-connector data-build-in="fade 2 auto" x1="1387" y1="436" x2="1600" y2="500" head="none" style="color:#5A6450;border-width:2px"></x-connector>
+<p data-build-in="fade 2 auto" style="position:absolute;left:1046px;top:440px;width:200px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#C8B88A">condicao</p>
+<p data-build-in="fade 2 auto" style="position:absolute;left:1560px;top:440px;width:200px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#C8B88A">entao[0]</p>
+<div data-build-in="pop 2 auto" style="position:absolute;left:1045px;top:500px;width:260px;height:96px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;background:#121611;border:2px solid #C8B88A;border-radius:12px;padding:8px">
+<p style="font-size:24px;font-weight:600;color:#EDE4CC">Binaria</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#9C9883">operador &lt;</p>
+</div>
+<div data-build-in="pop 2 auto" style="position:absolute;left:1470px;top:500px;width:260px;height:96px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;background:#121611;border:2px solid #C8B88A;border-radius:12px;padding:8px">
+<p style="font-size:24px;font-weight:600;color:#EDE4CC">Atribuicao</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#9C9883">risco =</p>
+</div>
+<x-connector data-build-in="fade 3" x1="1175" y1="596" x2="1060" y2="660" head="none" style="color:#5A6450;border-width:2px"></x-connector>
+<x-connector data-build-in="fade 3 auto" x1="1175" y1="596" x2="1290" y2="660" head="none" style="color:#5A6450;border-width:2px"></x-connector>
+<x-connector data-build-in="fade 3 auto" x1="1600" y1="596" x2="1600" y2="660" head="none" style="color:#5A6450;border-width:2px"></x-connector>
+<div data-build-in="pop 3 auto" style="position:absolute;left:960px;top:660px;width:200px;height:96px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;background:#121611;border:2px solid #2A3026;border-radius:12px;padding:8px">
+<p style="font-size:24px;font-weight:600;color:#EDE4CC">Identificador</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#9C9883">nivel</p>
+</div>
+<div data-build-in="pop 3 auto" style="position:absolute;left:1190px;top:660px;width:200px;height:96px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;background:#121611;border:2px solid #2A3026;border-radius:12px;padding:8px">
+<p style="font-size:24px;font-weight:600;color:#EDE4CC">Identificador</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#9C9883">LIMITE</p>
+</div>
+<div data-build-in="pop 3 auto" style="position:absolute;left:1500px;top:660px;width:200px;height:96px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;background:#121611;border:2px solid #2A3026;border-radius:12px;padding:8px">
+<p style="font-size:24px;font-weight:600;color:#EDE4CC">Literal</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#9C9883">2 (ration)</p>
+</div>
+<p data-build-in="fade 3 auto" style="position:absolute;left:960px;top:800px;width:832px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.4;color:#9C9883">checkpoint (nivel &lt; LIMITE) { risco = 2 }</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">06 · compilador/parser.js</p>
+<aside>O parser é descendente recursivo: cada regra da gramática EBNF, que está publicada no próprio código, vira uma função. Ele olha um token à frente (LL(1)) para decidir o caminho. Clique para montar a árvore da mesma linha do slide anterior: o checkpoint tem uma condição, que é uma operação binária entre dois identificadores, e um corpo com uma atribuição. A árvore tem 26 tipos de nó e cada nó guarda linha e coluna, o que permite mensagens de erro precisas.</aside>
+</section>

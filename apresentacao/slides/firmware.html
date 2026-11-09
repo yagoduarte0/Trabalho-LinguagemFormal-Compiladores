@@ -1,0 +1,31 @@
+<section id="firmware" data-transition="fade" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">O FIRMWARE</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">O abrigo inteiro é um programa AEGIS</h2>
+<div style="position:absolute;left:128px;top:320px;width:900px;display:flex;flex-direction:column;gap:8px;background:#121611;border:1px solid #2A3026;border-radius:16px;padding:32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#7F7C68">// firmware/abrigo.aeg</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.35;white-space:nowrap;color:#EDE4CC"><span style="color:#A8D04A">survivor</span> sentinela_calor {<br>&#160;&#160;&#160;&#160;temperatura = climate.temperature(radio(PINO_DHT))<br>&#160;&#160;&#160;&#160;risco_calor = NORMAL<br>&#160;&#160;&#160;&#160;<span style="color:#A8D04A">checkpoint</span> (temperatura &gt;= TEMP_ALARME) {<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;risco_calor = ALARME<br>&#160;&#160;&#160;&#160;} <span style="color:#A8D04A">fallback checkpoint</span> (temperatura &gt;= TEMP_ATENCAO) {<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;risco_calor = ATENCAO<br>&#160;&#160;&#160;&#160;}<br>}</p>
+</div>
+<div data-build-in="rise 1" style="position:absolute;left:1092px;top:320px;width:700px;display:flex;flex-direction:column;gap:4px">
+<p style="font-family:Oswald, Arial, sans-serif;font-size:120px;font-weight:700;line-height:1;color:#A8D04A">810</p>
+<p style="font-size:32px;color:#EDE4CC">linhas de AEGIS no abrigo.aeg</p>
+</div>
+<x-shape kind="arrow-down" data-build-in="fade 2" style="position:absolute;left:1100px;top:520px;width:28px;height:48px;background:#C8B88A"></x-shape>
+<div data-build-in="rise 2 auto" style="position:absolute;left:1092px;top:584px;width:700px;display:flex;flex-direction:column;gap:4px">
+<p style="font-family:Oswald, Arial, sans-serif;font-size:120px;font-weight:700;line-height:1;color:#EDE4CC">1.262</p>
+<p style="font-size:32px;color:#EDE4CC">linhas de MicroPython geradas</p>
+</div>
+<p data-build-in="fade 3" style="position:absolute;left:128px;top:760px;width:1664px;font-size:24px;color:#9C9883">9 survivors, um por sensor ou entrada, rodam a cada ciclo de 500 ms:</p>
+<div data-build-in="rise 3 auto" style="position:absolute;left:128px;top:808px;width:1664px;display:flex;gap:12px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">fumaça</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">ar</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">água</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">calor</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">presença</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">chuva</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">solo</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">digital</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;padding:8px 16px;border:1px solid #C8B88A;border-radius:24px;color:#EDE4CC">botão</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">10 · firmware/abrigo.aeg</p>
+<aside>Aqui a linguagem deixa de ser exemplo e vira produto. O firmware do abrigo tem 810 linhas de AEGIS e vira 1.262 linhas de MicroPython. Cada sensor tem um survivor, como este do calor: lê o DHT22 e classifica o risco com checkpoint e fallback checkpoint. A cada ciclo de meio segundo, os nove survivors rodam e o pior risco decide a reação.</aside>
+</section>

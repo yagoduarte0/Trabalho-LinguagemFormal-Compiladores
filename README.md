@@ -104,6 +104,14 @@ em [docs/hardware.md](docs/hardware.md).
 
 ---
 
+## A apresentação técnica
+
+`apresentacao/` traz os 19 slides animados que mostram o projeto do compilador ao
+protótipo físico, com notas do apresentador em cada slide. Para apresentar, abra a
+página publicada no modo Apresentar; detalhes em [apresentacao/README.md](apresentacao/README.md).
+
+---
+
 ## O pitch
 
 `pitch/` traz a apresentação de negócio do produto, feita em

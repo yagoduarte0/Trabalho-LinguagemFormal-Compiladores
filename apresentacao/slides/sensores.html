@@ -1,0 +1,25 @@
+<section id="sensores" data-transition="fade" style="background:#0A0D0A;color:#EDE4CC;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px">
+<p style="position:absolute;left:128px;top:128px;width:900px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:4px;color:#A8D04A">SENSORES E REGRAS</p>
+<h2 style="position:absolute;left:128px;top:176px;width:1664px;font-family:Oswald, Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#EDE4CC">Sete sensores, cada um com a sua regra</h2>
+<table data-build-in="fade 1" style="position:absolute;left:128px;top:320px;width:1664px;font-size:24px;color:#EDE4CC">
+<tr style="background:#121611"><th style="width:24%;color:#C8B88A">Sensor</th><th style="width:24%;color:#C8B88A">Mede</th><th style="width:52%;color:#C8B88A">Regra no abrigo.aeg</th></tr>
+<tr><td>MQ-2</td><td>fumaça e gás</td><td style="color:#E5533D">base + 800 → ALARME: fumaça</td></tr>
+<tr><td>HC-SR04</td><td>nível da água</td><td style="color:#E5533D">menos de 20 cm → ALARME: enchente</td></tr>
+<tr><td>Chuva + solo</td><td>chuva e umidade do solo</td><td style="color:#E5533D">chovendo e solo ≥ 85% → ALARME: deslizamento</td></tr>
+<tr><td>PIR HC-SR501</td><td>presença</td><td style="color:#E5533D">armado e sem digital em 15 s → ALARME: intruso</td></tr>
+<tr><td>DHT22</td><td>temperatura</td><td style="color:#E8C547">≥ 40 °C ATENÇÃO · ≥ 55 °C ALARME</td></tr>
+<tr><td>MQ-135</td><td>qualidade do ar</td><td style="color:#E8C547">base + 800 → ATENÇÃO</td></tr>
+<tr><td>Chuva FC-37</td><td>início da chuva</td><td style="color:#E8C547">≥ 30% → ATENÇÃO: chovendo</td></tr>
+</table>
+<p data-build-in="fade 2" style="position:absolute;left:128px;top:770px;width:1664px;font-size:24px;color:#9C9883">Saídas e entradas da placa:</p>
+<div data-build-in="rise 2 auto" style="position:absolute;left:128px;top:816px;width:1664px;display:flex;gap:12px">
+<p style="font-size:24px;padding:8px 20px;border-radius:24px;background:#C8B88A;color:#0A0D0A">LEDs</p>
+<p style="font-size:24px;padding:8px 20px;border-radius:24px;background:#C8B88A;color:#0A0D0A">sirene</p>
+<p style="font-size:24px;padding:8px 20px;border-radius:24px;background:#C8B88A;color:#0A0D0A">OLED SSD1306</p>
+<p style="font-size:24px;padding:8px 20px;border-radius:24px;background:#C8B88A;color:#0A0D0A">relé do exaustor</p>
+<p style="font-size:24px;padding:8px 20px;border-radius:24px;background:#C8B88A;color:#0A0D0A">digital AS608</p>
+<p style="font-size:24px;padding:8px 20px;border-radius:24px;background:#C8B88A;color:#0A0D0A">botão silenciar</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#7F7C68">12 · limites nas law do abrigo.aeg</p>
+<aside>Os quatro primeiros são alarmes: fumaça, enchente, deslizamento e intruso. O deslizamento é a regra mais interessante, porque junta dois sensores: só chuva ou só solo molhado dão atenção, mas os dois juntos com o solo acima de 85% viram alarme. O intruso só conta quando o sistema está armado pela digital. Todos os limites são law no código, então calibrar é mudar um número.</aside>
+</section>
