@@ -660,12 +660,30 @@ solo e o relé, orçados em lojas nacionais.
 \section{Conclusão}
 \label{sec:conclusao}
 
-\pendente{retomar o objetivo e o que foi entregue}
+Este trabalho apresentou o AEGIS, uma linguagem de domínio específico
+para programar um sistema de monitoramento de abrigos que funciona sem
+nuvem, e o compilador que a traduz para Python. A linguagem foi
+especificada com uma gramática LL(1), e o compilador implementa as três
+fases clássicas: análise léxica por expressões regulares com
+\textit{maximal munch}, análise sintática descendente recursiva com
+recuperação de erros em modo pânico e geração de código para dois alvos.
+O firmware completo do abrigo, com 810 linhas, foi escrito na própria
+linguagem e compilado sem alterações para o PC e para o ESP32.
 
-Como trabalhos futuros, destacam-se: uma fase de análise semântica, já
-que os tipos declarados (\texttt{ration}, \texttt{vital}, \texttt{status})
-são registrados na AST mas ainda não verificados; autenticação no painel
-web; e a conclusão da montagem do hardware real.
+A separação entre a linguagem e o hardware foi a decisão que mais rendeu.
+Como o mesmo programa roda no alvo simulado, a lógica de risco pôde ser
+verificada por 41 cenários automatizados no computador antes de ir para
+a placa, e erros de regra apareceram ali, e não na bancada. A linguagem
+também se mostrou adequada para expressar regras de reação: a prioridade
+dos riscos ficou escrita como uma sequência de \texttt{checkpoint}s, legível
+sem conhecer Python.
+
+Como trabalhos futuros, destacam-se: uma fase de análise semântica, já que
+os tipos declarados (\texttt{ration}, \texttt{vital}, \texttt{status}) são
+registrados na AST mas ainda não verificados; a execução concorrente das
+tarefas (\texttt{survivor}), hoje chamadas em sequência pelo laço
+principal; autenticação no painel web; e a conclusão da montagem do
+hardware real.
 
 % =====================================================================
 % Referências: confira cada uma antes de entregar.
