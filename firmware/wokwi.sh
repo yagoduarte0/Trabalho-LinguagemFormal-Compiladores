@@ -3,6 +3,8 @@
 #
 #   ./wokwi.sh preparar   baixa o MicroPython e instala o mpremote (uma vez)
 #   ./wokwi.sh enviar     recompila o abrigo.aeg e envia o firmware ao simulador
+#   ./wokwi.sh demo       para a apresentação: espera o simulador, envia o firmware,
+#                         espera o WiFi e abre o painel no navegador quando ele responder
 #   ./wokwi.sh dedo       lê a digital pelo Touch ID do Mac e manda ao simulador
 #                         (o Wokwi não tem o leitor AS608)
 #   ./wokwi.sh placa      recompila e grava o firmware + config.json no ESP32 real
@@ -79,6 +81,39 @@ enviar() {
   echo "firmware enviado. Veja a saída no terminal do Wokwi; painel em http://localhost:8180"
 }
 
+# a simulação responde? (pausada, com a aba do diagrama escondida, não responde)
+simulador_responde() {
+  "$MPREMOTE" connect "$PORTA" exec "print('ok')" >/dev/null 2>&1
+}
+
+demo() {
+  [ -x "$MPREMOTE" ] || preparar
+  echo "1/3 esperando o Wokwi (aba do diagram.json visível e play apertado)..."
+  local i
+  for i in $(seq 1 15); do
+    simulador_responde && break
+    if [ "$i" = 15 ]; then
+      echo "   o Wokwi não respondeu. No VS Code: deixe a aba do diagrama visível,"
+      echo "   aperte stop (■) e play (▶) de novo, e rode ./wokwi.sh demo outra vez."
+      exit 1
+    fi
+    sleep 2
+  done
+  echo "2/3 compilando o abrigo.aeg e enviando o firmware..."
+  enviar >/dev/null
+  echo "3/3 esperando o ESP32 entrar no WiFi do Wokwi e o painel responder..."
+  for i in $(seq 1 45); do
+    if curl -s -m 3 http://localhost:8180/dados | grep -q '"estado"'; then
+      echo "pronto: painel em http://localhost:8180 (o bot do Telegram avisa que o abrigo ligou)"
+      open http://localhost:8180
+      return
+    fi
+    sleep 2
+  done
+  echo "   o painel não respondeu em 90 s: veja o terminal do Wokwi (WiFi? erro no firmware?)"
+  exit 1
+}
+
 placa() {
   [ -x "$MPREMOTE" ] || { echo "rode ./wokwi.sh preparar primeiro"; exit 1; }
   compilar
@@ -124,8 +159,9 @@ PY
 case "${1:-}" in
   preparar) preparar ;;
   enviar) enviar ;;
+  demo) demo ;;
   dedo) dedo ;;
   placa) placa ;;
   pc) python3 rodar_pc.py ;;
-  *) echo "uso: ./wokwi.sh preparar | enviar | dedo | placa | pc"; exit 2 ;;
+  *) echo "uso: ./wokwi.sh preparar | enviar | demo | dedo | placa | pc"; exit 2 ;;
 esac
