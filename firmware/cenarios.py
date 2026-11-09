@@ -572,6 +572,35 @@ def _(g):
         bot.begin("", "")
 
 
+@cenario("Telegram: consulta que falha no boot nao engole o primeiro comando")
+def _(g):
+    bot = g["telegram"]
+    respostas = [
+        {"ok": True, "result": {"message_id": 1, "date": 1000}},   # "AEGIS ligado": hora do boot
+        None,                                                       # 1a consulta falha (timeout)
+        {"ok": True, "result": [
+            {"update_id": 20, "message": {"chat": {"id": 42}, "date": 990, "text": "/silenciar"}},  # antes de ligar
+            {"update_id": 21, "message": {"chat": {"id": 42}, "date": 1005, "text": "/ajuda"}},     # depois
+        ]},
+    ]
+    pedidos = []
+
+    def falso(metodo, dados):
+        pedidos.append((metodo, dict(dados)))
+        return respostas.pop(0)
+
+    bot._pedir = falso
+    try:
+        assert bot.begin("123:abc", 42)
+        assert bot.send("ligado")
+        assert bot.command(0) == ""
+        assert bot.command(0) == "/ajuda", "o /ajuda mandado depois de ligar sumiu"
+        assert pedidos[1][1]["offset"] == 0 and pedidos[2][1]["offset"] == 0, pedidos
+    finally:
+        del bot._pedir
+        bot.begin("", "")
+
+
 def principal():
     g = carregar_firmware()
     falhas = 0

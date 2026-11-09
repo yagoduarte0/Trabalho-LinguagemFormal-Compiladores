@@ -176,16 +176,28 @@ class _TelegramBase:
     # chegou desse chat, consultando a API no máximo a cada intervalo_ms
     # (no ESP32 cada consulta segura o laço por 1 a 2 s). Mensagens de outros
     # chats são ignoradas: só o dono do abrigo manda no bot.
+    #
+    # Comandos mandados antes de o abrigo ligar não são atendidos. O primeiro
+    # envio que dá certo traz a data do servidor; descontando o tempo desde o
+    # begin(), ela vira a hora do boot no relógio do Telegram (_desde), e só
+    # as mensagens com data anterior a ela são descartadas. Uma consulta que
+    # falha (comum no Wokwi) não engole mais o primeiro comando do dono.
     def __init__(self):
         self.fila = []
         self._token = ""
         self._chat = ""
-        self._offset = -1      # -1: a primeira consulta só descarta o que chegou antes de ligar
+        self._offset = -1      # -1: ainda não varreu o que chegou antes de ligar
         self._ultima = None
+        self._ligou = None     # _ms() do begin()
+        self._desde = None     # hora do boot em segundos Unix, pelo relógio do Telegram
 
     def begin(self, token, chat):
         self._token = str(token or "")
         self._chat = str(chat or "")
+        self._offset = -1
+        self._ultima = None
+        self._ligou = self._ms()
+        self._desde = None
         if self._token and not self._chat:
             print("[telegram] falta o telegram_chat no config.json: rode firmware/telegram_chat.py")
         return self._ativo()
@@ -200,7 +212,12 @@ class _TelegramBase:
         if not self._ativo():
             return False
         resposta = self._pedir("sendMessage", {"chat_id": self._chat, "text": str(texto)})
-        return resposta is not None and resposta.get("ok", False)
+        ok = resposta is not None and resposta.get("ok", False)
+        if ok and self._desde is None:
+            data = (resposta.get("result") or {}).get("date")
+            if data:
+                self._desde = data - self._diff(self._ms(), self._ligou) // 1000
+        return ok
 
     def command(self, intervalo_ms=15000):
         if not self.fila and self._ativo():
@@ -211,6 +228,10 @@ class _TelegramBase:
         return self.fila.pop(0) if self.fila else ""
 
     def _consultar(self):
+        # com a hora do boot conhecida, busca tudo o que está pendente e filtra
+        # pela data; sem ela, a primeira consulta descarta o que estava pendente
+        if self._offset == -1 and self._desde is not None:
+            self._offset = 0
         resposta = self._pedir("getUpdates", {"offset": self._offset, "timeout": 0, "limit": 10})
         if not resposta or not resposta.get("ok"):
             return
@@ -220,7 +241,8 @@ class _TelegramBase:
             self._offset = u["update_id"] + 1
             m = u.get("message") or {}
             texto = m.get("text") or ""
-            if primeira or str(m.get("chat", {}).get("id")) != self._chat or not texto.startswith("/"):
+            antiga = primeira or (self._desde is not None and m.get("date", 0) < self._desde)
+            if antiga or str(m.get("chat", {}).get("id")) != self._chat or not texto.startswith("/"):
                 continue
             self.fila.append(texto.split()[0].split("@")[0].lower())`;
 
