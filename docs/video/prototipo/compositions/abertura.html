@@ -1,0 +1,30 @@
+<!-- Abertura: o título entra por cima do vídeo nos primeiros segundos. -->
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #ab-faixa { position: absolute; left: 300px; bottom: 0; width: 1620px; height: 360px;
+      background: linear-gradient(to top, rgba(10, 13, 10, 0.92) 0%, rgba(10, 13, 10, 0.75) 45%, rgba(10, 13, 10, 0) 100%); opacity: 0; }
+    #ab-titulo { position: absolute; left: 380px; bottom: 120px; font-family: "League Gothic", sans-serif; font-size: 150px;
+      letter-spacing: 0.06em; line-height: 0.9; color: #ede4cc; opacity: 0; }
+    #ab-sub { position: absolute; left: 386px; bottom: 74px; font-family: "JetBrains Mono", monospace; font-size: 28px;
+      letter-spacing: 0.16em; text-transform: uppercase; color: #a8d04a; opacity: 0; }
+    #ab-linha { position: absolute; left: 386px; bottom: 60px; width: 640px; height: 2px; background: #a8d04a; transform-origin: left center; }
+  </style>
+  <div id="root" data-composition-id="abertura" data-width="1920" data-height="1080">
+    <div id="ab-faixa"></div>
+    <div id="ab-titulo">Protótipo físico</div>
+    <div id="ab-sub">componentes e demonstração · AEGIS</div>
+    <div id="ab-linha"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    gsap.set("#ab-linha", { scaleX: 0 });
+    tl.to("#ab-faixa", { opacity: 1, duration: 0.6, ease: "power2.out" }, 0.2);
+    tl.fromTo("#ab-titulo", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.4);
+    tl.fromTo("#ab-sub", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.8);
+    tl.to("#ab-linha", { scaleX: 1, duration: 0.9, ease: "power3.inOut" }, 0.9);
+    tl.to(["#ab-titulo", "#ab-sub", "#ab-linha", "#ab-faixa"], { opacity: 0, duration: 0.6, ease: "power2.in" }, 5.2);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["abertura"] = tl;
+  </script>
+</template>

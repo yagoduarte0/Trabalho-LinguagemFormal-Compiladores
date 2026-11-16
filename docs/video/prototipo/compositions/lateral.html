@@ -1,0 +1,119 @@
+<!-- Barra lateral: a lista dos componentes (os ligados na bancada e os que
+     entram com a fonte). O de que se está falando acende; na demonstração,
+     acendem os sensores que estão disparando, e o painel de baixo mostra o
+     estado do abrigo, igual aos LEDs. -->
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #lat { position: absolute; left: 0; top: 0; width: 300px; height: 1080px; background: #0a0d0a;
+      border-right: 1.5px solid rgba(200, 184, 138, 0.25); padding: 44px 26px 0 30px; color: #ede4cc; }
+    #lat-marca { font-family: "League Gothic", sans-serif; font-size: 76px; letter-spacing: 0.08em; line-height: 0.9; color: #ede4cc; }
+    #lat-sub { margin-top: 8px; font-family: "JetBrains Mono", monospace; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; color: #a8d04a; }
+    .grupo { margin-top: 30px; margin-bottom: 8px; font-family: "JetBrains Mono", monospace; font-size: 16px;
+      letter-spacing: 0.16em; text-transform: uppercase; color: rgba(200, 184, 138, 0.75); }
+    .item { position: relative; display: flex; align-items: center; gap: 12px; height: 40px; padding-left: 12px;
+      font-size: 24px; color: rgba(237, 228, 204, 0.82); }
+    .item i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+    .liga i { background: #a8d04a; }
+    .fonte i { border: 2px solid #c8b88a; }
+    .fonte { color: rgba(237, 228, 204, 0.6); }
+    .realce { position: absolute; left: 0; top: 2px; width: 248px; height: 36px; border-radius: 4px;
+      background: rgba(168, 208, 74, 0.16); border-left: 4px solid #a8d04a; opacity: 0; }
+    .fonte .realce { background: rgba(200, 184, 138, 0.16); border-left-color: #c8b88a; }
+    .item span { position: relative; }
+
+    #estado { position: absolute; left: 22px; top: 846px; width: 256px; height: 200px; padding: 16px 18px;
+      border: 1.5px solid rgba(200, 184, 138, 0.35); border-radius: 6px; background: #111610; opacity: 0; }
+    #estado .tit { font-family: "JetBrains Mono", monospace; font-size: 16px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(200, 184, 138, 0.8); }
+    .est { position: absolute; left: 18px; top: 48px; opacity: 0; }
+    .est b { display: block; font-family: "League Gothic", sans-serif; font-weight: 400; font-size: 64px; letter-spacing: 0.04em; line-height: 1; }
+    .est small { display: block; margin-top: 6px; font-family: "JetBrains Mono", monospace; font-size: 19px; color: rgba(237, 228, 204, 0.8); }
+    .e-ligando b { color: rgba(237, 228, 204, 0.55); }
+    .e-normal b { color: #a8d04a; }
+    .e-atencao b { color: #f0b545; }
+    .e-alarme b { color: #ef5a4c; }
+    #estado-luz { position: absolute; right: 18px; top: 16px; width: 16px; height: 16px; border-radius: 50%; background: rgba(237, 228, 204, 0.3); }
+  </style>
+  <div id="root" data-composition-id="lateral" data-width="1920" data-height="1080">
+    <div id="lat">
+      <div id="lat-marca">AEGIS</div>
+      <div id="lat-sub">protótipo físico</div>
+
+      <div class="grupo">ligados na bancada</div>
+      <div class="item liga" id="it-esp"><div class="realce"></div><i></i><span>ESP32</span></div>
+      <div class="item liga" id="it-leds"><div class="realce"></div><i></i><span>LEDs</span></div>
+      <div class="item liga" id="it-buzzer"><div class="realce"></div><i></i><span>Buzzer</span></div>
+      <div class="item liga" id="it-botao"><div class="realce"></div><i></i><span>Botão</span></div>
+      <div class="item liga" id="it-oled"><div class="realce"></div><i></i><span>Display OLED</span></div>
+      <div class="item liga" id="it-dht"><div class="realce"></div><i></i><span>DHT22</span></div>
+      <div class="item liga" id="it-pir"><div class="realce"></div><i></i><span>PIR · presença</span></div>
+      <div class="item liga" id="it-chuva"><div class="realce"></div><i></i><span>Chuva</span></div>
+      <div class="item liga" id="it-solo"><div class="realce"></div><i></i><span>Umidade do solo</span></div>
+
+      <div class="grupo">entram com a fonte</div>
+      <div class="item fonte" id="it-rele"><div class="realce"></div><i></i><span>Relé</span></div>
+      <div class="item fonte" id="it-mq135"><div class="realce"></div><i></i><span>MQ-135 · ar</span></div>
+      <div class="item fonte" id="it-mq2"><div class="realce"></div><i></i><span>MQ-2 · fumaça</span></div>
+      <div class="item fonte" id="it-hc"><div class="realce"></div><i></i><span>HC-SR04 · água</span></div>
+    </div>
+
+    <div id="estado">
+      <div class="tit">estado do abrigo</div>
+      <div id="estado-luz"></div>
+      <div class="est e-ligando" id="est-ligando"><b>LIGANDO</b><small>abertura no display</small></div>
+      <div class="est e-normal" id="est-normal1"><b>NORMAL</b><small>tudo em ordem</small></div>
+      <div class="est e-atencao" id="est-atencao1"><b>ATENÇÃO</b><small>solo encharcado</small></div>
+      <div class="est e-alarme" id="est-alarme"><b>ALARME</b><small>deslizamento</small></div>
+      <div class="est e-alarme" id="est-mudo"><b>ALARME</b><small>sirene silenciada</small></div>
+      <div class="est e-atencao" id="est-atencao2"><b>ATENÇÃO</b><small>ainda chovendo</small></div>
+      <div class="est e-normal" id="est-normal2"><b>NORMAL</b><small>tudo em ordem</small></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+
+    // [item, início, fim] em segundos do vídeo editado (assets/cortes.json)
+    const REALCES = [
+      ["rele", 36.13, 52.13], ["mq135", 52.13, 70.8], ["mq2", 70.8, 80.37], ["hc", 80.37, 108.2],
+      ["solo", 108.2, 151.33], ["chuva", 151.33, 169.33], ["pir", 169.33, 185.07],
+      ["oled", 189.63, 211.13], ["botao", 211.13, 220.4], ["buzzer", 220.4, 230.77],
+      ["dht", 230.77, 246.57], ["leds", 246.57, 272.67], ["esp", 272.67, 284.8],
+      // demonstração: os sensores acendem quando disparam
+      ["esp", 326.0, 336.0],
+      ["solo", 380.5, 410.0], ["pir", 412.0, 423.3], ["chuva", 437.5, 486.6],
+      ["buzzer", 446.0, 493.4], ["botao", 490.5, 499.0], ["solo", 521.0, 526.0], ["chuva", 530.0, 546.0],
+      ["rele", 563.0, 572.0], ["mq135", 563.0, 572.0], ["mq2", 563.0, 572.0], ["hc", 563.0, 572.0],
+    ];
+    REALCES.forEach(([id, a, b]) => {
+      tl.to(`#it-${id} .realce`, { opacity: 1, duration: 0.3, ease: "power2.out" }, a);
+      tl.to(`#it-${id} span`, { color: "#ede4cc", duration: 0.3 }, a);
+      tl.to(`#it-${id} .realce`, { opacity: 0, duration: 0.4, ease: "power2.in" }, b - 0.4);
+      tl.to(`#it-${id} span`, { color: "rgba(237, 228, 204, 0.82)", duration: 0.4 }, b - 0.4);
+    });
+
+    // painel de estado: só na demonstração
+    tl.fromTo("#estado", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 324.2);
+    tl.to("#estado", { opacity: 0, duration: 0.6 }, 556.4);
+
+    const COR = { ligando: "rgba(237, 228, 204, 0.3)", normal: "#a8d04a", atencao: "#f0b545", alarme: "#ef5a4c" };
+    const ESTADOS = [
+      ["ligando", 324.2, 336.0, "ligando"], ["normal1", 336.0, 398.6, "normal"],
+      ["atencao1", 398.6, 446.0, "atencao"], ["alarme", 446.0, 493.6, "alarme"],
+      ["mudo", 493.6, 524.0, "alarme"], ["atencao2", 524.0, 546.0, "atencao"],
+      ["normal2", 546.0, 557.03, "normal"],
+    ];
+    ESTADOS.forEach(([id, a, b, cor]) => {
+      tl.fromTo(`#est-${id}`, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out", immediateRender: false }, a);
+      tl.to(`#est-${id}`, { opacity: 0, duration: 0.25 }, b - 0.25);
+      tl.to("#estado-luz", { backgroundColor: COR[cor], boxShadow: `0 0 18px ${COR[cor]}`, duration: 0.3 }, a);
+    });
+    // no alarme a luz pisca, como o LED vermelho
+    for (let t = 446.0; t < 493.0; t += 1.0) {
+      tl.to("#estado-luz", { opacity: 0.25, duration: 0.25 }, t + 0.5);
+      tl.to("#estado-luz", { opacity: 1, duration: 0.25 }, t + 0.75);
+    }
+
+    window.__timelines = window.__timelines || {};
+    window.__timelines["lateral"] = tl;
+  </script>
+</template>

@@ -1,0 +1,154 @@
+<!-- Fichas por cima do vídeo: o capítulo no alto, a ficha de cada componente
+     embaixo à esquerda (nome, ligação, o que faz e se está ligado), avisos
+     curtos da demonstração e o trecho do código AEGIS que dispara o alarme de
+     deslizamento (firmware/abrigo.aeg). -->
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; color: #ede4cc; font-family: "Inter", sans-serif; }
+
+    .cap { position: absolute; left: 340px; top: 36px; display: flex; align-items: center; gap: 14px; padding: 8px 20px 8px 16px;
+      border-radius: 6px; background: rgba(10, 13, 10, 0.86); font-family: "League Gothic", sans-serif; font-size: 40px;
+      letter-spacing: 0.12em; text-transform: uppercase; color: #c8b88a; opacity: 0; }
+    .cap i { width: 12px; height: 12px; border-radius: 50%; background: #a8d04a; box-shadow: 0 0 16px #a8d04a; }
+
+    .ficha { position: absolute; left: 340px; top: 112px; width: 780px; padding: 22px 26px 22px 28px; border-radius: 8px;
+      background: rgba(10, 13, 10, 0.9); border-left: 6px solid #a8d04a; opacity: 0; }
+    .ficha.fonte { border-left-color: #c8b88a; }
+    .ficha.dir { left: auto; right: 44px; top: 130px; width: 700px; }
+    .ficha.nota { border-left-color: #f0b545; }
+    .ficha .nome { font-family: "League Gothic", sans-serif; font-size: 60px; letter-spacing: 0.03em; line-height: 1; text-transform: uppercase; }
+    .ficha .tec { margin-top: 8px; font-family: "JetBrains Mono", monospace; font-size: 22px; color: #c8b88a; }
+    .ficha .faz { margin-top: 12px; font-size: 28px; line-height: 1.35; color: #ede4cc; }
+    .ficha .selo { position: absolute; right: 22px; top: 22px; padding: 5px 12px; border-radius: 4px; font-family: "JetBrains Mono", monospace;
+      font-size: 17px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
+    .selo.liga { color: #0a0d0a; background: #a8d04a; }
+    .selo.fonte { color: #c8b88a; border: 1.5px solid #c8b88a; }
+    .selo.nota { color: #0a0d0a; background: #f0b545; }
+
+    .aviso { position: absolute; right: 44px; top: 40px; padding: 12px 22px; border-radius: 6px; background: rgba(10, 13, 10, 0.9);
+      font-family: "League Gothic", sans-serif; font-size: 46px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0; }
+    .aviso small { display: block; font-family: "JetBrains Mono", monospace; font-size: 18px; letter-spacing: 0.1em; color: #c8b88a; }
+    .av-ok { border-left: 6px solid #a8d04a; } .av-at { border-left: 6px solid #f0b545; } .av-al { border-left: 6px solid #ef5a4c; }
+
+    #codigo { position: absolute; right: 44px; top: 150px; width: 820px; border-radius: 6px; background: rgba(17, 22, 16, 0.95);
+      border: 1.5px solid rgba(200, 184, 138, 0.35); opacity: 0; }
+    #codigo .barra { height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1.5px solid rgba(200, 184, 138, 0.22);
+      font-family: "JetBrains Mono", monospace; font-size: 19px; color: rgba(237, 228, 204, 0.6); }
+    #codigo .barra i { width: 11px; height: 11px; border-radius: 50%; background: rgba(200, 184, 138, 0.35); }
+    #codigo pre { padding: 16px 18px 18px; font-family: "JetBrains Mono", monospace; font-size: 23px; line-height: 1.55; white-space: pre;
+      font-variant-ligatures: none; color: #ede4cc; }
+    #codigo .ln { color: #4b5545; display: inline-block; width: 2.4em; text-align: right; margin-right: 0.9em; }
+    #codigo .kw { color: #a8d04a; font-weight: 700; } #codigo .st { color: #e3a669; } #codigo .co { color: #6f7a66; }
+    #codigo .linha { display: block; border-left: 4px solid transparent; }
+    #codigo .linha.marca { background: rgba(239, 90, 76, 0.12); border-left-color: #ef5a4c; }
+  </style>
+  <div id="root" data-composition-id="fichas" data-width="1920" data-height="1080">
+
+    <div class="cap" id="cap-comp"><i></i>Componentes</div>
+    <div class="cap" id="cap-banc"><i></i>A bancada</div>
+    <div class="cap" id="cap-ener"><i></i>Alimentação</div>
+    <div class="cap" id="cap-demo"><i></i>Demonstração</div>
+    <div class="cap" id="cap-prox"><i></i>Próximos passos</div>
+
+    <div class="ficha fonte" id="f-rele"><div class="selo fonte">entra com a fonte</div>
+      <div class="nome">Relé 5 V</div><div class="tec">módulo SRD-05VDC · pino P23</div>
+      <div class="faz">Liga o exaustor quando há fumaça e o mantém ligado por mais 30 s.</div></div>
+    <div class="ficha fonte" id="f-mq135"><div class="selo fonte">entra com a fonte</div>
+      <div class="nome">MQ-135</div><div class="tec">qualidade do ar · 5 V · pino P35</div>
+      <div class="faz">Ar pesado deixa o abrigo em ATENÇÃO.</div></div>
+    <div class="ficha fonte" id="f-mq2"><div class="selo fonte">entra com a fonte</div>
+      <div class="nome">MQ-2</div><div class="tec">fumaça e gás · 5 V · pino P34</div>
+      <div class="faz">Fumaça dispara o ALARME e liga o exaustor.</div></div>
+    <div class="ficha fonte" id="f-hc"><div class="selo fonte">entra com a fonte</div>
+      <div class="nome">HC-SR04</div><div class="tec">ultrassom · nível da água · 5 V</div>
+      <div class="faz">Água a menos de 20 cm do sensor: ALARME de enchente.</div></div>
+    <div class="ficha" id="f-solo"><div class="selo liga">ligado</div>
+      <div class="nome">Umidade do solo</div><div class="tec">capacitivo v2.0 · 3,3 V · pino SUN</div>
+      <div class="faz">Acima de 70%: ATENÇÃO. Com chuva e acima de 85%: risco de deslizamento.</div></div>
+    <div class="ficha" id="f-chuva"><div class="selo liga">ligado</div>
+      <div class="nome">Sensor de chuva</div><div class="tec">placa + módulo · 3,3 V · pino SVP</div>
+      <div class="faz">A partir de 30% de chuva o abrigo entra em ATENÇÃO.</div></div>
+    <div class="ficha" id="f-pir"><div class="selo liga">ligado</div>
+      <div class="nome">PIR HC-SR501</div><div class="tec">presença · 5 V · pino P27</div>
+      <div class="faz">Com o abrigo armado, presença sem digital vira alarme de INTRUSO.</div></div>
+    <div class="ficha" id="f-oled"><div class="selo liga">ligado</div>
+      <div class="nome">Display OLED 0,96"</div><div class="tec">SSD1306 · I2C · P21 e P22 · 3,3 V</div>
+      <div class="faz">Mostra o estado e alterna três páginas: clima, gases, água e presença.</div></div>
+    <div class="ficha" id="f-botao"><div class="selo liga">ligado</div>
+      <div class="nome">Botão</div><div class="tec">pino P14</div>
+      <div class="faz">Cala a sirene por 60 s. O alarme continua registrado.</div></div>
+    <div class="ficha" id="f-buzzer"><div class="selo liga">ligado</div>
+      <div class="nome">Buzzer</div><div class="tec">pino P18 · resistor de 1 kΩ</div>
+      <div class="faz">A sirene: alterna dois tons enquanto o abrigo está em ALARME.</div></div>
+    <div class="ficha" id="f-dht"><div class="selo liga">ligado</div>
+      <div class="nome">DHT22</div><div class="tec">temperatura e umidade · pino P4 · 3,3 V</div>
+      <div class="faz">40 °C deixa o abrigo em ATENÇÃO; 55 °C dispara o ALARME de calor.</div></div>
+    <div class="ficha" id="f-leds"><div class="selo liga">ligado</div>
+      <div class="nome">LEDs</div><div class="tec">P13 verde · P33 amarelo · P32 vermelho</div>
+      <div class="faz">O semáforo do abrigo: normal, atenção e alarme.</div></div>
+    <div class="ficha" id="f-esp"><div class="selo liga">ligado</div>
+      <div class="nome">ESP32</div><div class="tec">NodeMCU ESP-32S · MicroPython</div>
+      <div class="faz">Roda o firmware escrito em AEGIS e gerado pelo nosso compilador.</div></div>
+    <div class="ficha nota" id="f-energia"><div class="selo nota">agora: USB-C</div>
+      <div class="nome">Alimentação</div><div class="tec">USB-C do notebook · 5 V</div>
+      <div class="faz">A fonte de 12 V 2 A com step-down fica para a próxima etapa.</div></div>
+    <div class="ficha nota dir" id="f-resistor"><div class="selo nota">ajuste</div>
+      <div class="nome">Por que o som está baixo</div><div class="tec">buzzer com resistor de 1 kΩ em série</div>
+      <div class="faz">Com 220 Ω o buzzer puxava corrente demais e a placa reiniciava no alarme.</div></div>
+    <div class="ficha fonte" id="f-limites"><div class="selo fonte">próxima etapa</div>
+      <div class="nome">Fora desta montagem</div><div class="tec">MQ-2 · MQ-135 · HC-SR04 · relé</div>
+      <div class="faz">Consomem mais do que o USB entrega: entram com a fonte de 12 V e o step-down.</div></div>
+
+    <div class="aviso av-ok" id="av-normal"><small>display</small>tudo em ordem</div>
+    <div class="aviso av-at" id="av-solo"><small>umidade do solo</small>100% · atenção</div>
+    <div class="aviso av-ok" id="av-pir1"><small>PIR</small>movimento</div>
+    <div class="aviso av-ok" id="av-pir2"><small>PIR</small>movimento</div>
+    <div class="aviso av-al" id="av-mudo"><small>botão</small>sirene silenciada · 60 s</div>
+    <div class="aviso av-ok" id="av-volta"><small>sensores secos</small>de volta ao normal</div>
+
+    <div id="codigo">
+      <div class="barra"><i></i><i></i><i></i>firmware/abrigo.aeg</div>
+      <pre><span class="linha marca"><span class="ln">357</span><span class="kw">checkpoint</span> (chovendo &amp;&amp; solo_pct &gt;= SOLO_ALARME) {</span><span class="linha"><span class="ln">358</span>    deslizamento = <span class="kw">alive</span></span><span class="linha"><span class="ln"></span><span class="co">    ...</span></span><span class="linha marca"><span class="ln">489</span><span class="kw">checkpoint</span> (deslizamento) {</span><span class="linha"><span class="ln">490</span>    estado = ALARME</span><span class="linha"><span class="ln">491</span>    motivo = <span class="st">"DESLIZAMENTO"</span></span></pre>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+
+    // entra e sai: [seletor, início, fim, deslocamento inicial]
+    function janela(sel, a, b, dx, dy) {
+      tl.fromTo(sel, { opacity: 0, x: dx || 0, y: dy || 0 },
+        { opacity: 1, x: 0, y: 0, duration: 0.5, ease: "power3.out", immediateRender: false }, a);
+      tl.to(sel, { opacity: 0, x: dx ? dx / 2 : 0, duration: 0.35, ease: "power2.in" }, b - 0.35);
+    }
+
+    // capítulos (tempos de assets/cortes.json)
+    janela("#cap-comp", 36.4, 185.0, -24);
+    janela("#cap-banc", 185.3, 284.7, -24);
+    janela("#cap-ener", 285.0, 323.9, -24);
+    janela("#cap-demo", 324.2, 556.9, -24);
+    janela("#cap-prox", 557.3, 600.2, -24);
+
+    // fichas dos componentes
+    [
+      ["#f-rele", 37.0, 51.8], ["#f-mq135", 53.0, 70.4], ["#f-mq2", 71.4, 80.0], ["#f-hc", 81.2, 107.8],
+      ["#f-solo", 109.2, 150.9], ["#f-chuva", 152.2, 168.9], ["#f-pir", 170.2, 184.7],
+      ["#f-oled", 190.4, 210.7], ["#f-botao", 211.9, 220.2], ["#f-buzzer", 220.8, 230.4],
+      ["#f-dht", 231.6, 246.2], ["#f-leds", 247.4, 272.3], ["#f-esp", 273.4, 284.4],
+      ["#f-energia", 286.0, 323.6], ["#f-resistor", 497.5, 516.8], ["#f-limites", 558.5, 579.8],
+    ].forEach(([sel, a, b]) => janela(sel, a, b, -40));
+
+    // avisos da demonstração, no alto à direita
+    janela("#av-normal", 348.0, 356.0, 0, -16);
+    janela("#av-solo", 403.8, 410.0, 0, -16);
+    janela("#av-pir1", 413.3, 416.6, 0, -16);
+    janela("#av-pir2", 419.3, 422.8, 0, -16);
+    janela("#av-mudo", 493.6, 497.2, 0, -16);
+    janela("#av-volta", 546.2, 553.5, 0, -16);
+
+    // a regra do deslizamento, no código da linguagem AEGIS
+    janela("#codigo", 447.0, 486.4, 30);
+
+    window.__timelines = window.__timelines || {};
+    window.__timelines["fichas"] = tl;
+  </script>
+</template>

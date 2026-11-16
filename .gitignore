@@ -32,3 +32,12 @@ docs/video/animacao/.hyperframes/
 docs/video/animacao/renders/
 docs/video/animacao/CLAUDE.md
 docs/video/animacao/AGENTS.md
+
+# Projeto HyperFrames do vídeo do protótipo: o vídeo cortado (gerado por
+# docs/video/edicao/prototipo_cortes.py a partir de video/fisico/bruto.mov), artefatos e renders
+docs/video/prototipo/assets/base.mp4
+docs/video/prototipo/assets/base.json
+docs/video/prototipo/.hyperframes/
+docs/video/prototipo/renders/
+docs/video/prototipo/CLAUDE.md
+docs/video/prototipo/AGENTS.md

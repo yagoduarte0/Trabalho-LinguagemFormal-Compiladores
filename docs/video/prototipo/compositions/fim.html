@@ -1,0 +1,27 @@
+<!-- Fim: depois do "obrigado", o logo do AEGIS cobre a tela e tudo escurece. -->
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #fim-fundo { position: absolute; inset: 0; background: #0a0d0a; opacity: 0; }
+    #fim-logo { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; opacity: 0; }
+    #fim-legenda { position: absolute; left: 0; width: 1920px; top: 990px; text-align: center; font-family: "JetBrains Mono", monospace;
+      font-size: 28px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(237, 228, 204, 0.7); opacity: 0; }
+    #fim-preto { position: absolute; inset: 0; background: #000; opacity: 0; }
+  </style>
+  <div id="root" data-composition-id="fim" data-width="1920" data-height="1080">
+    <div id="fim-fundo"></div>
+    <img id="fim-logo" src="assets/logo.png" alt="AEGIS" />
+    <div id="fim-legenda">o mesmo código do simulador, agora no ESP32</div>
+    <div id="fim-preto"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // começa 2 s depois do início do bloco (o "obrigado" termina em ~602 s)
+    tl.to("#fim-fundo", { opacity: 1, duration: 1.0, ease: "power2.inOut" }, 1.8);
+    tl.fromTo("#fim-logo", { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 1.4, ease: "power3.out" }, 2.2);
+    tl.to("#fim-legenda", { opacity: 1, duration: 0.8 }, 3.2);
+    tl.to("#fim-preto", { opacity: 1, duration: 0.9, ease: "power2.in" }, 6.0);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["fim"] = tl;
+  </script>
+</template>
