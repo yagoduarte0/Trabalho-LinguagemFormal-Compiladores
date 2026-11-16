@@ -668,6 +668,47 @@ aegisc: 2 erro(s), nada foi gerado
 \label{fig:erro}
 \end{figure}
 
+\subsection{Protótipo físico}
+
+O firmware foi gravado numa placa NodeMCU ESP-32S (38 pinos, MicroPython
+1.29), com os módulos ligados por uma protoboard
+(Fig.~\ref{fig:bancada}). Sem nenhuma alteração no programa gerado,
+funcionaram na bancada os LEDs, a sirene, o botão, o display OLED, o
+DHT22, o sensor de presença e os sensores de chuva e de umidade do solo.
+Com a haste do sensor de solo mergulhada em água, o abrigo foi para
+ATENÇÃO; com a placa de chuva molhada, passou a ALARME por deslizamento;
+o botão calou a sirene sem apagar o alarme e, com os sensores secos, o
+abrigo voltou a NORMAL, a mesma sequência verificada nos cenários do alvo
+simulado.
+
+A montagem expôs limites que o simulador não mostra. Alimentada só pela
+porta USB, a placa reiniciava por subtensão (\emph{brownout}) quando a
+carga crescia: os aquecedores dos dois sensores de gás (cerca de 150~mA
+cada) e a bobina do relé não couberam no orçamento de corrente, e mesmo a
+sirene, um buzzer magnético de baixa resistência ligado direto ao pino,
+derrubava a placa até receber um resistor de 1~k$\Omega$ em série. Pelo
+mesmo motivo, o rádio WiFi não pôde ser ligado na placa, e os canais
+remotos foram validados no Wokwi e no alvo simulado. Ficaram duas lições
+de montagem: uma entrada analógica sem sensor lê ruído, que o firmware
+interpreta como solo encharcado, e precisa de um nível definido enquanto o
+sensor não é ligado; e, nas placas de 38 pinos, os pinos da memória
+\emph{flash} (CLK e SD0 a SD3) ficam expostos e não podem receber
+nenhuma ligação, sob pena de a placa não iniciar. Os sensores de gás, o
+relé e o sensor de nível da água, cuja unidade impedia a placa de iniciar
+e será substituída, ficam para uma fonte externa de 5~V.
+
+\begin{figure*}[htbp]
+\centering
+\imagem{bancada.jpg}{width=\textwidth}{Protótipo na protoboard\\
+(figuras/bancada.jpg)}
+\caption{O protótipo físico executando o firmware gerado pelo compilador,
+em três momentos do teste: NORMAL (LED verde); ATENÇÃO, com o sensor de
+solo na água (LED amarelo); e ALARME de deslizamento depois de molhar a
+placa de chuva (LED vermelho). O display OLED mostra o estado e as
+leituras.}
+\label{fig:bancada}
+\end{figure*}
+
 O protótipo físico custa R\$~235,92 na configuração básica (ESP32,
 sensores de presença, nível, gases e temperatura, buzzer e LEDs) e
 R\$~408,42 com o display, o leitor biométrico, os sensores de chuva e de
@@ -690,7 +731,9 @@ linguagem e compilado sem alterações para o PC e para o ESP32.
 A separação entre a linguagem e o hardware foi a decisão que mais rendeu.
 Como o mesmo programa roda no alvo simulado, a lógica de risco pôde ser
 verificada por 42 cenários automatizados no computador antes de ir para
-a placa, e erros de regra apareceram ali, e não na bancada. A linguagem
+a placa, e erros de regra apareceram ali, e não na bancada. Na bancada, o mesmo
+programa funcionou sem alterações, e os problemas encontrados foram de
+alimentação e de montagem, não de lógica. A linguagem
 também se mostrou adequada para expressar regras de reação: a prioridade
 dos riscos ficou escrita como uma sequência de \texttt{checkpoint}s, legível
 sem conhecer Python.
@@ -699,8 +742,9 @@ Como trabalhos futuros, destacam-se: uma fase de análise semântica, já que
 os tipos declarados (\texttt{ration}, \texttt{vital}, \texttt{status}) são
 registrados na AST mas ainda não verificados; a execução concorrente das
 tarefas (\texttt{survivor}), hoje chamadas em sequência pelo laço
-principal; autenticação no painel web; e a conclusão da montagem do
-hardware real.
+principal; autenticação no painel web; e, no hardware, uma fonte de
+alimentação própria, que permita ligar os sensores de gás, o de nível da
+água, o relé e o WiFi na placa.
 
 % =====================================================================
 % Referências: confira cada uma antes de entregar.
