@@ -768,7 +768,6 @@ chronicle {
     checkpoint (finger.begin(radio(PINO_DIGITAL_RX), radio(PINO_DIGITAL_TX))) {
         log_entry("[AEGIS] leitor de digital pronto")
     }
-    inicio = time.ms()
     display.clear()
     display.logo(48, 2)
     display.center("AEGIS", 38, 1)
@@ -803,6 +802,10 @@ chronicle {
         log_entry("[AEGIS] modo offline: alertas so no local")
     }
 
+    // o aquecimento dos MQ conta a partir daqui, depois da rede: se ela
+    // demorasse mais que o aquecimento (no PC são 5 s), a base de ar limpo
+    // nunca seria medida e o ar normal pareceria fumaça
+    inicio = time.ms()
     watch {
         ciclo()
         hide(CICLO_MS)

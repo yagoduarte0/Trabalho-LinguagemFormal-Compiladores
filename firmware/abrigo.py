@@ -1222,12 +1222,11 @@ def ciclo():
     depurar()
 
 def main():
-    global inicio, rede, ip, mqtt_ok, painel, bot
+    global rede, ip, mqtt_ok, painel, bot, inicio
     log_entry("[AEGIS] abrigo iniciando")
     gpio.write(radio(PINO_RELE), not RELE_ATIVO_EM_ALTO)
     if finger.begin(radio(PINO_DIGITAL_RX), radio(PINO_DIGITAL_TX)):
         log_entry("[AEGIS] leitor de digital pronto")
-    inicio = time.ms()
     display.clear()
     display.logo(48, 2)
     display.center("AEGIS", 38, 1)
@@ -1254,6 +1253,7 @@ def main():
         hide(3000)
     else:
         log_entry("[AEGIS] modo offline: alertas so no local")
+    inicio = time.ms()
     while True:
         ciclo()
         hide(CICLO_MS)
