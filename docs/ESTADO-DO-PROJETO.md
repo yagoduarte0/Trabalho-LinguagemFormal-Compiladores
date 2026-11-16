@@ -3,7 +3,7 @@
 Documento de continuidade: registra o que está pronto, o que falta e as decisões
 já tomadas. Serve para retomar o trabalho sem precisar reconstruir o contexto.
 
-Última atualização: 08/11/2026
+Última atualização: 16/11/2026
 
 ---
 
@@ -61,7 +61,7 @@ repositório. Ficou decidido unificar tudo sob o nome AEGIS.
 | `compilador/painel.js` | Página do painel web, embutida pelo gerador no runtime |
 | `firmware/diagram.json`, `wokwi.toml`, `wokwi.sh` | Simulação no Wokwi (VS Code) |
 | `docs/` | Documentação da linguagem e do hardware |
-| `pitch/` | Apresentação animada em Manim |
+| `pitch/` | Pitch animado em Manim (`pitch.html`) e a fala de cada cena (`ROTEIRO.md`) |
 
 A pasta `C:\Users\yagod\OneDrive\Desktop\Apresentacao-Comp` foi a origem do
 pitch e pode ser descartada: tudo que importa já está versionado aqui.
@@ -98,35 +98,33 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
 - **Documentação** — `linguagem.md` e `gramatica.md`, com tabela de tokens e
   árvore de exemplo extraídas do próprio código.
 - **Pitch** — 10 cenas animadas, com a cena de arquitetura mostrando a linguagem
-  real ao lado da saída verdadeira do compilador.
+  real ao lado da saída verdadeira do compilador. Fala de cada cena em
+  [pitch/ROTEIRO.md](../pitch/ROTEIRO.md).
+- **Rede** (08/11) — painel web local servido pelo ESP32 (porta 80; no Wokwi em
+  `localhost:8180`), bot do Telegram com alertas e os comandos `/status`,
+  `/silenciar` e `/ajuda`, e ajustes da placa (WiFi, token, aquecimento) no
+  `firmware/config.json`, fora do Git. Configuração em `docs/hardware.md` §8.
+  Funciona no Mac (`./firmware/wokwi.sh pc`) e no Wokwi.
+- **Protótipo físico** (15/11) — o mesmo `abrigo.aeg` rodando na NodeMCU ESP-32S
+  com LEDs, buzzer, botão, OLED, DHT22, PIR, chuva e solo. Teste na bancada:
+  normal → atenção → alarme de deslizamento → sirene silenciada → normal.
+- **Artigo IEEE** — `artigo/artigo.tex` completo, com a seção do protótipo físico
+  e as referências conferidas. Compilar com `cd artigo && tectonic -X compile artigo.tex`.
+- **Vídeos** — `video/saida/aegis-completo.mp4` (14:56): a animação narrada
+  (`docs/video/animacao/`) seguida do protótipo físico (`docs/video/prototipo/`).
 
 ### Pendente
 
-**Rede (concluída em 08/11/2026):** painel web local servido pelo ESP32 (porta 80; no Wokwi em
-`localhost:8180`), bot do Telegram com alertas e os comandos `/status`, `/silenciar` e `/ajuda`, e
-ajustes da placa (WiFi, token, aquecimento) no `firmware/config.json`, fora do Git. Configuração em
-`docs/hardware.md` §8. Bot @Aegis_IoT_bot criado e testado no Mac e no Wokwi.
-
-- **Wokwi conferido em 08/11**: WiFi, painel e bot funcionando. Falta gravar o firmware novo na placa real.
-- **Artigo IEEE** (`artigo/artigo.tex`, figuras em `artigo/figuras/`; compilar com
-  `cd artigo && tectonic -X compile artigo.tex`): todas as seções escritas em 08–09/11. Faltam o
-  print da conversa com o bot (`figuras/telegram.png`), fotos dos MQ, PIR, AS608, chuva e solo
-  para completar `figuras/sensores.jpg` (hoje só 4 fotos ilustrativas do Wikimedia Commons) e
-  conferir as referências IBGE 2018 e Cemaden 2024.
-- **Vídeo de demonstração**: o animado (narração + 14 cenas, `docs/video/animacao/`) está
-  renderizado em `video/saida/aegis-demonstracao.mp4`. Falta gravar o protótipo real seguindo
-  [video/roteiro-fisico.md](video/roteiro-fisico.md); a animação por cima vem depois.
-
-1. **Revisar o pitch com os dados da sua pesquisa** — os números de mercado
-   estão em `pitch/aegis/data.py` com a fonte ao lado; trocar lá não exige
-   tocar nas animações.
-2. **Ensaiar cronometrado** — o roteiro foi desenhado para 10 minutos.
-3. **Montar o hardware real** quando os componentes chegarem, seguindo
-   `docs/hardware.md`, e recalibrar os MQ (seção 5 do guia).
-4. **Artigo IEEE** (`artigo/`) sobre a linguagem, o compilador e o sistema.
-5. **Orçamento do pitch** — o OLED, o botão e os resistores dos divisores não
-   estão em `pitch/aegis/data.py`.
-6. **Possível melhoria do compilador** — não há análise semântica: os tipos
+1. **Ensaiar o pitch cronometrado** (10 minutos), seguindo `pitch/ROTEIRO.md`.
+2. **Alimentação da placa** — pelo USB, o ESP32 não aguenta o WiFi (brownout ao
+   ligar o rádio), os sensores de gás MQ-2 e MQ-135 nem o relé. Precisa de fonte
+   própria (12 V com step-down). Até lá, painel e Telegram rodam no Mac
+   (`./firmware/wokwi.sh pc`) e no Wokwi.
+3. **HC-SR04 novo** — o atual derrubava a placa.
+4. **Print do Telegram para o artigo** (opcional) — se `artigo/figuras/telegram.png`
+   existir, a figura dos canais remotos mostra a conversa ao lado do painel;
+   sem ele, mostra só o painel.
+5. **Possível melhoria do compilador** — não há análise semântica: os tipos
    declarados (`ration`, `vital`, `status`) são registrados na AST mas não
    verificados. Se a disciplina exigir uma quarta fase, é o caminho natural.
 
