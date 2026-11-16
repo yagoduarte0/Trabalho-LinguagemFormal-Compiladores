@@ -1,8 +1,8 @@
 # Roteiro do pitch — AEGIS (10 minutos)
 
 A fala de cada cena do `pitch.html`. **[→]** marca onde apertar a seta para a
-direita. Os tempos somam 9 min 30 s, o que deixa 30 s de folga para respirar
-ou para uma pergunta no meio.
+direita. Com a demonstração do painel e do Telegram (1 min, logo depois da
+cena 05), os tempos somam 10 min. Se atrasar, encurte as cenas 07 e 09.
 
 Não precisa decorar palavra por palavra. Decore a **primeira frase** de cada
 cena, porque ela puxa o resto, e os **números**, que estão em negrito.
@@ -20,8 +20,58 @@ cena, porque ela puxa o resto, e os **números**, que estão em negrito.
   começar. Ela roda offline, com os LEDs, o display e o alarme funcionando.
   **Não grave firmware ao vivo**, porque a alimentação pelo USB é o ponto
   fraco da placa.
-- Um terminal aberto na raiz do repositório, caso perguntem do compilador
-  (ver "Se perguntarem", no fim).
+- O abrigo rodando no Mac para a demonstração do painel e do Telegram (ver
+  "Demonstração do painel e do Telegram", logo abaixo). Precisa de internet
+  no Mac, porque o bot usa a internet.
+- O celular com o Telegram aberto no chat do AegisBot, ou o Telegram para Mac
+  aberto, para a banca ver a mensagem no projetor.
+
+## Demonstração do painel e do Telegram
+
+A placa real roda sem Wi‑Fi, porque o USB não aguenta o rádio. Por isso o
+painel e o bot são mostrados com o **mesmo `abrigo.aeg`** rodando no Mac, com
+os sensores simulados. O firmware, o painel e o bot são os mesmos da placa.
+
+**5 minutos antes** (no Terminal):
+
+```sh
+cd ~/Faculdade/Trabalho-LinguagemFormal-Compiladores
+./firmware/wokwi.sh pc
+```
+
+- Chega no Telegram a mensagem "🛡 AEGIS ligado e vigiando".
+- Abra `http://localhost:8080` numa janela do Chrome. O painel fica verde,
+  em **NORMAL**.
+- Deixe o Terminal e o painel lado a lado e volte para o `pitch.html`.
+
+**Na hora** (depois da cena 05, ~1 min). Troque de janela com `Cmd+Tab`:
+
+1. > Agora o sistema funcionando. É o mesmo programa da placa, rodando aqui
+   > com os sensores simulados. Este é o painel web que o ESP32 serve na rede
+   > de casa.
+2. No Terminal, digite `fumaca` e aperte Enter.
+   > Vou simular fumaça. Em uns 2 segundos o painel fica vermelho, em
+   > alarme, e o celular recebe o alerta no Telegram.
+
+   Mostre o celular ou o Telegram para Mac com o "🚨 ALARME: FUMACA/GAS".
+3. Clique em **Silenciar sirene** no painel.
+   > Pelo painel dá para calar a sirene, mas não desarmar: desarmar só com a
+   > digital, de propósito.
+4. Digite `normal` e aperte Enter. O painel volta ao verde e chega "✅ NORMAL"
+   no Telegram.
+5. `Cmd+Tab` de volta ao pitch e **[→]**.
+
+Outros eventos que dá para digitar: `chuva`, `deslizamento` (chuva com solo
+encharcado), `agua`, `calor`, `ar`, `dedo` (arma ou desarma) e `estranho`
+(digital desconhecida). Para encerrar, use `Ctrl+C`.
+
+**Se não tiver internet:** o painel funciona igual, só o Telegram não chega.
+Se a rede da faculdade bloquear, ligue o Mac no roteador do celular.
+
+**Versão no Wokwi** (o ESP32 virtual na tela, com LEDs e display): é mais
+bonita, mas tem mais peças que podem falhar ao vivo. O passo a passo está em
+`docs/demo-wokwi.md` (`./firmware/wokwi.sh demo`, painel em
+`http://localhost:8180`).
 
 **Teste no projetor:** abra o `pitch.html`, passe pelas 10 cenas e veja se as
 animações rodam. A abertura fica em loop (o radar girando) até você apertar a
@@ -141,6 +191,9 @@ Esta é a cena da disciplina. Vá devagar aqui.
 >
 > O programa do abrigo tem **810 linhas** de AEGIS, e o mesmo arquivo rodou
 > no simulador, no PC e na placa real **sem nenhuma alteração**.
+
+**Demonstração (1:00):** painel e Telegram, conforme a seção
+"Demonstração do painel e do Telegram", lá em cima. Depois volte ao pitch.
 
 **[→]**
 
