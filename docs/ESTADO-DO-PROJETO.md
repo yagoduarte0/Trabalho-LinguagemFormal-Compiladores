@@ -121,10 +121,7 @@ pitch e pode ser descartada: tudo que importa já está versionado aqui.
    própria (12 V com step-down). Até lá, painel e Telegram rodam no Mac
    (`./firmware/wokwi.sh pc`) e no Wokwi.
 3. **HC-SR04 novo** — o atual derrubava a placa.
-4. **Print do Telegram para o artigo** (opcional) — se `artigo/figuras/telegram.png`
-   existir, a figura dos canais remotos mostra a conversa ao lado do painel;
-   sem ele, mostra só o painel.
-5. **Possível melhoria do compilador** — não há análise semântica: os tipos
+4. **Possível melhoria do compilador** — não há análise semântica: os tipos
    declarados (`ration`, `vital`, `status`) são registrados na AST mas não
    verificados. Se a disciplina exigir uma quarta fase, é o caminho natural.
 
