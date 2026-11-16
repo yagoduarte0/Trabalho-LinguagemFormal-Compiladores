@@ -575,16 +575,25 @@ estado, arme, desarme ou digital desconhecida, e aceita os comandos
 Por decisão de projeto, nenhum canal remoto desarma o abrigo: silenciar a
 sirene é permitido, mas desarmar exige a digital.
 
+% Com figuras/telegram.png, a figura mostra o painel e a conversa com o bot
+% lado a lado; sem ele, só o painel.
+\IfFileExists{figuras/telegram.png}{%
 \begin{figure*}[htbp]
 \centering
-\imagem{painel-celular.png}{height=8.5cm}{Painel web}\hfill
-\imagem{telegram.png}{height=8.5cm}{Conversa com o bot do Telegram\\
-(figuras/telegram.png)}
+\includegraphics[height=8.5cm]{figuras/painel-celular.png}\hfill
+\includegraphics[height=8.5cm]{figuras/telegram.png}
 \caption{Canais remotos. À esquerda, o painel web servido pelo próprio
 ESP32 durante um alarme de fumaça; à direita, as mensagens do bot do
 Telegram.}
 \label{fig:canais}
-\end{figure*}
+\end{figure*}}{%
+\begin{figure}[htbp]
+\centering
+\imagem{painel-celular.png}{height=8.5cm}{Painel web}
+\caption{Painel web servido pelo próprio ESP32 durante um alarme de
+fumaça.}
+\label{fig:canais}
+\end{figure}}
 
 \begin{figure}[htbp]
 \centering
@@ -747,7 +756,7 @@ alimentação própria, que permita ligar os sensores de gás, o de nível da
 água, o relé e o WiFi na placa.
 
 % =====================================================================
-% Referências: confira cada uma antes de entregar.
+% Referências
 \begin{thebibliography}{00}
 \bibitem{aho2007} A. V. Aho, M. S. Lam, R. Sethi e J. D. Ullman,
 \textit{Compilers: Principles, Techniques, and Tools}, 2.\ ed.
