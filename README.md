@@ -126,5 +126,6 @@ cd pitch
 
 A apresentação é o `pitch.html`: um arquivo único e autocontido, aberto no
 Chrome em tela cheia, que avança com as setas e funciona sem internet.
+A fala de cada cena, com o tempo de cada uma, está em [pitch/ROTEIRO.md](pitch/ROTEIRO.md).
 
 Requer Python 3.13 com `manim` 0.21 e `manim-slides` 5.7.
